@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSummary, getAllTransactions } from '@/lib/db';
 import { formatCurrency } from '@/lib/types';
 
@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     const { messages } = await req.json();
 
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!process.env.GOOGLE_API_KEY) {
       return new Response(JSON.stringify({ error: 'API key no configurada' }), { status: 500 });
     }
 
@@ -29,12 +29,10 @@ ${top20.map(t => `- [${t.date}] ${t.scope === 'personal' ? 'Personal' : 'Negocio
 CATEGORÍAS MÁS USADAS:
 ${summary.byCategory.slice(0, 10).map(c => `- ${c.scope}/${c.type}: ${c.category} = ${formatCurrency(c.total)} (${c.count} transacciones)`).join('\n')}`;
 
-    const client = new Anthropic();
-    const stream = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
-      stream: true,
-      system: `Eres un asistente financiero personal amigable, conciso y útil. Respondes en español.
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-1.5-flash',
+      systemInstruction: `Eres un asistente financiero personal amigable, conciso y útil. Respondes en español.
 
 Tienes acceso a los datos financieros del usuario:
 ${summaryText}
@@ -47,19 +45,23 @@ Puedes ayudar con:
 - Interpretar descripciones de gastos/ingresos y sugerir cómo registrarlos
 
 Sé amigable, directo y práctico. Usa los datos reales del usuario en tus respuestas.`,
-      messages: messages.map((m: { role: string; content: string }) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      })),
     });
+
+    const history = messages.slice(0, -1).map((m: { role: string; content: string }) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }));
+    const lastMessage = messages[messages.length - 1];
+
+    const chat = model.startChat({ history });
+    const result = await chat.sendMessageStream(lastMessage.content);
 
     const readable = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
-        for await (const event of stream) {
-          if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-            controller.enqueue(encoder.encode(event.delta.text));
-          }
+        for await (const chunk of result.stream) {
+          const text = chunk.text();
+          if (text) controller.enqueue(encoder.encode(text));
         }
         controller.close();
       },
