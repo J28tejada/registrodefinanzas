@@ -14,6 +14,7 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [recent, setRecent] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
 
@@ -25,14 +26,21 @@ export default function DashboardPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const [sumRes, txRes] = await Promise.all([
         fetch(`/api/summary?startDate=${monthStart}&endDate=${monthEnd}`),
         fetch(`/api/transactions?startDate=${monthStart}&endDate=${monthEnd}`),
       ]);
       const [sumData, txData] = await Promise.all([sumRes.json(), txRes.json()]);
-      setSummary(sumData);
-      setRecent(txData.slice(0, 10));
+      if (!sumRes.ok || sumData.error) {
+        setError('No se pudo conectar a la base de datos. Verifica que Vercel Postgres esté configurado.');
+      } else {
+        setSummary(sumData);
+        setRecent(Array.isArray(txData) ? txData.slice(0, 10) : []);
+      }
+    } catch {
+      setError('Error al cargar los datos. Intenta de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -70,6 +78,13 @@ export default function DashboardPage() {
           </button>
         </div>
       </div>
+
+      {/* Error state */}
+      {error && !loading && (
+        <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 text-rose-400 text-sm">
+          {error}
+        </div>
+      )}
 
       {/* Summary cards */}
       {loading ? (

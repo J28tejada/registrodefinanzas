@@ -9,6 +9,7 @@ import { Transaction, TransactionType, TransactionScope } from '@/lib/types';
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
 
@@ -31,7 +32,16 @@ export default function TransactionsPage() {
     try {
       const res = await fetch(`/api/transactions?${params}`);
       const data = await res.json();
-      setTransactions(data);
+      if (!res.ok || data.error) {
+        setError('No se pudo conectar a la base de datos. Verifica que Vercel Postgres esté configurado.');
+        setTransactions([]);
+      } else {
+        setError(null);
+        setTransactions(Array.isArray(data) ? data : []);
+      }
+    } catch {
+      setError('Error al cargar los datos. Intenta de nuevo.');
+      setTransactions([]);
     } finally {
       setLoading(false);
     }
@@ -86,6 +96,13 @@ export default function TransactionsPage() {
           </button>
         </div>
       </div>
+
+      {/* Error state */}
+      {error && !loading && (
+        <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 text-rose-400 text-sm">
+          {error}
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative">
