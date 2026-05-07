@@ -64,10 +64,11 @@ export async function POST(req: NextRequest) {
     const parsed = JSON.parse(jsonText);
     return NextResponse.json(parsed);
   } catch (err) {
-    console.error('Error interpretando:', err);
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('Error interpretando:', message);
     if (err instanceof SyntaxError) {
-      return NextResponse.json({ error: 'La IA no devolvió JSON válido' }, { status: 500 });
+      return NextResponse.json({ error: 'La IA no devolvió JSON válido', detail: message }, { status: 500 });
     }
-    return NextResponse.json({ error: 'Error al interpretar texto' }, { status: 500 });
+    return NextResponse.json({ error: 'Error al interpretar texto', detail: message }, { status: 500 });
   }
 }

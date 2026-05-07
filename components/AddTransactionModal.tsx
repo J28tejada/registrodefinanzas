@@ -69,7 +69,11 @@ export default function AddTransactionModal({
         body: JSON.stringify({ text }),
       });
       const data: AIInterpretation = await res.json();
-      if (!res.ok) throw new Error((data as { error?: string }).error ?? 'Error al interpretar');
+      if (!res.ok) {
+        const errData = data as { error?: string; detail?: string };
+        console.error('[AI Interpret Error]', errData.detail ?? errData.error);
+        throw new Error(errData.error ?? 'Error al interpretar');
+      }
 
       setInterpretation(data);
       setForm(prev => ({
