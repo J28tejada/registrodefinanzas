@@ -5,9 +5,9 @@ import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Receipt, Bot, Wallet } from 'lucide-react';
 
 const navItems = [
-  { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/', icon: Bot, label: 'Chat IA' },
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/transactions', icon: Receipt, label: 'Transacciones' },
-  { href: '/chat', icon: Bot, label: 'Chat IA' },
 ];
 
 export default function Navigation() {

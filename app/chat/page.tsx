@@ -1,9 +1,5 @@
-import ChatInterface from '@/components/ChatInterface';
+import { redirect } from 'next/navigation';
 
 export default function ChatPage() {
-  return (
-    <div className="max-w-3xl mx-auto">
-      <ChatInterface />
-    </div>
-  );
+  redirect('/');
 }
