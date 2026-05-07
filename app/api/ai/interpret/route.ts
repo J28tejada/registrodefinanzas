@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Respuesta inesperada de IA' }, { status: 500 });
     }
 
-    const jsonText = content.text.trim();
+    const jsonText = content.text.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
     const parsed = JSON.parse(jsonText);
     return NextResponse.json(parsed);
   } catch (err) {
