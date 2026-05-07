@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
 import { getSummary, getAllTransactions } from '@/lib/db';
 import { formatCurrency } from '@/lib/types';
 
@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     const { messages } = await req.json();
 
-    if (!process.env.GOOGLE_API_KEY) {
+    if (!process.env.GROQ_API_KEY) {
       return new Response(JSON.stringify({ error: 'API key no configurada' }), { status: 500 });
     }
 
@@ -29,10 +29,7 @@ ${top20.map(t => `- [${t.date}] ${t.scope === 'personal' ? 'Personal' : 'Negocio
 CATEGORÍAS MÁS USADAS:
 ${summary.byCategory.slice(0, 10).map(c => `- ${c.scope}/${c.type}: ${c.category} = ${formatCurrency(c.total)} (${c.count} transacciones)`).join('\n')}`;
 
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
-      systemInstruction: `Eres un asistente financiero personal amigable, conciso y útil. Respondes en español.
+    const systemPrompt = `Eres un asistente financiero personal amigable, conciso y útil. Respondes en español.
 
 Tienes acceso a los datos financieros del usuario:
 ${summaryText}
@@ -42,25 +39,28 @@ Puedes ayudar con:
 - Sugerencias de categorías para nuevas transacciones
 - Consejos de ahorro y finanzas personales
 - Responder preguntas sobre el estado financiero del usuario
-- Interpretar descripciones de gastos/ingresos y sugerir cómo registrarlos
 
-Sé amigable, directo y práctico. Usa los datos reales del usuario en tus respuestas.`,
+Sé amigable, directo y práctico. Usa los datos reales del usuario en tus respuestas.`;
+
+    const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    const stream = await client.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      max_tokens: 1024,
+      stream: true,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...messages.map((m: { role: string; content: string }) => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+        })),
+      ],
     });
-
-    const history = messages.slice(0, -1).map((m: { role: string; content: string }) => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
-    }));
-    const lastMessage = messages[messages.length - 1];
-
-    const chat = model.startChat({ history });
-    const result = await chat.sendMessageStream(lastMessage.content);
 
     const readable = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
-        for await (const chunk of result.stream) {
-          const text = chunk.text();
+        for await (const chunk of stream) {
+          const text = chunk.choices[0]?.delta?.content ?? '';
           if (text) controller.enqueue(encoder.encode(text));
         }
         controller.close();

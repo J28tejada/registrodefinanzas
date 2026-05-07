@@ -8,7 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.21.0",
+    "groq-sdk": "^0.9.0",
     "@vercel/postgres": "^0.10.0",
     "lucide-react": "^0.447.0",
     "next": "^16.2.5",

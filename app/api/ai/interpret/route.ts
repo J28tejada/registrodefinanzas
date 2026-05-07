@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Groq from 'groq-sdk';
 import { todayISO } from '@/lib/types';
 
 const SYSTEM_PROMPT = `Eres un asistente de finanzas personales. El usuario ingresó una descripción de una transacción (puede ser texto escrito o transcripción de voz en español).
@@ -40,20 +40,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Texto requerido' }, { status: 400 });
     }
 
-    if (!process.env.GOOGLE_API_KEY) {
+    if (!process.env.GROQ_API_KEY) {
       return NextResponse.json({ error: 'API key no configurada' }, { status: 500 });
     }
 
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
-      systemInstruction: SYSTEM_PROMPT,
+    const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    const completion = await client.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      max_tokens: 512,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: `Fecha actual: ${todayISO()}\n\nTexto del usuario: "${text}"` },
+      ],
     });
 
-    const result = await model.generateContent(`Fecha actual: ${todayISO()}\n\nTexto del usuario: "${text}"`);
-    const jsonText = result.response.text().trim()
-      .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
-
+    const jsonText = completion.choices[0].message.content ?? '';
     const parsed = JSON.parse(jsonText);
     return NextResponse.json(parsed);
   } catch (err) {
