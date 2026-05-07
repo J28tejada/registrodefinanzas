@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Receipt, Bot, Wallet } from 'lucide-react';
+import { LayoutDashboard, Receipt, Bot, Wallet, BarChart2, CalendarDays } from 'lucide-react';
 
 const navItems = [
   { href: '/', icon: Bot, label: 'Chat IA' },
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/transactions', icon: Receipt, label: 'Transacciones' },
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Inicio' },
+  { href: '/stats', icon: BarChart2, label: 'Estadísticas' },
+  { href: '/calendar', icon: CalendarDays, label: 'Calendario' },
+  { href: '/transactions', icon: Receipt, label: 'Registros' },
 ];
 
 export default function Navigation() {
@@ -50,25 +52,27 @@ export default function Navigation() {
         </nav>
 
         <div className="p-4 border-t border-slate-800">
-          <p className="text-xs text-slate-500 text-center">Registro de Finanzas v1.0</p>
+          <p className="text-xs text-slate-500 text-center">FinanzasIA v1.0</p>
         </div>
       </aside>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-slate-800 z-20 flex"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-slate-800 z-20 flex"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
         {navItems.map(({ href, icon: Icon, label }) => {
           const active = pathname === href;
           return (
             <Link
               key={href}
               href={href}
-              className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors min-h-[56px] ${
-                active ? 'text-emerald-400' : 'text-slate-400'
+              className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors min-h-[52px] ${
+                active ? 'text-emerald-400' : 'text-slate-500'
               }`}
             >
               <Icon className="w-5 h-5" />
-              {label}
+              <span className="text-[10px] leading-tight">{label.split(' ')[0]}</span>
             </Link>
           );
         })}
