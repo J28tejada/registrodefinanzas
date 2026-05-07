@@ -31,7 +31,7 @@ ${summary.byCategory.slice(0, 10).map(c => `- ${c.scope}/${c.type}: ${c.category
 
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash',
       systemInstruction: `Eres un asistente financiero personal amigable, conciso y útil. Respondes en español.
 
 Tienes acceso a los datos financieros del usuario:
