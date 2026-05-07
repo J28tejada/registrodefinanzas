@@ -195,7 +195,7 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100dvh - 7rem)' }}>
+    <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between pb-3 border-b border-slate-800">
         <div className="flex items-center gap-2.5">
@@ -218,19 +218,19 @@ export default function ChatInterface() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto py-3 space-y-3">
+      <div className="flex-1 min-h-0 overflow-y-auto py-3 space-y-3">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center space-y-4 px-4">
+          <div className="flex flex-col items-center justify-center h-full text-center space-y-4 px-6 w-full">
             <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center">
               <Bot className="w-7 h-7 text-emerald-400" />
             </div>
-            <div>
+            <div className="w-full">
               <p className="text-white font-semibold">Hola, soy tu asistente financiero</p>
               <p className="text-slate-400 text-sm mt-1">
                 Dime qué gastaste o ganaste y lo registro por ti.
               </p>
             </div>
-            <div className="grid grid-cols-1 gap-2 w-full max-w-xs">
+            <div className="grid grid-cols-1 gap-2 w-full">
               {SUGGESTED.map(q => (
                 <button
                   key={q}

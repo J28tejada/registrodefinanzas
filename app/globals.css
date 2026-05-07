@@ -2,29 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
+html, body {
+  height: 100%;
   @apply bg-slate-950 text-white;
-  /* Prevent text size adjustment on orientation change */
   -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
 }
 
-/* Remove tap highlight on mobile */
 * {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Better tap response on buttons/inputs */
 button, input, select, textarea {
   touch-action: manipulation;
 }
 
-/* Scrollbars (desktop only) */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { @apply bg-slate-950; }
 ::-webkit-scrollbar-thumb { @apply bg-slate-700 rounded-full; }
 ::-webkit-scrollbar-thumb:hover { @apply bg-slate-500; }
 
-/* Hide scrollbar utility */
 .scrollbar-none {
   scrollbar-width: none;
   -ms-overflow-style: none;
