@@ -1,7 +1,12 @@
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import SummaryBar from '@/components/SummaryBar';
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
+
   return (
     <div className="flex h-[100dvh]">
       <Navigation />
