@@ -11,7 +11,8 @@ let initialized = false;
 
 async function init() {
   if (initialized) return;
-  await getPool().query(`
+  const pool = getPool();
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS transactions (
       id TEXT PRIMARY KEY,
       type TEXT NOT NULL,
@@ -21,8 +22,16 @@ async function init() {
       description TEXT NOT NULL,
       date TEXT NOT NULL,
       created_at TEXT NOT NULL,
-      source TEXT NOT NULL DEFAULT 'manual'
+      source TEXT NOT NULL DEFAULT 'manual',
+      user_id TEXT
     )
+  `);
+  // Add user_id to existing tables that were created without it
+  await pool.query(`
+    ALTER TABLE transactions ADD COLUMN IF NOT EXISTS user_id TEXT
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions (user_id)
   `);
   initialized = true;
 }
@@ -41,10 +50,10 @@ function rowToTransaction(row: Record<string, unknown>): Transaction {
   };
 }
 
-export async function getAllTransactions(filters?: TransactionFilters): Promise<Transaction[]> {
+export async function getAllTransactions(userId: string, filters?: TransactionFilters): Promise<Transaction[]> {
   await init();
-  const conditions: string[] = ['1=1'];
-  const params: (string | number)[] = [];
+  const conditions: string[] = ['user_id = $1'];
+  const params: (string | number)[] = [userId];
 
   if (filters?.type) { conditions.push(`type = $${params.length + 1}`); params.push(filters.type); }
   if (filters?.scope) { conditions.push(`scope = $${params.length + 1}`); params.push(filters.scope); }
@@ -63,27 +72,37 @@ export async function getAllTransactions(filters?: TransactionFilters): Promise<
   return rows.map(rowToTransaction);
 }
 
-export async function getTransactionById(id: string): Promise<Transaction | null> {
+export async function getTransactionById(userId: string, id: string): Promise<Transaction | null> {
   await init();
-  const { rows } = await getPool().query('SELECT * FROM transactions WHERE id = $1', [id]);
+  const { rows } = await getPool().query(
+    'SELECT * FROM transactions WHERE id = $1 AND user_id = $2',
+    [id, userId],
+  );
   return rows[0] ? rowToTransaction(rows[0]) : null;
 }
 
-export async function createTransaction(data: Omit<Transaction, 'id' | 'createdAt'>): Promise<Transaction> {
+export async function createTransaction(
+  userId: string,
+  data: Omit<Transaction, 'id' | 'createdAt'>,
+): Promise<Transaction> {
   await init();
   const id = crypto.randomUUID();
   const createdAt = new Date().toISOString();
   await getPool().query(
-    `INSERT INTO transactions (id, type, scope, amount, category, description, date, created_at, source)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-    [id, data.type, data.scope, data.amount, data.category, data.description, data.date, createdAt, data.source ?? 'manual'],
+    `INSERT INTO transactions (id, type, scope, amount, category, description, date, created_at, source, user_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [id, data.type, data.scope, data.amount, data.category, data.description, data.date, createdAt, data.source ?? 'manual', userId],
   );
-  return (await getTransactionById(id))!;
+  return (await getTransactionById(userId, id))!;
 }
 
-export async function updateTransaction(id: string, data: Partial<Omit<Transaction, 'id' | 'createdAt'>>): Promise<Transaction | null> {
+export async function updateTransaction(
+  userId: string,
+  id: string,
+  data: Partial<Omit<Transaction, 'id' | 'createdAt'>>,
+): Promise<Transaction | null> {
   await init();
-  if (!(await getTransactionById(id))) return null;
+  if (!(await getTransactionById(userId, id))) return null;
 
   const updates: string[] = [];
   const params: (string | number)[] = [];
@@ -96,23 +115,29 @@ export async function updateTransaction(id: string, data: Partial<Omit<Transacti
   if (data.date !== undefined) { updates.push(`date = $${params.length + 1}`); params.push(data.date); }
   if (data.source !== undefined) { updates.push(`source = $${params.length + 1}`); params.push(data.source); }
 
-  if (updates.length === 0) return getTransactionById(id);
+  if (updates.length === 0) return getTransactionById(userId, id);
 
-  params.push(id);
-  await getPool().query(`UPDATE transactions SET ${updates.join(', ')} WHERE id = $${params.length}`, params);
-  return getTransactionById(id);
+  params.push(id, userId);
+  await getPool().query(
+    `UPDATE transactions SET ${updates.join(', ')} WHERE id = $${params.length - 1} AND user_id = $${params.length}`,
+    params,
+  );
+  return getTransactionById(userId, id);
 }
 
-export async function deleteTransaction(id: string): Promise<boolean> {
+export async function deleteTransaction(userId: string, id: string): Promise<boolean> {
   await init();
-  const result = await getPool().query('DELETE FROM transactions WHERE id = $1', [id]);
+  const result = await getPool().query(
+    'DELETE FROM transactions WHERE id = $1 AND user_id = $2',
+    [id, userId],
+  );
   return (result.rowCount ?? 0) > 0;
 }
 
-export async function getSummary(startDate?: string, endDate?: string): Promise<Summary> {
+export async function getSummary(userId: string, startDate?: string, endDate?: string): Promise<Summary> {
   await init();
-  const conditions: string[] = ['1=1'];
-  const params: string[] = [];
+  const conditions: string[] = ['user_id = $1'];
+  const params: string[] = [userId];
 
   if (startDate) { conditions.push(`date >= $${params.length + 1}`); params.push(startDate); }
   if (endDate) { conditions.push(`date <= $${params.length + 1}`); params.push(endDate); }

@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import Groq from 'groq-sdk';
 import { getSummary, getAllTransactions } from '@/lib/db';
 import { formatCurrency, todayISO } from '@/lib/types';
@@ -24,6 +25,9 @@ const REGISTER_TOOL: Groq.Chat.Completions.ChatCompletionTool = {
 };
 
 export async function POST(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401 });
+
   try {
     const { messages } = await req.json();
 
@@ -31,7 +35,10 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ error: 'API key no configurada' }), { status: 500 });
     }
 
-    const [summary, recentTx] = await Promise.all([getSummary(), getAllTransactions({})]);
+    const [summary, recentTx] = await Promise.all([
+      getSummary(userId),
+      getAllTransactions(userId, {}),
+    ]);
     const top20 = recentTx.slice(0, 20);
 
     const summaryText = `

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import Groq from 'groq-sdk';
 import { todayISO } from '@/lib/types';
 
@@ -34,6 +35,9 @@ Reglas:
 - Si un campo no se puede determinar, usa null`;
 
 export async function POST(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
   try {
     const { text } = await req.json();
     if (!text?.trim()) {

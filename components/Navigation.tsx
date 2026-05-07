@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { UserButton } from '@clerk/nextjs';
 import { LayoutDashboard, Receipt, Bot, Wallet, BarChart2, CalendarDays } from 'lucide-react';
 
 const navItems = [
@@ -51,8 +52,15 @@ export default function Navigation() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-800">
-          <p className="text-xs text-slate-500 text-center">FinanzasIA v1.0</p>
+        <div className="p-4 border-t border-slate-800 flex items-center justify-between">
+          <p className="text-xs text-slate-500">FinanzasIA v1.0</p>
+          <UserButton
+            appearance={{
+              elements: {
+                avatarBox: 'w-7 h-7',
+              },
+            }}
+          />
         </div>
       </aside>
 

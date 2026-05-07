@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { ClerkProvider } from '@clerk/nextjs';
 import './globals.css';
-import Navigation from '@/components/Navigation';
-import SummaryBar from '@/components/SummaryBar';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -13,19 +12,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
-      <body className={`${inter.className} bg-slate-950 text-white min-h-screen`}>
-        <div className="flex h-[100dvh]">
-          <Navigation />
-          <div className="flex-1 min-w-0 md:ml-60 flex flex-col">
-            <SummaryBar />
-            <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-3 md:p-6"
-              style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 5rem)' }}>
-              {children}
-            </main>
-          </div>
-        </div>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="es">
+        <body className={`${inter.className} bg-slate-950 text-white`}>
+          {children}
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

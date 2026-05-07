@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, TrendingDown, Wallet, User, Briefcase } from 'lucide-react';
+import { UserButton } from '@clerk/nextjs';
 import { formatCurrency, Summary } from '@/lib/types';
 
 export default function SummaryBar() {
@@ -33,6 +34,9 @@ export default function SummaryBar() {
 
   return (
     <div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 py-2.5 flex items-center gap-5 overflow-x-auto scrollbar-none">
+      <div className="md:hidden flex-shrink-0">
+        <UserButton appearance={{ elements: { avatarBox: 'w-6 h-6' } }} />
+      </div>
       <div className="flex items-center gap-1.5 flex-shrink-0">
         <Wallet className="w-3.5 h-3.5 text-emerald-400" />
         <span className="text-xs text-slate-500">Total</span>

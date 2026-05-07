@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { getAllTransactions, createTransaction } from '@/lib/db';
 import { TransactionFilters } from '@/lib/types';
 
 export async function GET(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
   try {
     const { searchParams } = req.nextUrl;
     const filters: TransactionFilters = {};
@@ -20,7 +24,7 @@ export async function GET(req: NextRequest) {
     if (endDate) filters.endDate = endDate;
     if (search) filters.search = search;
 
-    const transactions = await getAllTransactions(filters);
+    const transactions = await getAllTransactions(userId, filters);
     return NextResponse.json(transactions);
   } catch (err) {
     console.error(err);
@@ -29,6 +33,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
   try {
     const body = await req.json();
     const { type, scope, amount, category, description, date, source } = body;
@@ -43,7 +50,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ámbito inválido' }, { status: 400 });
     }
 
-    const tx = await createTransaction({ type, scope, amount: Number(amount), category, description, date, source: source ?? 'manual' });
+    const tx = await createTransaction(userId, {
+      type, scope, amount: Number(amount), category, description, date,
+      source: source ?? 'manual',
+    });
     return NextResponse.json(tx, { status: 201 });
   } catch (err) {
     console.error(err);
