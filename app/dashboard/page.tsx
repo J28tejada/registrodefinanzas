@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   TrendingUp, TrendingDown, Wallet, Briefcase,
   Plus, RefreshCw, User,
@@ -18,10 +18,18 @@ export default function DashboardPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
 
-  const now = new Date();
-  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-  const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`;
-  const monthName = now.toLocaleString('es-MX', { month: 'long', year: 'numeric' });
+  const { monthStart, monthEnd, monthName } = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const mm = String(m + 1).padStart(2, '0');
+    const lastDay = String(new Date(y, m + 1, 0).getDate()).padStart(2, '0');
+    return {
+      monthStart: `${y}-${mm}-01`,
+      monthEnd: `${y}-${mm}-${lastDay}`,
+      monthName: now.toLocaleString('es-MX', { month: 'long', year: 'numeric' }),
+    };
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,8 +55,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     load();
-    window.addEventListener('finanzas:refresh', load);
-    return () => window.removeEventListener('finanzas:refresh', load);
+    const onRefresh = () => load();
+    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
+    window.addEventListener('finanzas:refresh', onRefresh);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('finanzas:refresh', onRefresh);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [load]);
 
   const handleDelete = async (id: string) => {

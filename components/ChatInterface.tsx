@@ -169,17 +169,22 @@ export default function ChatInterface() {
     });
 
     try {
+      const data = msg.proposal.data;
+      // Ensure date is always YYYY-MM-DD; fall back to today if AI gave something invalid
+      const dateValid = data.date && /^\d{4}-\d{2}-\d{2}$/.test(data.date);
+      const safeDate = dateValid ? data.date : todayISO();
+
       const res = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...msg.proposal.data, source: 'voice' }),
+        body: JSON.stringify({ ...data, date: safeDate, source: 'voice' }),
       });
       if (!res.ok) throw new Error();
 
       window.dispatchEvent(new Event('finanzas:refresh'));
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: `✅ Registrado: ${msg.proposal!.data.type === 'expense' ? '−' : '+'} ${formatCurrency(msg.proposal!.data.amount)} en ${msg.proposal!.data.category}.`,
+        content: `✅ Registrado: ${data.type === 'expense' ? '−' : '+'} ${formatCurrency(data.amount)} en ${data.category} (${safeDate}).`,
       }]);
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: '❌ No pude guardar. Intenta de nuevo.' }]);
