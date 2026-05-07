@@ -19,7 +19,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Navigation />
           <div className="flex-1 md:ml-60 flex flex-col min-h-screen">
             <SummaryBar />
-            <main className="flex-1 p-4 md:p-6 pb-24 md:pb-6">
+            <main className="flex-1 p-3 md:p-6 pb-24 md:pb-6"
+              style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 5rem)' }}>
               {children}
             </main>
           </div>

@@ -55,14 +55,15 @@ export default function Navigation() {
       </aside>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 z-20 flex">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-slate-800 z-20 flex"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {navItems.map(({ href, icon: Icon, label }) => {
           const active = pathname === href;
           return (
             <Link
               key={href}
               href={href}
-              className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors ${
+              className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors min-h-[56px] ${
                 active ? 'text-emerald-400' : 'text-slate-400'
               }`}
             >

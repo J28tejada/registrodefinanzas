@@ -81,19 +81,19 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
               </p>
             </div>
 
-            {/* Actions (visible on hover) */}
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Actions — always visible on mobile, hover on desktop */}
+            <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
               <button
                 onClick={() => onEdit(tx)}
-                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-2 md:p-1.5 text-slate-400 hover:text-white active:text-white hover:bg-slate-800 active:bg-slate-800 rounded-lg transition-colors"
               >
-                <Pencil className="w-3.5 h-3.5" />
+                <Pencil className="w-4 h-4 md:w-3.5 md:h-3.5" />
               </button>
               <button
                 onClick={() => onDelete(tx.id)}
-                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                className="p-2 md:p-1.5 text-slate-400 hover:text-rose-400 active:text-rose-400 hover:bg-rose-500/10 active:bg-rose-500/10 rounded-lg transition-colors"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-4 h-4 md:w-3.5 md:h-3.5" />
               </button>
             </div>
           </div>
