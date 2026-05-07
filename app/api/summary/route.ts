@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = req.nextUrl;
     const startDate = searchParams.get('startDate') ?? undefined;
     const endDate = searchParams.get('endDate') ?? undefined;
-    const summary = getSummary(startDate, endDate);
+    const summary = await getSummary(startDate, endDate);
     return NextResponse.json(summary);
   } catch (err) {
     console.error(err);

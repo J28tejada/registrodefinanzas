@@ -11,8 +11,11 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ error: 'API key no configurada' }), { status: 500 });
     }
 
-    const summary = getSummary();
-    const recentTx = getAllTransactions({ }).slice(0, 20);
+    const [summary, recentTx] = await Promise.all([
+      getSummary(),
+      getAllTransactions({}),
+    ]);
+    const top20 = recentTx.slice(0, 20);
 
     const summaryText = `
 RESUMEN FINANCIERO ACTUAL DEL USUARIO:
@@ -21,7 +24,7 @@ RESUMEN FINANCIERO ACTUAL DEL USUARIO:
 - Balance total: ${formatCurrency(summary.totalBalance)}
 
 ÚLTIMAS 20 TRANSACCIONES:
-${recentTx.map(t => `- [${t.date}] ${t.scope === 'personal' ? 'Personal' : 'Negocio'} | ${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)} | ${t.category}: ${t.description}`).join('\n')}
+${top20.map(t => `- [${t.date}] ${t.scope === 'personal' ? 'Personal' : 'Negocio'} | ${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)} | ${t.category}: ${t.description}`).join('\n')}
 
 CATEGORÍAS MÁS USADAS:
 ${summary.byCategory.slice(0, 10).map(c => `- ${c.scope}/${c.type}: ${c.category} = ${formatCurrency(c.total)} (${c.count} transacciones)`).join('\n')}`;

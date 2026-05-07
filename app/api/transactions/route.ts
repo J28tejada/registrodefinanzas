@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     if (endDate) filters.endDate = endDate;
     if (search) filters.search = search;
 
-    const transactions = getAllTransactions(filters);
+    const transactions = await getAllTransactions(filters);
     return NextResponse.json(transactions);
   } catch (err) {
     console.error(err);
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ámbito inválido' }, { status: 400 });
     }
 
-    const tx = createTransaction({ type, scope, amount: Number(amount), category, description, date, source: source ?? 'manual' });
+    const tx = await createTransaction({ type, scope, amount: Number(amount), category, description, date, source: source ?? 'manual' });
     return NextResponse.json(tx, { status: 201 });
   } catch (err) {
     console.error(err);
