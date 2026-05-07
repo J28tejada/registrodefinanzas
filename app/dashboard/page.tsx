@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   TrendingUp, TrendingDown, Wallet, Briefcase,
-  Plus, RefreshCw, User,
+  Plus, RefreshCw, User, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import SummaryCard from '@/components/SummaryCard';
 import TransactionList from '@/components/TransactionList';
@@ -17,19 +17,31 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
-
-  const { monthStart, monthEnd, monthName } = useMemo(() => {
+  const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth();
-    const mm = String(m + 1).padStart(2, '0');
-    const lastDay = String(new Date(y, m + 1, 0).getDate()).padStart(2, '0');
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+
+  const { monthStart, monthEnd, monthName, isCurrentMonth } = useMemo(() => {
+    const { year, month } = selectedMonth;
+    const now = new Date();
+    const mm = String(month + 1).padStart(2, '0');
+    const lastDay = String(new Date(year, month + 1, 0).getDate()).padStart(2, '0');
     return {
-      monthStart: `${y}-${mm}-01`,
-      monthEnd: `${y}-${mm}-${lastDay}`,
-      monthName: now.toLocaleString('es-MX', { month: 'long', year: 'numeric' }),
+      monthStart: `${year}-${mm}-01`,
+      monthEnd: `${year}-${mm}-${lastDay}`,
+      monthName: new Date(year, month).toLocaleString('es-MX', { month: 'long', year: 'numeric' }),
+      isCurrentMonth: year === now.getFullYear() && month === now.getMonth(),
     };
-  }, []);
+  }, [selectedMonth]);
+
+  const prevMonth = () => setSelectedMonth(({ year, month }) =>
+    month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }
+  );
+  const nextMonth = () => setSelectedMonth(({ year, month }) => {
+    if (isCurrentMonth) return { year, month };
+    return month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 };
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -74,12 +86,32 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white capitalize">Dashboard</h1>
-          <p className="text-slate-400 text-sm capitalize">{monthName}</p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-1 min-w-0">
+          <button
+            onClick={prevMonth}
+            className="p-2 text-slate-400 hover:text-white active:text-white hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <div className="min-w-0">
+            <h1 className="text-base md:text-xl font-bold text-white capitalize truncate">{monthName}</h1>
+            {!isCurrentMonth && (
+              <button onClick={() => setSelectedMonth({ year: new Date().getFullYear(), month: new Date().getMonth() })}
+                className="text-xs text-emerald-400 hover:underline">
+                Volver al mes actual
+              </button>
+            )}
+          </div>
+          <button
+            onClick={nextMonth}
+            disabled={isCurrentMonth}
+            className="p-2 text-slate-400 hover:text-white active:text-white hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-30 flex-shrink-0"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-shrink-0">
           <button
             onClick={load}
             className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
@@ -88,7 +120,7 @@ export default function DashboardPage() {
           </button>
           <button
             onClick={() => { setEditing(null); setModalOpen(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-500 text-white rounded-xl text-sm font-medium transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Registrar</span>
