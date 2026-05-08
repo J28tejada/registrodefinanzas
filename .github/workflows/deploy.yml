@@ -34,11 +34,16 @@ jobs:
             --name registrodefinanzas \
             --token=${{ secrets.VERCEL_TOKEN }} \
             --build-env NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }} \
-            --build-env CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }} \
             --build-env NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in \
             --build-env NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up \
             --build-env NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/ \
             --build-env NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/ \
+            --env NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }} \
+            --env CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }} \
+            --env NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in \
+            --env NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up \
+            --env NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/ \
+            --env NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/ \
             2>&1 | tee deploy-output.txt
           echo "DEPLOYMENT_URL=$(grep -oP 'https://[^\s]+\.vercel\.app' deploy-output.txt | head -1)" >> $GITHUB_ENV
 
