@@ -25,7 +25,12 @@ const REGISTER_TOOL: Groq.Chat.Completions.ChatCompletionTool = {
 };
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
+  let userId: string | null = null;
+  try {
+    ({ userId } = await auth());
+  } catch {
+    return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401 });
+  }
   if (!userId) return new Response(JSON.stringify({ error: 'No autorizado' }), { status: 401 });
 
   try {

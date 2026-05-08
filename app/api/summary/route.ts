@@ -3,7 +3,12 @@ import { auth } from '@clerk/nextjs/server';
 import { getSummary } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
-  const { userId } = await auth();
+  let userId: string | null = null;
+  try {
+    ({ userId } = await auth());
+  } catch {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
   if (!userId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   try {

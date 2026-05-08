@@ -26,6 +26,20 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
+      - name: Link Vercel project
+        run: |
+          PROJECT_DATA=$(curl -sf "https://api.vercel.com/v9/projects/registrodefinanzas" \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" || echo '{}')
+          PROJECT_ID=$(echo "$PROJECT_DATA" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('id',''))" 2>/dev/null || echo "")
+          ORG_ID=$(echo "$PROJECT_DATA" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('accountId',''))" 2>/dev/null || echo "")
+          if [ -n "$PROJECT_ID" ] && [ -n "$ORG_ID" ]; then
+            mkdir -p .vercel
+            printf '{"projectId":"%s","orgId":"%s"}' "$PROJECT_ID" "$ORG_ID" > .vercel/project.json
+            echo "Linked to Vercel project: $PROJECT_ID"
+          else
+            echo "Warning: Could not find project via API, using --name fallback"
+          fi
+
       - name: Deploy to Vercel
         run: |
           vercel deploy \
@@ -38,12 +52,6 @@ jobs:
             --build-env NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up \
             --build-env NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/ \
             --build-env NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/ \
-            --env NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }} \
-            --env CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }} \
-            --env NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in \
-            --env NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up \
-            --env NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/ \
-            --env NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/ \
             2>&1 | tee deploy-output.txt
           echo "DEPLOYMENT_URL=$(grep -oP 'https://[^\s]+\.vercel\.app' deploy-output.txt | head -1)" >> $GITHUB_ENV
 

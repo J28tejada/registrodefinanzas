@@ -5,7 +5,12 @@ import { getTransactionById, updateTransaction, deleteTransaction } from '@/lib/
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: RouteContext) {
-  const { userId } = await auth();
+  let userId: string | null = null;
+  try {
+    ({ userId } = await auth());
+  } catch {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
   if (!userId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   const { id } = await params;
@@ -15,7 +20,12 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
 }
 
 export async function PUT(req: NextRequest, { params }: RouteContext) {
-  const { userId } = await auth();
+  let userId: string | null = null;
+  try {
+    ({ userId } = await auth());
+  } catch {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
   if (!userId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   try {
@@ -31,7 +41,12 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: RouteContext) {
-  const { userId } = await auth();
+  let userId: string | null = null;
+  try {
+    ({ userId } = await auth());
+  } catch {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
   if (!userId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   const { id } = await params;
