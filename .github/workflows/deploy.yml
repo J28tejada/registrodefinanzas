@@ -35,27 +35,40 @@ jobs:
           if [ -n "$PROJECT_ID" ] && [ -n "$ORG_ID" ]; then
             mkdir -p .vercel
             printf '{"projectId":"%s","orgId":"%s"}' "$PROJECT_ID" "$ORG_ID" > .vercel/project.json
-            echo "Linked to Vercel project: $PROJECT_ID"
+            echo "Linked to Vercel project: $PROJECT_ID (org: $ORG_ID)"
           else
-            echo "Warning: Could not find project via API, using --name fallback"
+            echo "ERROR: Could not fetch project from Vercel API"
+            echo "Raw response: $PROJECT_DATA"
+            exit 1
           fi
 
-      - name: Deploy to Vercel
+      - name: Pull Vercel environment variables
         run: |
-          vercel deploy \
-            --prod \
-            --yes \
-            --name registrodefinanzas \
+          vercel pull --yes --environment=production \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            2>&1
+          echo "--- Checking pulled env file ---"
+          ls -la .vercel/ || true
+
+      - name: Build with Vercel
+        run: |
+          vercel build --prod \
             --token=${{ secrets.VERCEL_TOKEN }} \
             --build-env NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }} \
             --build-env NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in \
             --build-env NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up \
             --build-env NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/ \
             --build-env NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/ \
+            2>&1
+
+      - name: Deploy to Vercel
+        run: |
+          vercel deploy --prebuilt --prod \
+            --token=${{ secrets.VERCEL_TOKEN }} \
             2>&1 | tee deploy-output.txt
           echo "DEPLOYMENT_URL=$(grep -oP 'https://[^\s]+\.vercel\.app' deploy-output.txt | head -1)" >> $GITHUB_ENV
 
       - name: Print deployment URL
         run: |
-          echo "✅ App deployed to Vercel!"
-          echo "🔗 URL: $DEPLOYMENT_URL"
+          echo "App deployed to Vercel!"
+          echo "URL: $DEPLOYMENT_URL"
