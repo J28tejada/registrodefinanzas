@@ -59,7 +59,7 @@ jobs:
           vercel deploy --prebuilt --prod \
             --token=${{ secrets.VERCEL_TOKEN }} \
             --env CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }} \
-            --env DATABASE_URL=${{ secrets.DATABASE_URL }} \
+            --env POSTGRES_URL=${{ secrets.POSTGRES_URL }} \
             --env GROQ_API_KEY=${{ secrets.GROQ_API_KEY }} \
             2>&1 | tee deploy-output.txt
           echo "DEPLOYMENT_URL=$(grep -oP 'https://[^\s]+\.vercel\.app' deploy-output.txt | head -1)" >> $GITHUB_ENV
