@@ -51,14 +51,15 @@ jobs:
           ls -la .vercel/ || true
 
       - name: Build with Vercel
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_CLERK_SIGN_IN_URL: /sign-in
+          NEXT_PUBLIC_CLERK_SIGN_UP_URL: /sign-up
+          NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: /
+          NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: /
         run: |
           vercel build --prod \
             --token=${{ secrets.VERCEL_TOKEN }} \
-            --build-env NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }} \
-            --build-env NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in \
-            --build-env NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up \
-            --build-env NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/ \
-            --build-env NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/ \
             2>&1
 
       - name: Deploy to Vercel
