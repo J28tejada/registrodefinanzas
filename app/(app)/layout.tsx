@@ -4,7 +4,12 @@ import Navigation from '@/components/Navigation';
 import SummaryBar from '@/components/SummaryBar';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const { userId } = await auth();
+  let userId: string | null = null;
+  try {
+    ({ userId } = await auth());
+  } catch {
+    redirect('/sign-in');
+  }
   if (!userId) redirect('/sign-in');
 
   return (
