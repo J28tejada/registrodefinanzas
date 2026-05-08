@@ -26,35 +26,34 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
-      - name: Link Vercel project
+      - name: Resolve Vercel project IDs
         run: |
           PROJECT_DATA=$(curl -sf "https://api.vercel.com/v9/projects/registrodefinanzas" \
             -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" || echo '{}')
           PROJECT_ID=$(echo "$PROJECT_DATA" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('id',''))" 2>/dev/null || echo "")
           ORG_ID=$(echo "$PROJECT_DATA" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('accountId',''))" 2>/dev/null || echo "")
-          if [ -n "$PROJECT_ID" ] && [ -n "$ORG_ID" ]; then
-            mkdir -p .vercel
-            printf '{"projectId":"%s","orgId":"%s"}' "$PROJECT_ID" "$ORG_ID" > .vercel/project.json
-            echo "Linked to Vercel project: $PROJECT_ID (org: $ORG_ID)"
-          else
+          if [ -z "$PROJECT_ID" ] || [ -z "$ORG_ID" ]; then
             echo "ERROR: Could not fetch project from Vercel API"
-            echo "Raw response: $PROJECT_DATA"
+            echo "Response: $PROJECT_DATA"
             exit 1
           fi
+          echo "VERCEL_ORG_ID=$ORG_ID" >> $GITHUB_ENV
+          echo "VERCEL_PROJECT_ID=$PROJECT_ID" >> $GITHUB_ENV
+          echo "Resolved project: $PROJECT_ID (org: $ORG_ID)"
 
-      - name: Build with Vercel
+      - name: Pull Vercel project settings
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build
         env:
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           NEXT_PUBLIC_CLERK_SIGN_IN_URL: /sign-in
           NEXT_PUBLIC_CLERK_SIGN_UP_URL: /sign-up
           NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: /
           NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: /
-        run: |
-          vercel build --prod \
-            --token=${{ secrets.VERCEL_TOKEN }} \
-            2>&1
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Deploy to Vercel
+      - name: Deploy
         run: |
           vercel deploy --prebuilt --prod \
             --token=${{ secrets.VERCEL_TOKEN }} \
@@ -65,6 +64,4 @@ jobs:
           echo "DEPLOYMENT_URL=$(grep -oP 'https://[^\s]+\.vercel\.app' deploy-output.txt | head -1)" >> $GITHUB_ENV
 
       - name: Print deployment URL
-        run: |
-          echo "App deployed to Vercel!"
-          echo "URL: $DEPLOYMENT_URL"
+        run: echo "Deployed to $DEPLOYMENT_URL"
