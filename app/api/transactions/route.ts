@@ -32,8 +32,9 @@ export async function GET(req: NextRequest) {
     const transactions = await getAllTransactions(userId, filters);
     return NextResponse.json(transactions);
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: 'Error al obtener transacciones' }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('transactions error:', msg);
+    return NextResponse.json({ error: 'Error al obtener transacciones', detail: msg }, { status: 500 });
   }
 }
 

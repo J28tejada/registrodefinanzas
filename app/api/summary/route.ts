@@ -18,7 +18,8 @@ export async function GET(req: NextRequest) {
     const summary = await getSummary(userId, startDate, endDate);
     return NextResponse.json(summary);
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: 'Error al obtener resumen' }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('summary error:', msg);
+    return NextResponse.json({ error: 'Error al obtener resumen', detail: msg }, { status: 500 });
   }
 }
