@@ -1,7 +1,7 @@
 'use client';
 
 import { Transaction, PaymentMethod, formatCurrency, formatDate } from '@/lib/types';
-import { Pencil, Trash2, Mic, Bot, Pencil as PencilIcon, Banknote, ArrowLeftRight, CreditCard } from 'lucide-react';
+import { Pencil, Trash2, Mic, Bot, Pencil as PencilIcon, Banknote, ArrowLeftRight, CreditCard, Mail } from 'lucide-react';
 
 const paymentIcon: Record<PaymentMethod, React.ElementType> = {
   cash: Banknote,
@@ -23,6 +23,7 @@ const sourceBadge = {
   voice: { icon: Mic, label: 'Voz', cls: 'text-slate-500' },
   ai: { icon: Bot, label: 'IA', cls: 'text-slate-500' },
   manual: { icon: PencilIcon, label: 'Manual', cls: 'text-slate-600' },
+  email: { icon: Mail, label: 'Correo', cls: 'text-blue-500' },
 };
 
 interface TransactionListProps {

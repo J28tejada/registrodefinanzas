@@ -53,6 +53,32 @@ async function init() {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gmail_tokens (
+      user_id TEXT PRIMARY KEY,
+      access_token TEXT NOT NULL,
+      refresh_token TEXT NOT NULL,
+      expiry BIGINT NOT NULL,
+      last_checked BIGINT NOT NULL DEFAULT 0
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS email_transactions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      email_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      type TEXT NOT NULL,
+      scope TEXT NOT NULL DEFAULT 'personal',
+      amount DECIMAL(12,2) NOT NULL,
+      description TEXT NOT NULL,
+      category TEXT NOT NULL,
+      date TEXT NOT NULL,
+      bank_name TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(user_id, email_id)
+    )
+  `);
   initialized = true;
 }
 
@@ -225,6 +251,181 @@ export async function saveChatHistory(userId: string, messagesJson: string): Pro
      ON CONFLICT (user_id) DO UPDATE SET messages_json = EXCLUDED.messages_json, updated_at = NOW()`,
     [userId, messagesJson],
   );
+}
+
+export interface GmailToken {
+  accessToken: string;
+  refreshToken: string;
+  expiry: number;
+  lastChecked: number;
+}
+
+export interface EmailTransaction {
+  id: string;
+  userId: string;
+  emailId: string;
+  status: 'pending' | 'confirmed' | 'rejected';
+  type: 'income' | 'expense';
+  scope: 'personal' | 'business';
+  amount: number;
+  description: string;
+  category: string;
+  date: string;
+  bankName: string | null;
+  createdAt: string;
+}
+
+function rowToEmailTransaction(row: Record<string, unknown>): EmailTransaction {
+  return {
+    id: row.id as string,
+    userId: row.user_id as string,
+    emailId: row.email_id as string,
+    status: row.status as EmailTransaction['status'],
+    type: row.type as EmailTransaction['type'],
+    scope: row.scope as EmailTransaction['scope'],
+    amount: Number(row.amount),
+    description: row.description as string,
+    category: row.category as string,
+    date: row.date as string,
+    bankName: (row.bank_name as string) ?? null,
+    createdAt: row.created_at as string,
+  };
+}
+
+export async function getGmailToken(userId: string): Promise<GmailToken | null> {
+  await init();
+  const { rows } = await getPool().query(
+    'SELECT * FROM gmail_tokens WHERE user_id = $1',
+    [userId],
+  );
+  if (!rows[0]) return null;
+  return {
+    accessToken: rows[0].access_token as string,
+    refreshToken: rows[0].refresh_token as string,
+    expiry: Number(rows[0].expiry),
+    lastChecked: Number(rows[0].last_checked),
+  };
+}
+
+export async function saveGmailToken(
+  userId: string,
+  data: { accessToken: string; refreshToken: string; expiry: number; lastChecked?: number },
+): Promise<void> {
+  await init();
+  await getPool().query(
+    `INSERT INTO gmail_tokens (user_id, access_token, refresh_token, expiry, last_checked)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (user_id) DO UPDATE SET
+       access_token = EXCLUDED.access_token,
+       refresh_token = EXCLUDED.refresh_token,
+       expiry = EXCLUDED.expiry,
+       last_checked = EXCLUDED.last_checked`,
+    [userId, data.accessToken, data.refreshToken, data.expiry, data.lastChecked ?? 0],
+  );
+}
+
+export async function updateGmailTokenAccess(
+  userId: string,
+  data: { accessToken: string; expiry: number },
+): Promise<void> {
+  await init();
+  await getPool().query(
+    'UPDATE gmail_tokens SET access_token = $1, expiry = $2 WHERE user_id = $3',
+    [data.accessToken, data.expiry, userId],
+  );
+}
+
+export async function updateGmailLastChecked(userId: string, ts: number): Promise<void> {
+  await init();
+  await getPool().query(
+    'UPDATE gmail_tokens SET last_checked = $1 WHERE user_id = $2',
+    [ts, userId],
+  );
+}
+
+export async function deleteGmailToken(userId: string): Promise<void> {
+  await init();
+  await getPool().query('DELETE FROM gmail_tokens WHERE user_id = $1', [userId]);
+}
+
+export async function isGmailConnected(userId: string): Promise<boolean> {
+  await init();
+  const { rows } = await getPool().query(
+    'SELECT 1 FROM gmail_tokens WHERE user_id = $1',
+    [userId],
+  );
+  return rows.length > 0;
+}
+
+export async function getAllGmailUserIds(): Promise<string[]> {
+  await init();
+  const { rows } = await getPool().query('SELECT user_id FROM gmail_tokens');
+  return rows.map(r => r.user_id as string);
+}
+
+export async function createEmailTransaction(
+  userId: string,
+  data: {
+    emailId: string;
+    type: 'income' | 'expense';
+    scope: 'personal' | 'business';
+    amount: number;
+    description: string;
+    category: string;
+    date: string;
+    bankName?: string;
+  },
+): Promise<EmailTransaction | null> {
+  await init();
+  const id = crypto.randomUUID();
+  const { rows } = await getPool().query(
+    `INSERT INTO email_transactions (id, user_id, email_id, type, scope, amount, description, category, date, bank_name)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     ON CONFLICT (user_id, email_id) DO NOTHING
+     RETURNING *`,
+    [id, userId, data.emailId, data.type, data.scope, data.amount, data.description, data.category, data.date, data.bankName ?? null],
+  );
+  return rows[0] ? rowToEmailTransaction(rows[0]) : null;
+}
+
+export async function getPendingEmailTransactions(userId: string): Promise<EmailTransaction[]> {
+  await init();
+  const { rows } = await getPool().query(
+    `SELECT * FROM email_transactions WHERE user_id = $1 AND status = 'pending' ORDER BY created_at DESC`,
+    [userId],
+  );
+  return rows.map(rowToEmailTransaction);
+}
+
+export async function countPendingEmailTransactions(userId: string): Promise<number> {
+  await init();
+  const { rows } = await getPool().query(
+    `SELECT COUNT(*)::int AS cnt FROM email_transactions WHERE user_id = $1 AND status = 'pending'`,
+    [userId],
+  );
+  return rows[0]?.cnt ?? 0;
+}
+
+export async function updateEmailTransactionStatus(
+  userId: string,
+  id: string,
+  status: 'confirmed' | 'rejected',
+): Promise<EmailTransaction | null> {
+  await init();
+  const { rows } = await getPool().query(
+    `UPDATE email_transactions SET status = $1 WHERE id = $2 AND user_id = $3 RETURNING *`,
+    [status, id, userId],
+  );
+  return rows[0] ? rowToEmailTransaction(rows[0]) : null;
+}
+
+export async function getEmailTransactionById(userId: string, id: string): Promise<EmailTransaction | null> {
+  await init();
+  const { rows } = await getPool().query(
+    'SELECT * FROM email_transactions WHERE id = $1 AND user_id = $2',
+    [id, userId],
+  );
+  return rows[0] ? rowToEmailTransaction(rows[0]) : null;
 }
 
 export async function getSummary(userId: string, startDate?: string, endDate?: string): Promise<Summary> {

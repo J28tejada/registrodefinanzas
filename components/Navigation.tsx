@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { UserButton } from '@clerk/nextjs';
-import { LayoutDashboard, Receipt, Bot, Wallet, BarChart2, CalendarDays, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Receipt, Bot, Wallet, BarChart2, CalendarDays, CreditCard, Settings } from 'lucide-react';
 
 const navItems = [
   { href: '/', icon: Bot, label: 'Chat IA' },
@@ -12,6 +12,7 @@ const navItems = [
   { href: '/calendar', icon: CalendarDays, label: 'Calendario' },
   { href: '/transactions', icon: Receipt, label: 'Registros' },
   { href: '/cards', icon: CreditCard, label: 'Tarjetas' },
+  { href: '/settings', icon: Settings, label: 'Ajustes' },
 ];
 
 export default function Navigation() {

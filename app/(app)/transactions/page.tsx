@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, Filter, X } from 'lucide-react';
 import TransactionList from '@/components/TransactionList';
 import AddTransactionModal from '@/components/AddTransactionModal';
+import EmailTransactionBanner from '@/components/EmailTransactionBanner';
 import { Transaction, TransactionType, TransactionScope } from '@/lib/types';
 
 export default function TransactionsPage() {
@@ -12,6 +13,8 @@ export default function TransactionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
+  const [emailPendingCount, setEmailPendingCount] = useState(0);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<TransactionType | ''>('');
@@ -51,6 +54,21 @@ export default function TransactionsPage() {
     const timeout = setTimeout(load, 300);
     return () => clearTimeout(timeout);
   }, [load]);
+
+  useEffect(() => {
+    const fetchEmailCount = async () => {
+      try {
+        const res = await fetch('/api/gmail');
+        if (res.ok) {
+          const data = await res.json() as { connected: boolean; pendingCount: number };
+          if (data.connected) setEmailPendingCount(data.pendingCount);
+        }
+      } catch {
+        // silently fail
+      }
+    };
+    fetchEmailCount();
+  }, []);
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Eliminar esta transacción?')) return;
@@ -96,6 +114,14 @@ export default function TransactionsPage() {
           </button>
         </div>
       </div>
+
+      {/* Email transaction banner */}
+      {!bannerDismissed && emailPendingCount > 0 && (
+        <EmailTransactionBanner
+          count={emailPendingCount}
+          onDismiss={() => setBannerDismissed(true)}
+        />
+      )}
 
       {/* Error state */}
       {error && !loading && (

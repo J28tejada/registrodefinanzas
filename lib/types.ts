@@ -1,6 +1,6 @@
 export type TransactionType = 'income' | 'expense';
 export type TransactionScope = 'personal' | 'business';
-export type TransactionSource = 'manual' | 'voice' | 'ai';
+export type TransactionSource = 'manual' | 'voice' | 'ai' | 'email';
 export type PaymentMethod = 'cash' | 'transfer' | 'card';
 export type CardType = 'credit' | 'debit';
 
