@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const tokens = await exchangeCodeForTokens(code);
+    const tokens = await exchangeCodeForTokens(code, req.nextUrl.origin);
     await saveGmailToken(userId, { ...tokens, lastChecked: 0 });
     return NextResponse.redirect(new URL('/settings?gmail=connected', req.nextUrl.origin), 302);
   } catch (err) {

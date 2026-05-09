@@ -1,10 +1,10 @@
 const GMAIL_API = 'https://gmail.googleapis.com/gmail/v1/users/me';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
-export function buildOAuthUrl(userId: string): string {
+export function buildOAuthUrl(userId: string, appUrl: string): string {
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID!,
-    redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/gmail/callback`,
+    redirect_uri: `${appUrl}/api/gmail/callback`,
     response_type: 'code',
     scope: 'https://www.googleapis.com/auth/gmail.readonly',
     access_type: 'offline',
@@ -16,6 +16,7 @@ export function buildOAuthUrl(userId: string): string {
 
 export async function exchangeCodeForTokens(
   code: string,
+  appUrl: string,
 ): Promise<{ accessToken: string; refreshToken: string; expiry: number }> {
   const res = await fetch(TOKEN_URL, {
     method: 'POST',
@@ -24,7 +25,7 @@ export async function exchangeCodeForTokens(
       code,
       client_id: process.env.GOOGLE_CLIENT_ID!,
       client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/gmail/callback`,
+      redirect_uri: `${appUrl}/api/gmail/callback`,
       grant_type: 'authorization_code',
     }),
   });
