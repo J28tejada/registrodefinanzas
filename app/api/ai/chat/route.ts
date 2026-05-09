@@ -76,19 +76,43 @@ ${summary.byCategory.slice(0, 8).map(c => `- ${c.scope}/${c.type}: ${c.category}
 Tienes acceso a los datos financieros del usuario:
 ${summaryText}
 
-INSTRUCCIONES IMPORTANTES:
-- Cuando el usuario mencione cualquier gasto, pago, compra, ingreso, cobro o transacción → llama INMEDIATAMENTE la función registrar_transaccion con los datos extraídos del mensaje.
-- Si menciona "efectivo" → payment_method: cash. Si menciona "transferencia" → payment_method: transfer. Si menciona "tarjeta", "crédito", "débito" o el nombre de una tarjeta (ej: "BHD", "Popular") → payment_method: card y pon el nombre en card_name.
-- Si falta el monto, pregunta antes de llamar la función.
-- Si el ámbito (personal/negocio) no está claro, dedúcelo del contexto o usa personal por defecto.
-- Para análisis, preguntas o consejos sobre finanzas → responde con texto directamente.
-- Sé conciso. Máximo 3-4 líneas por respuesta de texto.`;
+## TU TAREA PRINCIPAL
+Detectar CUALQUIER intención financiera en el mensaje del usuario y registrarla con registrar_transaccion. No necesitas palabras exactas — interpreta el significado.
+
+## DETECTA TRANSACCIONES EN FRASES COMO ESTAS (ejemplos reales):
+- "fui al super" → gasto Alimentación
+- "me comí una pizza" / "almorcé afuera" → gasto Alimentación
+- "tanqueé el carro" / "eché gasolina" → gasto Transporte
+- "me cayó el sueldo" / "cobré hoy" / "me pagaron" → ingreso Salario
+- "tiré 200 en ropa" / "me compré unos zapatos" → gasto Ropa
+- "pagué la luz" / "el recibo del agua" → gasto Servicios básicos
+- "fui al médico" / "compré medicinas" → gasto Salud
+- "me llegó una transferencia de un cliente" → ingreso Servicios prestados (negocio)
+- "vendí algo" / "hice una venta" → ingreso Ventas (negocio)
+- "gasté en Netflix" / "pagué Spotify" → gasto Suscripciones
+- "le presté plata a alguien" → puede ser gasto Otros personal
+- "tuve que pagar algo" / "desembolsé" / "salí con" → gasto
+- "recibí" / "me dieron" / "entró dinero" → ingreso
+
+## MÉTODO DE PAGO — detecta automáticamente:
+- "efectivo", "cash", "billetes", "en mano", "físico" → cash
+- "transferencia", "transferí", "mandé por", "Sinpe", "Bizum" → transfer
+- Nombre de banco o tarjeta: "BHD", "Popular", "Scotiabank", "Visa", "Mastercard", "débito", "crédito", "la tarjeta" → card (pon el nombre en card_name si se menciona)
+
+## REGLAS:
+1. Si el mensaje describe CLARAMENTE un monto + algo comprado/pagado/cobrado → llama registrar_transaccion de inmediato.
+2. Si hay intención financiera pero falta el monto → pregunta SOLO el monto, nada más.
+3. Si el mensaje describe múltiples transacciones → llama registrar_transaccion una vez por cada una.
+4. Si el ámbito no está claro → usa "personal" por defecto, salvo que mencione su negocio/empresa/clientes.
+5. Para preguntas, análisis o consejos → responde con texto, sin llamar la función.
+6. Sé conciso. Máximo 2-3 líneas por respuesta de texto.`;
 
     const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
     const stream = await client.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       max_tokens: 1024,
+      temperature: 0.3,
       stream: true,
       tools: [REGISTER_TOOL],
       tool_choice: 'auto',
