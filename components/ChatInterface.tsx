@@ -1,8 +1,15 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useUser } from '@clerk/nextjs';
 import { Send, Loader2, Bot, User, Trash2, Mic, MicOff, Check, X, Banknote, ArrowLeftRight, CreditCard } from 'lucide-react';
 import { formatCurrency, todayISO, Card, PaymentMethod } from '@/lib/types';
+
+const MAX_STORED_MESSAGES = 100;
+
+function storageKey(userId: string) {
+  return `chat_history_${userId}`;
+}
 
 const paymentIcon: Record<PaymentMethod, React.ElementType> = { cash: Banknote, transfer: ArrowLeftRight, card: CreditCard };
 const paymentLabel: Record<PaymentMethod, string> = { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta' };
@@ -41,16 +48,37 @@ const isSpeechSupported = () =>
   ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
 export default function ChatInterface() {
+  const { user } = useUser();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState('');
   const [cards, setCards] = useState<Card[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const transcriptRef = useRef('');
+
+  // Load history from localStorage once user is known
+  useEffect(() => {
+    if (!user?.id || historyLoaded) return;
+    try {
+      const raw = localStorage.getItem(storageKey(user.id));
+      if (raw) setMessages(JSON.parse(raw));
+    } catch { /* corrupted data — start fresh */ }
+    setHistoryLoaded(true);
+  }, [user?.id, historyLoaded]);
+
+  // Persist messages to localStorage whenever they change
+  useEffect(() => {
+    if (!user?.id || !historyLoaded) return;
+    try {
+      const toStore = messages.slice(-MAX_STORED_MESSAGES);
+      localStorage.setItem(storageKey(user.id), JSON.stringify(toStore));
+    } catch { /* storage full — ignore */ }
+  }, [messages, user?.id, historyLoaded]);
 
   useEffect(() => {
     fetch('/api/cards').then(r => r.json()).then(d => setCards(Array.isArray(d) ? d : [])).catch(() => {});
@@ -288,7 +316,10 @@ export default function ChatInterface() {
         </div>
         {messages.length > 0 && (
           <button
-            onClick={() => setMessages([])}
+            onClick={() => {
+              setMessages([]);
+              if (user?.id) localStorage.removeItem(storageKey(user.id));
+            }}
             className="p-2 text-slate-500 hover:text-rose-400 active:text-rose-400 transition-colors"
           >
             <Trash2 className="w-4 h-4" />
