@@ -76,7 +76,10 @@ export default function ChatInterface() {
         }),
       });
 
-      if (!res.ok || !res.body) throw new Error();
+      if (!res.ok || !res.body) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error((errData as { detail?: string; error?: string }).detail ?? (errData as { error?: string }).error ?? `Error ${res.status}`);
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -111,10 +114,11 @@ export default function ChatInterface() {
           });
         } catch { /* show as text */ }
       }
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error desconocido';
       setMessages(prev => {
         const updated = [...prev];
-        updated[assistantIndex] = { role: 'assistant', content: 'Ocurrió un error. Intenta de nuevo.' };
+        updated[assistantIndex] = { role: 'assistant', content: `Error: ${msg}` };
         return updated;
       });
     } finally {

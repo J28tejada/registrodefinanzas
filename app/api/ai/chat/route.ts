@@ -127,7 +127,8 @@ INSTRUCCIONES IMPORTANTES:
 
     return new Response(readable, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
   } catch (err) {
-    console.error('Error en chat:', err);
-    return new Response(JSON.stringify({ error: 'Error en el chat' }), { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('Error en chat:', msg);
+    return new Response(JSON.stringify({ error: 'Error en el chat', detail: msg }), { status: 500 });
   }
 }
