@@ -154,13 +154,34 @@ export async function deleteTransaction(userId: string, id: string): Promise<boo
   return (result.rowCount ?? 0) > 0;
 }
 
-export async function getCards(userId: string): Promise<Card[]> {
+export async function getCards(userId: string, startDate?: string, endDate?: string): Promise<(Card & { spentThisMonth: number })[]> {
   await init();
   const { rows } = await getPool().query(
     'SELECT * FROM cards WHERE user_id = $1 ORDER BY created_at ASC',
     [userId],
   );
-  return rows.map(r => ({ id: r.id as string, name: r.name as string, type: r.type as Card['type'], createdAt: r.created_at as string }));
+  if (rows.length === 0) return [];
+
+  const dateFilter = startDate && endDate
+    ? `AND t.date >= '${startDate}' AND t.date <= '${endDate}'`
+    : '';
+
+  const { rows: spending } = await getPool().query(
+    `SELECT card_id, COALESCE(SUM(amount), 0)::float AS total
+     FROM transactions
+     WHERE user_id = $1 AND type = 'expense' AND card_id IS NOT NULL ${dateFilter}
+     GROUP BY card_id`,
+    [userId],
+  );
+  const spendMap = Object.fromEntries(spending.map((r: Record<string, unknown>) => [r.card_id as string, r.total as number]));
+
+  return rows.map(r => ({
+    id: r.id as string,
+    name: r.name as string,
+    type: r.type as Card['type'],
+    createdAt: r.created_at as string,
+    spentThisMonth: spendMap[r.id as string] ?? 0,
+  }));
 }
 
 export async function createCard(userId: string, data: { name: string; type: Card['type'] }): Promise<Card> {

@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { getCards, createCard } from '@/lib/db';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   let userId: string | null = null;
   try { ({ userId } = await auth()); } catch { return NextResponse.json({ error: 'No autorizado' }, { status: 401 }); }
   if (!userId) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   try {
-    const cards = await getCards(userId);
+    const { searchParams } = req.nextUrl;
+    const startDate = searchParams.get('startDate') ?? undefined;
+    const endDate = searchParams.get('endDate') ?? undefined;
+    const cards = await getCards(userId, startDate, endDate);
     return NextResponse.json(cards);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

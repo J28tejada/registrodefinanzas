@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { CreditCard, Plus, Trash2, Loader2 } from 'lucide-react';
-import { Card, CardType } from '@/lib/types';
+import { Card, CardType, formatCurrency } from '@/lib/types';
 
 const typeLabel: Record<CardType, string> = { credit: 'Crédito', debit: 'Débito' };
 const typeBadge: Record<CardType, string> = {
@@ -10,8 +10,18 @@ const typeBadge: Record<CardType, string> = {
   debit: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
 };
 
+type CardWithSpending = Card & { spentThisMonth: number };
+
+function getMonthRange() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const last = new Date(y, now.getMonth() + 1, 0).getDate();
+  return { startDate: `${y}-${m}-01`, endDate: `${y}-${m}-${last}` };
+}
+
 export default function CardsPage() {
-  const [cards, setCards] = useState<Card[]>([]);
+  const [cards, setCards] = useState<CardWithSpending[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -20,10 +30,12 @@ export default function CardsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  const { startDate, endDate } = getMonthRange();
+
   const loadCards = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/cards');
+      const res = await fetch(`/api/cards?startDate=${startDate}&endDate=${endDate}`);
       const data = await res.json();
       setCards(Array.isArray(data) ? data : []);
     } finally {
@@ -64,12 +76,14 @@ export default function CardsPage() {
     }
   };
 
+  const monthName = new Date().toLocaleString('es-MX', { month: 'long', year: 'numeric' });
+
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-white">Mis Tarjetas</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Registra tus tarjetas para usarlas al registrar transacciones</p>
+          <p className="text-sm text-slate-400 mt-0.5">Gasto mensual · {monthName}</p>
         </div>
         <button
           onClick={() => setShowForm(v => !v)}
@@ -84,47 +98,27 @@ export default function CardsPage() {
         <form onSubmit={handleAdd} className="bg-slate-900 border border-slate-700 rounded-xl p-4 space-y-3">
           <p className="text-sm font-medium text-white">Nueva tarjeta</p>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setType('credit')}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                type === 'credit' ? 'bg-violet-500/20 border-violet-500/40 text-violet-300' : 'border-slate-700 text-slate-400 hover:border-slate-600'
-              }`}
-            >
+            <button type="button" onClick={() => setType('credit')}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${type === 'credit' ? 'bg-violet-500/20 border-violet-500/40 text-violet-300' : 'border-slate-700 text-slate-400 hover:border-slate-600'}`}>
               Crédito
             </button>
-            <button
-              type="button"
-              onClick={() => setType('debit')}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                type === 'debit' ? 'bg-blue-500/20 border-blue-500/40 text-blue-300' : 'border-slate-700 text-slate-400 hover:border-slate-600'
-              }`}
-            >
+            <button type="button" onClick={() => setType('debit')}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${type === 'debit' ? 'bg-blue-500/20 border-blue-500/40 text-blue-300' : 'border-slate-700 text-slate-400 hover:border-slate-600'}`}>
               Débito
             </button>
           </div>
-          <input
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
+          <input type="text" value={name} onChange={e => setName(e.target.value)}
             placeholder="Nombre del banco o tarjeta (ej: BHD Visa)"
             className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-            autoFocus
-          />
+            autoFocus />
           {error && <p className="text-xs text-rose-400">{error}</p>}
           <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={saving || !name.trim()}
-              className="flex-1 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5"
-            >
+            <button type="submit" disabled={saving || !name.trim()}
+              className="flex-1 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar'}
             </button>
-            <button
-              type="button"
-              onClick={() => { setShowForm(false); setName(''); setError(''); }}
-              className="px-4 py-2 text-sm text-slate-400 hover:text-white border border-slate-700 rounded-lg transition-colors"
-            >
+            <button type="button" onClick={() => { setShowForm(false); setName(''); setError(''); }}
+              className="px-4 py-2 text-sm text-slate-400 hover:text-white border border-slate-700 rounded-lg transition-colors">
               Cancelar
             </button>
           </div>
@@ -133,9 +127,7 @@ export default function CardsPage() {
 
       {loading ? (
         <div className="space-y-2">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl h-16 animate-pulse" />
-          ))}
+          {[...Array(3)].map((_, i) => <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl h-20 animate-pulse" />)}
         </div>
       ) : cards.length === 0 ? (
         <div className="text-center py-16 text-slate-500">
@@ -151,16 +143,23 @@ export default function CardsPage() {
                 <CreditCard className="w-4 h-4 text-slate-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white">{card.name}</p>
-                <span className={`text-xs px-1.5 py-0.5 rounded border ${typeBadge[card.type]}`}>
-                  {typeLabel[card.type]}
-                </span>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-white">{card.name}</p>
+                  <span className={`text-xs px-1.5 py-0.5 rounded border ${typeBadge[card.type]}`}>
+                    {typeLabel[card.type]}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <p className={`text-sm font-semibold ${card.spentThisMonth > 0 ? 'text-rose-400' : 'text-slate-500'}`}>
+                    {card.spentThisMonth > 0 ? `−${formatCurrency(card.spentThisMonth)}` : 'Sin gastos este mes'}
+                  </p>
+                  {card.spentThisMonth > 0 && (
+                    <span className="text-xs text-slate-500">gastado este mes</span>
+                  )}
+                </div>
               </div>
-              <button
-                onClick={() => handleDelete(card.id)}
-                disabled={deleting === card.id}
-                className="p-1.5 text-slate-600 hover:text-rose-400 transition-colors rounded-lg hover:bg-rose-500/10"
-              >
+              <button onClick={() => handleDelete(card.id)} disabled={deleting === card.id}
+                className="p-1.5 text-slate-600 hover:text-rose-400 transition-colors rounded-lg hover:bg-rose-500/10">
                 {deleting === card.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               </button>
             </div>
