@@ -74,26 +74,27 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
                   {tx.scope === 'personal' ? 'Personal' : 'Negocio'}
                 </span>
               </div>
-              <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 flex-wrap">
+              <div className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-500 flex-wrap">
                 <span>{tx.category}</span>
                 <span>·</span>
                 <span>{formatDate(tx.date)}</span>
-                {tx.paymentMethod && (() => {
-                  const PIcon = paymentIcon[tx.paymentMethod];
-                  return (
-                    <>
-                      <span>·</span>
-                      <span className="flex items-center gap-0.5 text-slate-400">
-                        <PIcon className="w-3 h-3" />
-                        {tx.paymentMethod === 'card' && tx.cardName ? tx.cardName : paymentLabel[tx.paymentMethod]}
-                      </span>
-                    </>
-                  );
-                })()}
                 <span>·</span>
-                <span className={`flex items-center gap-0.5 ${Source.cls}`}>
-                  <SourceIcon className="w-3 h-3" />
-                </span>
+                {tx.paymentMethod ? (() => {
+                  const PIcon = paymentIcon[tx.paymentMethod];
+                  const label = tx.paymentMethod === 'card'
+                    ? (tx.cardName ? `Tarjeta ${tx.cardName}` : 'Tarjeta')
+                    : paymentLabel[tx.paymentMethod];
+                  return (
+                    <span className="flex items-center gap-1 text-slate-400 font-medium">
+                      <PIcon className="w-3 h-3 flex-shrink-0" />
+                      {label}
+                    </span>
+                  );
+                })() : (
+                  <span className="flex items-center gap-0.5">
+                    <SourceIcon className="w-3 h-3" />
+                  </span>
+                )}
               </div>
             </div>
 

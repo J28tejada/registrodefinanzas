@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { type, scope, amount, category, description, date, source } = body;
+    const { type, scope, amount, category, description, date, source, paymentMethod, cardId, cardName } = body;
 
     if (!type || !scope || amount == null || !category || !description || !date) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 });
@@ -64,6 +64,9 @@ export async function POST(req: NextRequest) {
     const tx = await createTransaction(userId, {
       type, scope, amount: Number(amount), category, description, date,
       source: source ?? 'manual',
+      paymentMethod: paymentMethod ?? undefined,
+      cardId: cardId ?? undefined,
+      cardName: cardName ?? undefined,
     });
     return NextResponse.json(tx, { status: 201 });
   } catch (err) {
