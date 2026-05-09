@@ -29,11 +29,11 @@ export default function SummaryBar() {
   }, [load]);
 
   if (!summary) {
-    return <div className="h-12 bg-slate-900/80 border-b border-slate-800 animate-pulse" />;
+    return <div className="hidden md:block h-12 bg-slate-900/80 border-b border-slate-800 animate-pulse" />;
   }
 
   return (
-    <div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 py-2.5 flex items-center gap-5 overflow-x-auto scrollbar-none">
+    <div className="hidden md:flex sticky top-0 z-10 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 py-2.5 items-center gap-5 overflow-x-auto scrollbar-none">
       <div className="md:hidden flex-shrink-0">
         <UserButton appearance={{ elements: { avatarBox: 'w-6 h-6' } }} />
       </div>

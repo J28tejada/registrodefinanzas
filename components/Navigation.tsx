@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { UserButton } from '@clerk/nextjs';
 import { LayoutDashboard, Receipt, Bot, Wallet, BarChart2, CalendarDays, CreditCard, Settings } from 'lucide-react';
 
-const navItems = [
+const desktopNav = [
   { href: '/', icon: Bot, label: 'Chat IA' },
   { href: '/dashboard', icon: LayoutDashboard, label: 'Inicio' },
   { href: '/stats', icon: BarChart2, label: 'Stats' },
@@ -15,8 +15,19 @@ const navItems = [
   { href: '/settings', icon: Settings, label: 'Ajustes' },
 ];
 
+const mobileLeft = [
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Inicio' },
+  { href: '/transactions', icon: Receipt, label: 'Registros' },
+];
+
+const mobileRight = [
+  { href: '/stats', icon: BarChart2, label: 'Stats' },
+  { href: '/settings', icon: Settings, label: 'Ajustes' },
+];
+
 export default function Navigation() {
   const pathname = usePathname();
+  const chatActive = pathname === '/';
 
   return (
     <>
@@ -35,7 +46,7 @@ export default function Navigation() {
         </div>
 
         <nav className="flex-1 p-3 space-y-1">
-          {navItems.map(({ href, icon: Icon, label }) => {
+          {desktopNav.map(({ href, icon: Icon, label }) => {
             const active = pathname === href;
             return (
               <Link
@@ -56,33 +67,63 @@ export default function Navigation() {
 
         <div className="p-4 border-t border-slate-800 flex items-center justify-between">
           <p className="text-xs text-slate-500">FinanzasIA v1.0</p>
-          <UserButton
-            appearance={{
-              elements: {
-                avatarBox: 'w-7 h-7',
-              },
-            }}
-          />
+          <UserButton appearance={{ elements: { avatarBox: 'w-7 h-7' } }} />
         </div>
       </aside>
 
-      {/* Mobile bottom nav */}
+      {/* Mobile bottom nav — 5 items, Chat centered & elevated */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-slate-800 z-20 flex"
+        className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-slate-800 z-20 flex items-end"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        {navItems.map(({ href, icon: Icon, label }) => {
+        {/* Left two items */}
+        {mobileLeft.map(({ href, icon: Icon, label }) => {
           const active = pathname === href;
           return (
             <Link
               key={href}
               href={href}
-              className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors min-h-[52px] ${
+              className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors min-h-[52px] ${
                 active ? 'text-emerald-400' : 'text-slate-500'
               }`}
             >
               <Icon className="w-5 h-5" />
-              <span className="text-[10px] leading-tight">{label.split(' ')[0]}</span>
+              <span className="text-[10px] leading-tight">{label}</span>
+            </Link>
+          );
+        })}
+
+        {/* Chat — center, elevated */}
+        <div className="flex-1 flex flex-col items-center justify-end pb-1">
+          <Link href="/" className="flex flex-col items-center gap-1 -mt-7">
+            <div
+              className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all ${
+                chatActive
+                  ? 'bg-emerald-500 shadow-emerald-500/40'
+                  : 'bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/25'
+              }`}
+            >
+              <Bot className="w-6 h-6 text-white" />
+            </div>
+            <span className={`text-[10px] leading-tight font-medium ${chatActive ? 'text-emerald-400' : 'text-slate-400'}`}>
+              Chat
+            </span>
+          </Link>
+        </div>
+
+        {/* Right two items */}
+        {mobileRight.map(({ href, icon: Icon, label }) => {
+          const active = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors min-h-[52px] ${
+                active ? 'text-emerald-400' : 'text-slate-500'
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              <span className="text-[10px] leading-tight">{label}</span>
             </Link>
           );
         })}
