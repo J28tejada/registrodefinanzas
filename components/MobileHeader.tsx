@@ -1,33 +1,38 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { MoreHorizontal, X, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MoreHorizontal, X, Wallet, CalendarDays, CreditCard, Mail } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
-import { formatCurrency, Summary } from '@/lib/types';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+const extraNav = [
+  { href: '/calendar', icon: CalendarDays, label: 'Calendario' },
+  { href: '/cards', icon: CreditCard, label: 'Tarjetas' },
+  { href: '/email-transactions', icon: Mail, label: 'Correos' },
+];
 
 export default function MobileHeader() {
   const [open, setOpen] = useState(false);
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const [pendingEmails, setPendingEmails] = useState(0);
+  const pathname = usePathname();
 
-  const load = useCallback(async () => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
-    try {
-      const res = await fetch(
-        `/api/summary?startDate=${y}-${m}-01&endDate=${y}-${m}-${String(lastDay).padStart(2, '0')}`
-      );
-      const data = await res.json();
-      if (!data.error) setSummary(data);
-    } catch { /* silent */ }
-  }, []);
+  useEffect(() => { setOpen(false); }, [pathname]);
 
   useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch('/api/email-transactions');
+        if (res.ok) {
+          const data = await res.json();
+          setPendingEmails(Array.isArray(data) ? data.length : 0);
+        }
+      } catch { /* silent */ }
+    };
     load();
     window.addEventListener('finanzas:refresh', load);
     return () => window.removeEventListener('finanzas:refresh', load);
-  }, [load]);
+  }, []);
 
   return (
     <div className="md:hidden sticky top-0 z-10 bg-slate-900/95 backdrop-blur border-b border-slate-800">
@@ -40,6 +45,11 @@ export default function MobileHeader() {
         </div>
 
         <div className="flex items-center gap-2">
+          {pendingEmails > 0 && !open && (
+            <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">
+              {pendingEmails}
+            </span>
+          )}
           <UserButton appearance={{ elements: { avatarBox: 'w-7 h-7' } }} />
           <button
             onClick={() => setOpen(v => !v)}
@@ -51,31 +61,30 @@ export default function MobileHeader() {
       </div>
 
       {open && (
-        <div className="px-4 pb-4 grid grid-cols-3 gap-2 border-t border-slate-800/60 pt-3">
-          <div className="bg-slate-800/60 rounded-xl p-3 flex flex-col gap-1">
-            <span className="text-[10px] text-slate-500 uppercase tracking-wide">Balance total</span>
-            <span className={`text-sm font-bold ${summary && summary.totalBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {summary ? formatCurrency(summary.totalBalance) : '—'}
-            </span>
-          </div>
-          <div className="bg-slate-800/60 rounded-xl p-3 flex flex-col gap-1">
-            <div className="flex items-center gap-1">
-              <TrendingUp className="w-3 h-3 text-emerald-400" />
-              <span className="text-[10px] text-slate-500">Ingresos</span>
-            </div>
-            <span className="text-sm font-semibold text-emerald-400">
-              {summary ? formatCurrency(summary.totalIncome) : '—'}
-            </span>
-          </div>
-          <div className="bg-slate-800/60 rounded-xl p-3 flex flex-col gap-1">
-            <div className="flex items-center gap-1">
-              <TrendingDown className="w-3 h-3 text-rose-400" />
-              <span className="text-[10px] text-slate-500">Gastos</span>
-            </div>
-            <span className="text-sm font-semibold text-rose-400">
-              {summary ? formatCurrency(summary.totalExpenses) : '—'}
-            </span>
-          </div>
+        <div className="px-4 pb-4 flex flex-col gap-1.5 border-t border-slate-800/60 pt-3">
+          {extraNav.map(({ href, icon: Icon, label }) => {
+            const isEmails = href === '/email-transactions';
+            return (
+              <Link
+                key={href}
+                href={href}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 transition-colors"
+              >
+                <div className="relative">
+                  <Icon className="w-5 h-5 text-slate-300" />
+                  {isEmails && pendingEmails > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-blue-500 text-white text-[9px] font-bold flex items-center justify-center">
+                      {pendingEmails}
+                    </span>
+                  )}
+                </div>
+                <span className="text-sm text-slate-200">{label}</span>
+                {isEmails && pendingEmails > 0 && (
+                  <span className="ml-auto text-xs text-blue-400">{pendingEmails} pendiente{pendingEmails > 1 ? 's' : ''}</span>
+                )}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
