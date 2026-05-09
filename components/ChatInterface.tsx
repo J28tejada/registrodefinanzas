@@ -18,10 +18,15 @@ interface TransactionProposal {
   card_name?: string;
 }
 
+interface ProposalItem {
+  data: TransactionProposal;
+  status: 'pending' | 'confirmed' | 'rejected';
+}
+
 interface Message {
   role: 'user' | 'assistant';
   content: string;
-  proposal?: { data: TransactionProposal; status: 'pending' | 'confirmed' | 'rejected' };
+  proposals?: ProposalItem[];
 }
 
 const SUGGESTED = [
@@ -96,23 +101,37 @@ export default function ChatInterface() {
         });
       }
 
-      const proposalIdx = fullText.indexOf('\n[PROPOSAL]');
-      if (proposalIdx !== -1) {
-        const visibleText = fullText.slice(0, proposalIdx).trim();
-        const proposalJson = fullText.slice(proposalIdx + '\n[PROPOSAL]'.length);
-        try {
-          const data: TransactionProposal = JSON.parse(proposalJson);
-          if (!data.date) data.date = todayISO();
+      const firstProposalIdx = fullText.indexOf('\n[PROPOSAL]');
+      if (firstProposalIdx !== -1) {
+        const visibleText = fullText.slice(0, firstProposalIdx).trim();
+        const proposals: ProposalItem[] = [];
+        const marker = '\n[PROPOSAL]';
+        let remaining = fullText.slice(firstProposalIdx);
+        while (remaining.startsWith(marker)) {
+          const jsonStart = marker.length;
+          const nextIdx = remaining.indexOf(marker, jsonStart);
+          const jsonStr = nextIdx !== -1 ? remaining.slice(jsonStart, nextIdx) : remaining.slice(jsonStart);
+          try {
+            const data: TransactionProposal = JSON.parse(jsonStr.trim());
+            if (!data.date) data.date = todayISO();
+            proposals.push({ data, status: 'pending' });
+          } catch { /* skip malformed */ }
+          remaining = nextIdx !== -1 ? remaining.slice(nextIdx) : '';
+        }
+        if (proposals.length > 0) {
+          const defaultContent = proposals.length === 1
+            ? `Voy a registrar ${proposals[0].data.type === 'expense' ? 'un gasto' : 'un ingreso'} de ${formatCurrency(proposals[0].data.amount)}.`
+            : `Voy a registrar ${proposals.length} transacciones.`;
           setMessages(prev => {
             const updated = [...prev];
             updated[assistantIndex] = {
               role: 'assistant',
-              content: visibleText || `Voy a registrar ${data.type === 'expense' ? 'un gasto' : 'un ingreso'} de ${formatCurrency(data.amount)}.`,
-              proposal: { data, status: 'pending' },
+              content: visibleText || defaultContent,
+              proposals,
             };
             return updated;
           });
-        } catch { /* show as text */ }
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error desconocido';
@@ -172,60 +191,84 @@ export default function ChatInterface() {
     recognition.start();
   }, [isRecording, sendMessage]);
 
-  const confirmTransaction = async (msgIndex: number) => {
+  const saveProposal = async (data: TransactionProposal): Promise<void> => {
+    const dateValid = data.date && /^\d{4}-\d{2}-\d{2}$/.test(data.date);
+    const safeDate = dateValid ? data.date : todayISO();
+    let cardId: string | undefined;
+    let cardName: string | undefined;
+    if (data.payment_method === 'card' && data.card_name) {
+      const matched = cards.find(c =>
+        c.name.toLowerCase().includes(data.card_name!.toLowerCase()) ||
+        data.card_name!.toLowerCase().includes(c.name.toLowerCase())
+      );
+      if (matched) { cardId = matched.id; cardName = matched.name; }
+      else { cardName = data.card_name; }
+    }
+    const res = await fetch('/api/transactions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...data, date: safeDate, source: 'ai', paymentMethod: data.payment_method, cardId, cardName }),
+    });
+    if (!res.ok) throw new Error();
+  };
+
+  const confirmProposal = async (msgIndex: number, proposalIndex: number) => {
     const msg = messages[msgIndex];
-    if (!msg.proposal || msg.proposal.status !== 'pending') return;
+    if (!msg.proposals?.[proposalIndex] || msg.proposals[proposalIndex].status !== 'pending') return;
 
     setMessages(prev => {
       const updated = [...prev];
-      updated[msgIndex] = { ...updated[msgIndex], proposal: { ...msg.proposal!, status: 'confirmed' } };
+      const proposals = updated[msgIndex].proposals!.map((p, i) =>
+        i === proposalIndex ? { ...p, status: 'confirmed' as const } : p
+      );
+      updated[msgIndex] = { ...updated[msgIndex], proposals };
       return updated;
     });
 
     try {
-      const data = msg.proposal.data;
-      // Ensure date is always YYYY-MM-DD; fall back to today if AI gave something invalid
-      const dateValid = data.date && /^\d{4}-\d{2}-\d{2}$/.test(data.date);
-      const safeDate = dateValid ? data.date : todayISO();
-
-      // Match card_name to a registered card if payment is by card
-      let cardId: string | undefined;
-      let cardName: string | undefined;
-      if (data.payment_method === 'card' && data.card_name) {
-        const matched = cards.find(c =>
-          c.name.toLowerCase().includes(data.card_name!.toLowerCase()) ||
-          data.card_name!.toLowerCase().includes(c.name.toLowerCase())
-        );
-        if (matched) { cardId = matched.id; cardName = matched.name; }
-        else { cardName = data.card_name; }
-      }
-
-      const res = await fetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data, date: safeDate, source: 'ai',
-          paymentMethod: data.payment_method,
-          cardId,
-          cardName,
-        }),
-      });
-      if (!res.ok) throw new Error();
-
+      await saveProposal(msg.proposals[proposalIndex].data);
       window.dispatchEvent(new Event('finanzas:refresh'));
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: `✅ Registrado: ${data.type === 'expense' ? '−' : '+'} ${formatCurrency(data.amount)} en ${data.category} (${safeDate}).`,
-      }]);
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: '❌ No pude guardar. Intenta de nuevo.' }]);
     }
   };
 
-  const rejectTransaction = (msgIndex: number) => {
+  const confirmAllProposals = async (msgIndex: number) => {
+    const msg = messages[msgIndex];
+    if (!msg.proposals) return;
+    const pending = msg.proposals.filter(p => p.status === 'pending');
+    if (pending.length === 0) return;
+
     setMessages(prev => {
       const updated = [...prev];
-      updated[msgIndex] = { ...updated[msgIndex], proposal: { ...updated[msgIndex].proposal!, status: 'rejected' } };
+      updated[msgIndex] = { ...updated[msgIndex], proposals: updated[msgIndex].proposals!.map(p => ({ ...p, status: 'confirmed' as const })) };
+      return updated;
+    });
+
+    try {
+      await Promise.all(pending.map(p => saveProposal(p.data)));
+      window.dispatchEvent(new Event('finanzas:refresh'));
+      setMessages(prev => [...prev, { role: 'assistant', content: `✅ ${pending.length} transacciones registradas.` }]);
+    } catch {
+      setMessages(prev => [...prev, { role: 'assistant', content: '❌ No pude guardar. Intenta de nuevo.' }]);
+    }
+  };
+
+  const rejectProposal = (msgIndex: number, proposalIndex: number) => {
+    setMessages(prev => {
+      const updated = [...prev];
+      const proposals = updated[msgIndex].proposals!.map((p, i) =>
+        i === proposalIndex ? { ...p, status: 'rejected' as const } : p
+      );
+      updated[msgIndex] = { ...updated[msgIndex], proposals };
+      return updated;
+    });
+  };
+
+  const rejectAllProposals = (msgIndex: number) => {
+    setMessages(prev => {
+      const updated = [...prev];
+      updated[msgIndex] = { ...updated[msgIndex], proposals: updated[msgIndex].proposals!.map(p => ({ ...p, status: 'rejected' as const })) };
       return [...updated, { role: 'assistant', content: 'Entendido, no registré nada. ¿Algo más?' }];
     });
   };
@@ -299,74 +342,64 @@ export default function ChatInterface() {
                   )}
                 </div>
 
-                {/* Transaction proposal card */}
-                {msg.proposal && (
-                  <div className={`rounded-xl border p-3 space-y-2.5 text-sm ${
-                    msg.proposal.status === 'confirmed'
-                      ? 'bg-emerald-500/5 border-emerald-500/20'
-                      : msg.proposal.status === 'rejected'
-                      ? 'bg-slate-800/30 border-slate-700/50 opacity-50'
-                      : 'bg-slate-800 border-slate-600'
-                  }`}>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        msg.proposal.data.type === 'expense'
-                          ? 'bg-rose-500/20 text-rose-400'
-                          : 'bg-emerald-500/20 text-emerald-400'
+                {/* Transaction proposal cards */}
+                {msg.proposals && msg.proposals.length > 0 && (
+                  <div className="space-y-2">
+                    {msg.proposals.map((proposal, pi) => (
+                      <div key={pi} className={`rounded-xl border p-3 space-y-2 text-sm ${
+                        proposal.status === 'confirmed' ? 'bg-emerald-500/5 border-emerald-500/20'
+                        : proposal.status === 'rejected' ? 'bg-slate-800/30 border-slate-700/50 opacity-40'
+                        : 'bg-slate-800 border-slate-600'
                       }`}>
-                        {msg.proposal.data.type === 'expense' ? '− Gasto' : '+ Ingreso'}
-                      </span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        msg.proposal.data.scope === 'personal'
-                          ? 'bg-violet-500/20 text-violet-400'
-                          : 'bg-blue-500/20 text-blue-400'
-                      }`}>
-                        {msg.proposal.data.scope === 'personal' ? 'Personal' : 'Negocio'}
-                      </span>
-                      <span className="text-xs text-slate-500 ml-auto">{msg.proposal.data.date}</span>
-                    </div>
-                    <div>
-                      <p className="text-white font-bold text-lg">{formatCurrency(msg.proposal.data.amount)}</p>
-                      <p className="text-slate-300 text-sm">{msg.proposal.data.description}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <p className="text-slate-500 text-xs">{msg.proposal.data.category}</p>
-                        {msg.proposal.data.payment_method && (() => {
-                          const pm = msg.proposal.data.payment_method!;
-                          const PMIcon = paymentIcon[pm];
-                          const label = pm === 'card' && msg.proposal.data.card_name
-                            ? msg.proposal.data.card_name
-                            : paymentLabel[pm];
-                          return (
-                            <span className="flex items-center gap-1 text-xs text-slate-400">
-                              <span>·</span><PMIcon className="w-3 h-3" />{label}
-                            </span>
-                          );
-                        })()}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${proposal.data.type === 'expense' ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                            {proposal.data.type === 'expense' ? '− Gasto' : '+ Ingreso'}
+                          </span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${proposal.data.scope === 'personal' ? 'bg-violet-500/20 text-violet-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                            {proposal.data.scope === 'personal' ? 'Personal' : 'Negocio'}
+                          </span>
+                          <span className="text-xs text-slate-500 ml-auto">{proposal.data.date}</span>
+                        </div>
+                        <div>
+                          <p className="text-white font-bold text-lg">{formatCurrency(proposal.data.amount)}</p>
+                          <p className="text-slate-300 text-sm">{proposal.data.description}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <p className="text-slate-500 text-xs">{proposal.data.category}</p>
+                            {proposal.data.payment_method && (() => {
+                              const pm = proposal.data.payment_method!;
+                              const PMIcon = paymentIcon[pm];
+                              const label = pm === 'card' && proposal.data.card_name ? proposal.data.card_name : paymentLabel[pm];
+                              return <span className="flex items-center gap-1 text-xs text-slate-400"><span>·</span><PMIcon className="w-3 h-3" />{label}</span>;
+                            })()}
+                          </div>
+                        </div>
+                        {proposal.status === 'pending' && (
+                          <div className="flex gap-2">
+                            <button onClick={() => confirmProposal(i, pi)}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-600 active:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors">
+                              <Check className="w-4 h-4" /> Confirmar
+                            </button>
+                            <button onClick={() => rejectProposal(i, pi)}
+                              className="px-3 py-2 bg-slate-700 active:bg-slate-600 text-slate-400 rounded-lg text-sm transition-colors">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                        {proposal.status === 'confirmed' && <p className="text-xs text-emerald-400 flex items-center gap-1"><Check className="w-3.5 h-3.5" /> Guardado</p>}
+                        {proposal.status === 'rejected' && <p className="text-xs text-slate-500">Cancelado</p>}
                       </div>
-                    </div>
-                    {msg.proposal.status === 'pending' && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => confirmTransaction(i)}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-600 active:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors"
-                        >
-                          <Check className="w-4 h-4" /> Confirmar
+                    ))}
+                    {msg.proposals.length > 1 && msg.proposals.some(p => p.status === 'pending') && (
+                      <div className="flex gap-2 pt-1">
+                        <button onClick={() => confirmAllProposals(i)}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-600 active:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors">
+                          <Check className="w-4 h-4" /> Confirmar todas
                         </button>
-                        <button
-                          onClick={() => rejectTransaction(i)}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-slate-700 active:bg-slate-600 text-slate-300 rounded-lg text-sm transition-colors"
-                        >
-                          <X className="w-4 h-4" /> Cancelar
+                        <button onClick={() => rejectAllProposals(i)}
+                          className="px-3 py-2 bg-slate-700 active:bg-slate-600 text-slate-400 rounded-lg text-sm transition-colors">
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
-                    )}
-                    {msg.proposal.status === 'confirmed' && (
-                      <p className="text-xs text-emerald-400 flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5" /> Guardado
-                      </p>
-                    )}
-                    {msg.proposal.status === 'rejected' && (
-                      <p className="text-xs text-slate-500">Cancelado</p>
                     )}
                   </div>
                 )}

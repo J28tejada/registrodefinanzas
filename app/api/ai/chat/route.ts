@@ -104,22 +104,22 @@ INSTRUCCIONES IMPORTANTES:
     const readable = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
-        let toolCallArgs = '';
-        let hasToolCall = false;
+        const toolCallsByIndex: Record<number, string> = {};
 
         for await (const chunk of stream) {
           const delta = chunk.choices[0]?.delta;
           if (delta?.content) controller.enqueue(encoder.encode(delta.content));
           if (delta?.tool_calls) {
-            hasToolCall = true;
             for (const tc of delta.tool_calls) {
-              if (tc.function?.arguments) toolCallArgs += tc.function.arguments;
+              const idx = tc.index ?? 0;
+              if (!toolCallsByIndex[idx]) toolCallsByIndex[idx] = '';
+              if (tc.function?.arguments) toolCallsByIndex[idx] += tc.function.arguments;
             }
           }
         }
 
-        if (hasToolCall && toolCallArgs) {
-          controller.enqueue(encoder.encode(`\n[PROPOSAL]${toolCallArgs}`));
+        for (const args of Object.values(toolCallsByIndex)) {
+          if (args) controller.enqueue(encoder.encode(`\n[PROPOSAL]${args}`));
         }
         controller.close();
       },
