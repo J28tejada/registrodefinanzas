@@ -1,5 +1,5 @@
 import { createPool, VercelPool } from '@vercel/postgres';
-import { Transaction, TransactionFilters, Summary } from './types';
+import { Transaction, TransactionFilters, Summary, Card } from './types';
 
 let _pool: VercelPool | null = null;
 function getPool(): VercelPool {
@@ -33,6 +33,19 @@ async function init() {
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions (user_id)
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS cards (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      type TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    )
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_cards_user_id ON cards (user_id)`);
+  await pool.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS payment_method TEXT`);
+  await pool.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS card_id TEXT`);
+  await pool.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS card_name TEXT`);
   initialized = true;
 }
 
@@ -47,6 +60,9 @@ function rowToTransaction(row: Record<string, unknown>): Transaction {
     date: row.date as string,
     createdAt: row.created_at as string,
     source: row.source as Transaction['source'],
+    paymentMethod: (row.payment_method as Transaction['paymentMethod']) ?? undefined,
+    cardId: (row.card_id as string) ?? undefined,
+    cardName: (row.card_name as string) ?? undefined,
   };
 }
 
@@ -89,9 +105,10 @@ export async function createTransaction(
   const id = crypto.randomUUID();
   const createdAt = new Date().toISOString();
   await getPool().query(
-    `INSERT INTO transactions (id, type, scope, amount, category, description, date, created_at, source, user_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-    [id, data.type, data.scope, data.amount, data.category, data.description, data.date, createdAt, data.source ?? 'manual', userId],
+    `INSERT INTO transactions (id, type, scope, amount, category, description, date, created_at, source, user_id, payment_method, card_id, card_name)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+    [id, data.type, data.scope, data.amount, data.category, data.description, data.date, createdAt, data.source ?? 'manual', userId,
+     data.paymentMethod ?? null, data.cardId ?? null, data.cardName ?? null],
   );
   return (await getTransactionById(userId, id))!;
 }
@@ -114,6 +131,9 @@ export async function updateTransaction(
   if (data.description !== undefined) { updates.push(`description = $${params.length + 1}`); params.push(data.description); }
   if (data.date !== undefined) { updates.push(`date = $${params.length + 1}`); params.push(data.date); }
   if (data.source !== undefined) { updates.push(`source = $${params.length + 1}`); params.push(data.source); }
+  if (data.paymentMethod !== undefined) { updates.push(`payment_method = $${params.length + 1}`); params.push(data.paymentMethod); }
+  if (data.cardId !== undefined) { updates.push(`card_id = $${params.length + 1}`); params.push(data.cardId); }
+  if (data.cardName !== undefined) { updates.push(`card_name = $${params.length + 1}`); params.push(data.cardName); }
 
   if (updates.length === 0) return getTransactionById(userId, id);
 
@@ -131,6 +151,32 @@ export async function deleteTransaction(userId: string, id: string): Promise<boo
     'DELETE FROM transactions WHERE id = $1 AND user_id = $2',
     [id, userId],
   );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function getCards(userId: string): Promise<Card[]> {
+  await init();
+  const { rows } = await getPool().query(
+    'SELECT * FROM cards WHERE user_id = $1 ORDER BY created_at ASC',
+    [userId],
+  );
+  return rows.map(r => ({ id: r.id as string, name: r.name as string, type: r.type as Card['type'], createdAt: r.created_at as string }));
+}
+
+export async function createCard(userId: string, data: { name: string; type: Card['type'] }): Promise<Card> {
+  await init();
+  const id = crypto.randomUUID();
+  const createdAt = new Date().toISOString();
+  await getPool().query(
+    'INSERT INTO cards (id, user_id, name, type, created_at) VALUES ($1, $2, $3, $4, $5)',
+    [id, userId, data.name.trim(), data.type, createdAt],
+  );
+  return { id, name: data.name.trim(), type: data.type, createdAt };
+}
+
+export async function deleteCard(userId: string, id: string): Promise<boolean> {
+  await init();
+  const result = await getPool().query('DELETE FROM cards WHERE id = $1 AND user_id = $2', [id, userId]);
   return (result.rowCount ?? 0) > 0;
 }
 

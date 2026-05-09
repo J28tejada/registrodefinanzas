@@ -14,7 +14,9 @@ Analiza el texto y extrae la información de la transacción financiera. Respond
   "description": string descriptivo breve,
   "date": "YYYY-MM-DD",
   "confidence": número entre 0 y 1,
-  "suggestions": ["alternativa1", "alternativa2"]
+  "suggestions": ["alternativa1", "alternativa2"],
+  "paymentMethod": "cash" o "transfer" o "card" o null,
+  "cardName": string o null
 }
 
 Categorías disponibles:
@@ -32,6 +34,8 @@ Reglas:
 - Para la fecha, usa la fecha actual si no se especifica
 - confidence: qué tan seguro estás de la interpretación (0.9 = muy seguro, 0.5 = dudas)
 - suggestions: 2 categorías alternativas posibles si hay ambigüedad
+- paymentMethod: si menciona "efectivo" → "cash"; "transferencia" → "transfer"; "tarjeta", "crédito", "débito", o nombre de banco/tarjeta → "card"
+- cardName: si el pago es con tarjeta y menciona el nombre del banco o tarjeta (ej: "BHD", "Popular", "Banreservas"), extráelo aquí
 - Si un campo no se puede determinar, usa null`;
 
 export async function POST(req: NextRequest) {

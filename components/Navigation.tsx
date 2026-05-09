@@ -3,14 +3,15 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { UserButton } from '@clerk/nextjs';
-import { LayoutDashboard, Receipt, Bot, Wallet, BarChart2, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, Receipt, Bot, Wallet, BarChart2, CalendarDays, CreditCard } from 'lucide-react';
 
 const navItems = [
   { href: '/', icon: Bot, label: 'Chat IA' },
   { href: '/dashboard', icon: LayoutDashboard, label: 'Inicio' },
-  { href: '/stats', icon: BarChart2, label: 'Estadísticas' },
+  { href: '/stats', icon: BarChart2, label: 'Stats' },
   { href: '/calendar', icon: CalendarDays, label: 'Calendario' },
   { href: '/transactions', icon: Receipt, label: 'Registros' },
+  { href: '/cards', icon: CreditCard, label: 'Tarjetas' },
 ];
 
 export default function Navigation() {

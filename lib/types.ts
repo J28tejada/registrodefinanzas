@@ -1,6 +1,15 @@
 export type TransactionType = 'income' | 'expense';
 export type TransactionScope = 'personal' | 'business';
 export type TransactionSource = 'manual' | 'voice' | 'ai';
+export type PaymentMethod = 'cash' | 'transfer' | 'card';
+export type CardType = 'credit' | 'debit';
+
+export interface Card {
+  id: string;
+  name: string;
+  type: CardType;
+  createdAt: string;
+}
 
 export interface Transaction {
   id: string;
@@ -12,6 +21,9 @@ export interface Transaction {
   date: string;
   createdAt: string;
   source: TransactionSource;
+  paymentMethod?: PaymentMethod;
+  cardId?: string;
+  cardName?: string;
 }
 
 export interface TransactionFilters {

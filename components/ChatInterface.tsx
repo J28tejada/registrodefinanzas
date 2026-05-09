@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Loader2, Bot, User, Trash2, Mic, MicOff, Check, X } from 'lucide-react';
-import { formatCurrency, todayISO } from '@/lib/types';
+import { Send, Loader2, Bot, User, Trash2, Mic, MicOff, Check, X, Banknote, ArrowLeftRight, CreditCard } from 'lucide-react';
+import { formatCurrency, todayISO, Card, PaymentMethod } from '@/lib/types';
+
+const paymentIcon: Record<PaymentMethod, React.ElementType> = { cash: Banknote, transfer: ArrowLeftRight, card: CreditCard };
+const paymentLabel: Record<PaymentMethod, string> = { cash: 'Efectivo', transfer: 'Transferencia', card: 'Tarjeta' };
 
 interface TransactionProposal {
   type: 'expense' | 'income';
@@ -11,6 +14,8 @@ interface TransactionProposal {
   category: string;
   description: string;
   date: string;
+  payment_method?: PaymentMethod;
+  card_name?: string;
 }
 
 interface Message {
@@ -36,10 +41,15 @@ export default function ChatInterface() {
   const [loading, setLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState('');
+  const [cards, setCards] = useState<Card[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const transcriptRef = useRef('');
+
+  useEffect(() => {
+    fetch('/api/cards').then(r => r.json()).then(d => setCards(Array.isArray(d) ? d : [])).catch(() => {});
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -174,10 +184,27 @@ export default function ChatInterface() {
       const dateValid = data.date && /^\d{4}-\d{2}-\d{2}$/.test(data.date);
       const safeDate = dateValid ? data.date : todayISO();
 
+      // Match card_name to a registered card if payment is by card
+      let cardId: string | undefined;
+      let cardName: string | undefined;
+      if (data.payment_method === 'card' && data.card_name) {
+        const matched = cards.find(c =>
+          c.name.toLowerCase().includes(data.card_name!.toLowerCase()) ||
+          data.card_name!.toLowerCase().includes(c.name.toLowerCase())
+        );
+        if (matched) { cardId = matched.id; cardName = matched.name; }
+        else { cardName = data.card_name; }
+      }
+
       const res = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, date: safeDate, source: 'voice' }),
+        body: JSON.stringify({
+          ...data, date: safeDate, source: 'ai',
+          paymentMethod: data.payment_method,
+          cardId,
+          cardName,
+        }),
       });
       if (!res.ok) throw new Error();
 
@@ -297,7 +324,21 @@ export default function ChatInterface() {
                     <div>
                       <p className="text-white font-bold text-lg">{formatCurrency(msg.proposal.data.amount)}</p>
                       <p className="text-slate-300 text-sm">{msg.proposal.data.description}</p>
-                      <p className="text-slate-500 text-xs">{msg.proposal.data.category}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-slate-500 text-xs">{msg.proposal.data.category}</p>
+                        {msg.proposal.data.payment_method && (() => {
+                          const pm = msg.proposal.data.payment_method!;
+                          const PMIcon = paymentIcon[pm];
+                          const label = pm === 'card' && msg.proposal.data.card_name
+                            ? msg.proposal.data.card_name
+                            : paymentLabel[pm];
+                          return (
+                            <span className="flex items-center gap-1 text-xs text-slate-400">
+                              <span>·</span><PMIcon className="w-3 h-3" />{label}
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </div>
                     {msg.proposal.status === 'pending' && (
                       <div className="flex gap-2">

@@ -1,7 +1,18 @@
 'use client';
 
-import { Transaction, formatCurrency, formatDate } from '@/lib/types';
-import { Pencil, Trash2, Mic, Bot, Pencil as PencilIcon } from 'lucide-react';
+import { Transaction, PaymentMethod, formatCurrency, formatDate } from '@/lib/types';
+import { Pencil, Trash2, Mic, Bot, Pencil as PencilIcon, Banknote, ArrowLeftRight, CreditCard } from 'lucide-react';
+
+const paymentIcon: Record<PaymentMethod, React.ElementType> = {
+  cash: Banknote,
+  transfer: ArrowLeftRight,
+  card: CreditCard,
+};
+const paymentLabel: Record<PaymentMethod, string> = {
+  cash: 'Efectivo',
+  transfer: 'Transferencia',
+  card: 'Tarjeta',
+};
 
 const scopeBadge = {
   personal: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
@@ -63,10 +74,22 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
                   {tx.scope === 'personal' ? 'Personal' : 'Negocio'}
                 </span>
               </div>
-              <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
+              <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 flex-wrap">
                 <span>{tx.category}</span>
                 <span>·</span>
                 <span>{formatDate(tx.date)}</span>
+                {tx.paymentMethod && (() => {
+                  const PIcon = paymentIcon[tx.paymentMethod];
+                  return (
+                    <>
+                      <span>·</span>
+                      <span className="flex items-center gap-0.5 text-slate-400">
+                        <PIcon className="w-3 h-3" />
+                        {tx.paymentMethod === 'card' && tx.cardName ? tx.cardName : paymentLabel[tx.paymentMethod]}
+                      </span>
+                    </>
+                  );
+                })()}
                 <span>·</span>
                 <span className={`flex items-center gap-0.5 ${Source.cls}`}>
                   <SourceIcon className="w-3 h-3" />
