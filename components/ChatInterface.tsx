@@ -227,7 +227,10 @@ export default function ChatInterface() {
       setLiveTranscript('');
       const text = transcriptRef.current;
       transcriptRef.current = '';
-      if (text.trim()) sendMessage(text);
+      if (text.trim()) {
+        setInput(text);
+        setTimeout(() => inputRef.current?.focus(), 50);
+      }
     };
 
     recognition.onerror = () => {
