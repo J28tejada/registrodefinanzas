@@ -163,7 +163,7 @@ export async function getCards(userId: string, startDate?: string, endDate?: str
   if (rows.length === 0) return [];
 
   const dateFilter = startDate && endDate
-    ? `AND t.date >= '${startDate}' AND t.date <= '${endDate}'`
+    ? `AND date >= '${startDate}' AND date <= '${endDate}'`
     : '';
 
   const { rows: spending } = await getPool().query(
