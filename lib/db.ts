@@ -46,6 +46,13 @@ async function init() {
   await pool.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS payment_method TEXT`);
   await pool.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS card_id TEXT`);
   await pool.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS card_name TEXT`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS chat_sessions (
+      user_id TEXT PRIMARY KEY,
+      messages_json TEXT NOT NULL DEFAULT '[]',
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
   initialized = true;
 }
 
@@ -199,6 +206,25 @@ export async function deleteCard(userId: string, id: string): Promise<boolean> {
   await init();
   const result = await getPool().query('DELETE FROM cards WHERE id = $1 AND user_id = $2', [id, userId]);
   return (result.rowCount ?? 0) > 0;
+}
+
+export async function getChatHistory(userId: string): Promise<string> {
+  await init();
+  const { rows } = await getPool().query(
+    'SELECT messages_json FROM chat_sessions WHERE user_id = $1',
+    [userId],
+  );
+  return rows[0]?.messages_json ?? '[]';
+}
+
+export async function saveChatHistory(userId: string, messagesJson: string): Promise<void> {
+  await init();
+  await getPool().query(
+    `INSERT INTO chat_sessions (user_id, messages_json, updated_at)
+     VALUES ($1, $2, NOW())
+     ON CONFLICT (user_id) DO UPDATE SET messages_json = EXCLUDED.messages_json, updated_at = NOW()`,
+    [userId, messagesJson],
+  );
 }
 
 export async function getSummary(userId: string, startDate?: string, endDate?: string): Promise<Summary> {

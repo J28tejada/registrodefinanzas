@@ -61,24 +61,45 @@ export default function ChatInterface() {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const transcriptRef = useRef('');
 
-  // Load history from localStorage once user is known
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load history: localStorage first for instant render, then DB as source of truth
   useEffect(() => {
     if (!user?.id || historyLoaded) return;
+    // Fast path: show localStorage immediately
     try {
       const raw = localStorage.getItem(storageKey(user.id));
       if (raw) setMessages(JSON.parse(raw));
-    } catch { /* corrupted data — start fresh */ }
-    setHistoryLoaded(true);
+    } catch { /* ignore */ }
+    // Authoritative path: load from DB (works across devices)
+    fetch('/api/chat-history')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setMessages(data);
+          try { localStorage.setItem(storageKey(user.id!), JSON.stringify(data)); } catch { /* ignore */ }
+        }
+      })
+      .catch(() => { /* keep localStorage data on network failure */ })
+      .finally(() => setHistoryLoaded(true));
   }, [user?.id, historyLoaded]);
 
-  // Persist messages to localStorage whenever they change
+  // Persist to localStorage immediately + debounce save to DB
   useEffect(() => {
     if (!user?.id || !historyLoaded) return;
-    try {
-      const toStore = messages.slice(-MAX_STORED_MESSAGES);
-      localStorage.setItem(storageKey(user.id), JSON.stringify(toStore));
-    } catch { /* storage full — ignore */ }
-  }, [messages, user?.id, historyLoaded]);
+    const toStore = messages.slice(-MAX_STORED_MESSAGES);
+    try { localStorage.setItem(storageKey(user.id), JSON.stringify(toStore)); } catch { /* ignore */ }
+    // Skip DB save while streaming (loading=true); the post-stream change will trigger it
+    if (loading) return;
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      fetch('/api/chat-history', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: toStore }),
+      }).catch(() => { /* silent */ });
+    }, 1500);
+  }, [messages, user?.id, historyLoaded, loading]);
 
   useEffect(() => {
     fetch('/api/cards').then(r => r.json()).then(d => setCards(Array.isArray(d) ? d : [])).catch(() => {});
@@ -318,7 +339,14 @@ export default function ChatInterface() {
           <button
             onClick={() => {
               setMessages([]);
-              if (user?.id) localStorage.removeItem(storageKey(user.id));
+              if (user?.id) {
+                localStorage.removeItem(storageKey(user.id));
+                fetch('/api/chat-history', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ messages: [] }),
+                }).catch(() => {});
+              }
             }}
             className="p-2 text-slate-500 hover:text-rose-400 active:text-rose-400 transition-colors"
           >
