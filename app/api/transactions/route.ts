@@ -6,6 +6,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = req.nextUrl;
     const filters: TransactionFilters = {};
+    const ledger_id = searchParams.get('ledger_id');
     const type = searchParams.get('type');
     const scope = searchParams.get('scope');
     const category = searchParams.get('category');
@@ -13,6 +14,7 @@ export async function GET(req: NextRequest) {
     const endDate = searchParams.get('endDate');
     const search = searchParams.get('search');
 
+    if (ledger_id) filters.ledger_id = ledger_id;
     if (type === 'income' || type === 'expense') filters.type = type;
     if (scope === 'personal' || scope === 'business') filters.scope = scope;
     if (category) filters.category = category;
@@ -31,7 +33,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { type, scope, amount, category, description, date, source } = body;
+    const { ledger_id, type, scope, amount, category, description, date, source } = body;
 
     if (!type || !scope || amount == null || !category || !description || !date) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 });
@@ -43,7 +45,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ámbito inválido' }, { status: 400 });
     }
 
-    const tx = await createTransaction({ type, scope, amount: Number(amount), category, description, date, source: source ?? 'manual' });
+    const tx = await createTransaction({
+      ledger_id: ledger_id ?? null,
+      type,
+      scope,
+      amount: Number(amount),
+      category,
+      description,
+      date,
+      source: source ?? 'manual',
+    });
     return NextResponse.json(tx, { status: 201 });
   } catch (err) {
     console.error(err);

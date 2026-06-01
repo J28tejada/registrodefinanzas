@@ -4,9 +4,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, Filter, X } from 'lucide-react';
 import TransactionList from '@/components/TransactionList';
 import AddTransactionModal from '@/components/AddTransactionModal';
-import { Transaction, TransactionType, TransactionScope } from '@/lib/types';
+import { useLedger } from '@/components/LedgerContext';
+import { Transaction, TransactionType } from '@/lib/types';
 
 export default function TransactionsPage() {
+  const { currentLedger, refreshLedgers } = useLedger();
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +18,6 @@ export default function TransactionsPage() {
 
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<TransactionType | ''>('');
-  const [scopeFilter, setScopeFilter] = useState<TransactionScope | ''>('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -23,9 +25,9 @@ export default function TransactionsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
+    if (currentLedger) params.set('ledger_id', currentLedger.id);
     if (search) params.set('search', search);
     if (typeFilter) params.set('type', typeFilter);
-    if (scopeFilter) params.set('scope', scopeFilter);
     if (startDate) params.set('startDate', startDate);
     if (endDate) params.set('endDate', endDate);
 
@@ -45,7 +47,7 @@ export default function TransactionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, typeFilter, scopeFilter, startDate, endDate]);
+  }, [search, typeFilter, startDate, endDate, currentLedger]);
 
   useEffect(() => {
     const timeout = setTimeout(load, 300);
@@ -56,24 +58,31 @@ export default function TransactionsPage() {
     if (!confirm('¿Eliminar esta transacción?')) return;
     await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
     load();
+    refreshLedgers();
+  };
+
+  const handleSave = () => {
+    load();
+    refreshLedgers();
   };
 
   const clearFilters = () => {
     setSearch('');
     setTypeFilter('');
-    setScopeFilter('');
     setStartDate('');
     setEndDate('');
   };
 
-  const hasFilters = search || typeFilter || scopeFilter || startDate || endDate;
+  const hasFilters = search || typeFilter || startDate || endDate;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
+    <div className="max-w-4xl mx-auto space-y-5 pt-14 md:pt-0">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Transacciones</h1>
+          <h1 className="text-2xl font-bold text-white">
+            {currentLedger ? `${currentLedger.name}` : 'Todas las transacciones'}
+          </h1>
           <p className="text-slate-400 text-sm">{transactions.length} registros</p>
         </div>
         <div className="flex gap-2">
@@ -124,7 +133,7 @@ export default function TransactionsPage() {
       {/* Filters */}
       {showFilters && (
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {/* Type filter */}
             <div className="space-y-1.5">
               <label className="text-xs text-slate-400 font-medium">TIPO</label>
@@ -136,20 +145,6 @@ export default function TransactionsPage() {
                 <option value="">Todos</option>
                 <option value="income">Ingresos</option>
                 <option value="expense">Gastos</option>
-              </select>
-            </div>
-
-            {/* Scope filter */}
-            <div className="space-y-1.5">
-              <label className="text-xs text-slate-400 font-medium">ÁMBITO</label>
-              <select
-                value={scopeFilter}
-                onChange={e => setScopeFilter(e.target.value as TransactionScope | '')}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
-              >
-                <option value="">Todos</option>
-                <option value="personal">Personal</option>
-                <option value="business">Negocio</option>
               </select>
             </div>
 
@@ -193,7 +188,7 @@ export default function TransactionsPage() {
       <AddTransactionModal
         isOpen={modalOpen}
         onClose={() => { setModalOpen(false); setEditing(null); }}
-        onSave={load}
+        onSave={handleSave}
         editingTransaction={editing}
       />
     </div>

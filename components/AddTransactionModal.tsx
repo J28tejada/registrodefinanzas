@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Transaction, TransactionType, TransactionScope, getCategories, todayISO, AIInterpretation } from '@/lib/types';
+import { X, Loader2, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
+import { Transaction, TransactionType, TransactionScope, getCategories, todayISO, AIInterpretation, LEDGER_COLOR_MAP } from '@/lib/types';
+import { useLedger } from './LedgerContext';
 import VoiceInput from './VoiceInput';
 
 interface AddTransactionModalProps {
@@ -13,50 +14,58 @@ interface AddTransactionModalProps {
 }
 
 interface FormData {
+  ledger_id: string;
   type: TransactionType;
-  scope: TransactionScope;
   amount: string;
   category: string;
   description: string;
   date: string;
 }
 
-const defaultForm: FormData = {
-  type: 'expense',
-  scope: 'personal',
-  amount: '',
-  category: '',
-  description: '',
-  date: todayISO(),
-};
-
 export default function AddTransactionModal({
   isOpen, onClose, onSave, editingTransaction,
 }: AddTransactionModalProps) {
+  const { currentLedger, ledgers } = useLedger();
+
+  const defaultLedgerId = currentLedger?.id ?? (ledgers[0]?.id ?? '');
+
+  const defaultForm: FormData = {
+    ledger_id: defaultLedgerId,
+    type: 'expense',
+    amount: '',
+    category: '',
+    description: '',
+    date: todayISO(),
+  };
+
   const [form, setForm] = useState<FormData>(defaultForm);
   const [saving, setSaving] = useState(false);
   const [interpreting, setInterpreting] = useState(false);
   const [interpretation, setInterpretation] = useState<AIInterpretation | null>(null);
   const [error, setError] = useState('');
 
+  // Derive scope from selected ledger
+  const selectedLedger = ledgers.find(l => l.id === form.ledger_id) ?? currentLedger;
+  const scope: TransactionScope = selectedLedger?.type ?? 'personal';
+  const categories = getCategories(form.type, scope);
+
   useEffect(() => {
     if (editingTransaction) {
       setForm({
+        ledger_id: editingTransaction.ledger_id ?? defaultLedgerId,
         type: editingTransaction.type,
-        scope: editingTransaction.scope,
         amount: String(editingTransaction.amount),
         category: editingTransaction.category,
         description: editingTransaction.description,
         date: editingTransaction.date,
       });
     } else {
-      setForm({ ...defaultForm, date: todayISO() });
+      setForm({ ...defaultForm, date: todayISO(), ledger_id: currentLedger?.id ?? (ledgers[0]?.id ?? '') });
     }
     setInterpretation(null);
     setError('');
-  }, [editingTransaction, isOpen]);
-
-  const categories = getCategories(form.type, form.scope);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingTransaction, isOpen, currentLedger, ledgers.length]);
 
   const handleVoiceTranscript = async (text: string) => {
     setInterpreting(true);
@@ -73,8 +82,8 @@ export default function AddTransactionModal({
 
       setInterpretation(data);
       setForm(prev => ({
+        ...prev,
         type: data.type ?? prev.type,
-        scope: data.scope ?? prev.scope,
         amount: data.amount != null ? String(data.amount) : prev.amount,
         category: data.category ?? prev.category,
         description: data.description ?? prev.description,
@@ -93,6 +102,10 @@ export default function AddTransactionModal({
       setError('Completa todos los campos requeridos');
       return;
     }
+    if (!form.ledger_id && ledgers.length > 0) {
+      setError('Selecciona una cuenta');
+      return;
+    }
     setSaving(true);
     setError('');
     try {
@@ -104,8 +117,13 @@ export default function AddTransactionModal({
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...form,
+          ledger_id: form.ledger_id || null,
+          type: form.type,
+          scope,
           amount: parseFloat(form.amount),
+          category: form.category,
+          description: form.description,
+          date: form.date,
           source: interpretation ? 'voice' : 'manual',
         }),
       });
@@ -160,6 +178,35 @@ export default function AddTransactionModal({
             </div>
           )}
 
+          {/* Ledger picker — shown when no specific ledger is active or editing */}
+          {ledgers.length > 0 && (
+            <div className="space-y-1.5">
+              <label className="text-xs text-slate-400 font-medium">CUENTA</label>
+              <div className="relative">
+                <select
+                  value={form.ledger_id}
+                  onChange={e => setForm(p => ({ ...p, ledger_id: e.target.value, category: '' }))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-8 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm appearance-none"
+                >
+                  <option value="">Sin cuenta asignada</option>
+                  {ledgers.map(l => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </select>
+                {/* Color dot */}
+                {selectedLedger && (
+                  <div
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 rounded-sm pointer-events-none"
+                    style={{
+                      background: `linear-gradient(to right, ${LEDGER_COLOR_MAP[selectedLedger.color].dark} 35%, ${LEDGER_COLOR_MAP[selectedLedger.color].main} 35%)`
+                    }}
+                  />
+                )}
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              </div>
+            </div>
+          )}
+
           {/* Type toggle */}
           <div className="space-y-1.5">
             <label className="text-xs text-slate-400 font-medium">TIPO</label>
@@ -178,29 +225,6 @@ export default function AddTransactionModal({
                   }`}
                 >
                   {t === 'expense' ? '− Gasto' : '+ Ingreso'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Scope toggle */}
-          <div className="space-y-1.5">
-            <label className="text-xs text-slate-400 font-medium">ÁMBITO</label>
-            <div className="grid grid-cols-2 gap-2">
-              {(['personal', 'business'] as const).map(s => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setForm(p => ({ ...p, scope: s, category: '' }))}
-                  className={`py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    form.scope === s
-                      ? s === 'personal'
-                        ? 'bg-violet-500/20 border-2 border-violet-500 text-violet-300'
-                        : 'bg-blue-500/20 border-2 border-blue-500 text-blue-300'
-                      : 'bg-slate-800 border-2 border-transparent text-slate-400 hover:border-slate-600'
-                  }`}
-                >
-                  {s === 'personal' ? '👤 Personal' : '💼 Negocio'}
                 </button>
               ))}
             </div>

@@ -1,16 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  TrendingUp, TrendingDown, Wallet, Briefcase,
-  Plus, RefreshCw, User,
-} from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Plus, RefreshCw } from 'lucide-react';
 import SummaryCard from '@/components/SummaryCard';
 import TransactionList from '@/components/TransactionList';
 import AddTransactionModal from '@/components/AddTransactionModal';
-import { Summary, Transaction, formatCurrency } from '@/lib/types';
+import { useLedger } from '@/components/LedgerContext';
+import { Summary, Transaction, formatCurrency, LEDGER_COLOR_MAP } from '@/lib/types';
 
 export default function DashboardPage() {
+  const { currentLedger, refreshLedgers } = useLedger();
+
   const [summary, setSummary] = useState<Summary | null>(null);
   const [recent, setRecent] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,16 +21,18 @@ export default function DashboardPage() {
   const now = new Date();
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
   const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`;
-
   const monthName = now.toLocaleString('es-MX', { month: 'long', year: 'numeric' });
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
+      const params = new URLSearchParams({ startDate: monthStart, endDate: monthEnd });
+      if (currentLedger) params.set('ledger_id', currentLedger.id);
+
       const [sumRes, txRes] = await Promise.all([
-        fetch(`/api/summary?startDate=${monthStart}&endDate=${monthEnd}`),
-        fetch(`/api/transactions?startDate=${monthStart}&endDate=${monthEnd}`),
+        fetch(`/api/summary?${params}`),
+        fetch(`/api/transactions?${params}`),
       ]);
       const [sumData, txData] = await Promise.all([sumRes.json(), txRes.json()]);
       if (!sumRes.ok || sumData.error) {
@@ -44,7 +46,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [monthStart, monthEnd]);
+  }, [monthStart, monthEnd, currentLedger]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -52,15 +54,33 @@ export default function DashboardPage() {
     if (!confirm('¿Eliminar esta transacción?')) return;
     await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
     load();
+    refreshLedgers();
   };
 
+  const handleSave = () => {
+    load();
+    refreshLedgers();
+  };
+
+  const ledgerColor = currentLedger ? LEDGER_COLOR_MAP[currentLedger.color] : null;
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 pt-14 md:pt-0">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white capitalize">Dashboard</h1>
-          <p className="text-slate-400 text-sm capitalize">{monthName}</p>
+        <div className="flex items-center gap-3">
+          {ledgerColor && (
+            <div
+              className="w-10 h-10 rounded-xl flex-shrink-0"
+              style={{ background: `linear-gradient(to right, ${ledgerColor.dark} 30%, ${ledgerColor.main} 30%)` }}
+            />
+          )}
+          <div>
+            <h1 className="text-2xl font-bold text-white">
+              {currentLedger?.name ?? 'Dashboard'}
+            </h1>
+            <p className="text-slate-400 text-sm capitalize">{monthName}</p>
+          </div>
         </div>
         <div className="flex gap-2">
           <button
@@ -88,18 +108,19 @@ export default function DashboardPage() {
 
       {/* Summary cards */}
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[...Array(4)].map((_, i) => (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {[...Array(3)].map((_, i) => (
             <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl h-28 animate-pulse" />
           ))}
         </div>
       ) : summary ? (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <SummaryCard title="Ingresos" subtitle="este mes" amount={summary.totalIncome} icon={TrendingUp} variant="income" />
             <SummaryCard title="Gastos" subtitle="este mes" amount={summary.totalExpenses} icon={TrendingDown} variant="expense" />
-            <SummaryCard title="Balance Personal" amount={summary.personalBalance} icon={User} variant="personal" />
-            <SummaryCard title="Balance Negocio" amount={summary.businessBalance} icon={Briefcase} variant="business" />
+            <div className="col-span-2 md:col-span-1">
+              <SummaryCard title="Balance" subtitle="este mes" amount={summary.totalBalance} icon={Wallet} variant="balance" />
+            </div>
           </div>
 
           {/* Balance total */}
@@ -110,7 +131,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-slate-400 text-sm">Balance Total del Mes</p>
-                <p className="text-xs text-slate-500">Ingresos − Gastos (personal + negocio)</p>
+                <p className="text-xs text-slate-500">Ingresos − Gastos</p>
               </div>
             </div>
             <p className={`text-2xl font-bold ${summary.totalBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -127,14 +148,11 @@ export default function DashboardPage() {
                   const max = summary.byCategory[0].total;
                   const pct = Math.round((cat.total / max) * 100);
                   return (
-                    <div key={`${cat.category}-${cat.type}-${cat.scope}`} className="space-y-1">
+                    <div key={`${cat.category}-${cat.type}`} className="space-y-1">
                       <div className="flex justify-between text-xs">
                         <div className="flex items-center gap-2">
                           <span className={`w-2 h-2 rounded-full ${cat.type === 'income' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
                           <span className="text-slate-300">{cat.category}</span>
-                          <span className={`text-xs px-1.5 py-0.5 rounded ${cat.scope === 'personal' ? 'text-violet-400 bg-violet-500/10' : 'text-blue-400 bg-blue-500/10'}`}>
-                            {cat.scope === 'personal' ? 'Personal' : 'Negocio'}
-                          </span>
                         </div>
                         <span className="text-slate-400">{formatCurrency(cat.total)}</span>
                       </div>
@@ -167,7 +185,7 @@ export default function DashboardPage() {
       <AddTransactionModal
         isOpen={modalOpen}
         onClose={() => { setModalOpen(false); setEditing(null); }}
-        onSave={load}
+        onSave={handleSave}
         editingTransaction={editing}
       />
     </div>

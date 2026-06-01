@@ -1,9 +1,36 @@
 export type TransactionType = 'income' | 'expense';
 export type TransactionScope = 'personal' | 'business';
 export type TransactionSource = 'manual' | 'voice' | 'ai';
+export type LedgerColor = 'green' | 'blue' | 'purple' | 'orange' | 'red' | 'teal' | 'indigo' | 'pink';
+
+export const LEDGER_COLOR_MAP: Record<LedgerColor, { main: string; dark: string; text: string }> = {
+  green:  { main: '#059669', dark: '#065f46', text: '#d1fae5' },
+  blue:   { main: '#3b82f6', dark: '#1d4ed8', text: '#dbeafe' },
+  purple: { main: '#9333ea', dark: '#6b21a8', text: '#f3e8ff' },
+  orange: { main: '#f97316', dark: '#c2410c', text: '#ffedd5' },
+  red:    { main: '#ef4444', dark: '#b91c1c', text: '#fee2e2' },
+  teal:   { main: '#14b8a6', dark: '#0f766e', text: '#ccfbf1' },
+  indigo: { main: '#6366f1', dark: '#4338ca', text: '#e0e7ff' },
+  pink:   { main: '#ec4899', dark: '#be185d', text: '#fce7f3' },
+};
+
+export interface Ledger {
+  id: string;
+  name: string;
+  color: LedgerColor;
+  type: TransactionScope;
+  description: string;
+  created_at: string;
+}
+
+export interface LedgerWithStats extends Ledger {
+  transactionCount: number;
+  balance: number;
+}
 
 export interface Transaction {
   id: string;
+  ledger_id: string | null;
   type: TransactionType;
   scope: TransactionScope;
   amount: number;
@@ -15,6 +42,7 @@ export interface Transaction {
 }
 
 export interface TransactionFilters {
+  ledger_id?: string;
   type?: TransactionType;
   scope?: TransactionScope;
   category?: string;
@@ -24,14 +52,8 @@ export interface TransactionFilters {
 }
 
 export interface Summary {
-  personalIncome: number;
-  personalExpenses: number;
-  businessIncome: number;
-  businessExpenses: number;
   totalIncome: number;
   totalExpenses: number;
-  personalBalance: number;
-  businessBalance: number;
   totalBalance: number;
   byCategory: CategorySummary[];
 }
@@ -39,7 +61,6 @@ export interface Summary {
 export interface CategorySummary {
   category: string;
   type: TransactionType;
-  scope: TransactionScope;
   total: number;
   count: number;
 }

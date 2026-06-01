@@ -1,17 +1,13 @@
 'use client';
 
-import { Transaction, formatCurrency, formatDate } from '@/lib/types';
+import { Transaction, formatCurrency, formatDate, LEDGER_COLOR_MAP } from '@/lib/types';
+import { useLedger } from './LedgerContext';
 import { Pencil, Trash2, Mic, Bot, Pencil as PencilIcon } from 'lucide-react';
 
-const scopeBadge = {
-  personal: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
-  business: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-};
-
 const sourceBadge = {
-  voice: { icon: Mic, label: 'Voz', cls: 'text-slate-500' },
-  ai: { icon: Bot, label: 'IA', cls: 'text-slate-500' },
-  manual: { icon: PencilIcon, label: 'Manual', cls: 'text-slate-600' },
+  voice: { icon: Mic, cls: 'text-slate-500' },
+  ai: { icon: Bot, cls: 'text-slate-500' },
+  manual: { icon: PencilIcon, cls: 'text-slate-600' },
 };
 
 interface TransactionListProps {
@@ -22,6 +18,8 @@ interface TransactionListProps {
 }
 
 export default function TransactionList({ transactions, onEdit, onDelete, loading }: TransactionListProps) {
+  const { currentLedger, ledgers } = useLedger();
+
   if (loading) {
     return (
       <div className="space-y-2">
@@ -47,6 +45,9 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
       {transactions.map(tx => {
         const Source = sourceBadge[tx.source];
         const SourceIcon = Source.icon;
+        const txLedger = tx.ledger_id ? ledgers.find(l => l.id === tx.ledger_id) : null;
+        const showLedgerBadge = !currentLedger && txLedger;
+
         return (
           <div
             key={tx.id}
@@ -59,9 +60,17 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm text-white font-medium truncate">{tx.description}</span>
-                <span className={`text-xs px-1.5 py-0.5 rounded border ${scopeBadge[tx.scope]}`}>
-                  {tx.scope === 'personal' ? 'Personal' : 'Negocio'}
-                </span>
+                {showLedgerBadge && (
+                  <span
+                    className="text-xs px-1.5 py-0.5 rounded font-medium"
+                    style={{
+                      backgroundColor: LEDGER_COLOR_MAP[txLedger.color].main + '22',
+                      color: LEDGER_COLOR_MAP[txLedger.color].text,
+                    }}
+                  >
+                    {txLedger.name}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
                 <span>{tx.category}</span>

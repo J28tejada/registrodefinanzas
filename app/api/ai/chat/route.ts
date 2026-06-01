@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { getSummary, getAllTransactions } from '@/lib/db';
+import { getSummary, getAllTransactions, getAllLedgersWithStats } from '@/lib/db';
 import { formatCurrency } from '@/lib/types';
 
 export async function POST(req: NextRequest) {
@@ -11,23 +11,32 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ error: 'API key no configurada' }), { status: 500 });
     }
 
-    const [summary, recentTx] = await Promise.all([
+    const [summary, recentTx, ledgers] = await Promise.all([
       getSummary(),
       getAllTransactions({}),
+      getAllLedgersWithStats(),
     ]);
     const top20 = recentTx.slice(0, 20);
 
+    const ledgersText = ledgers.length > 0
+      ? `\nCUENTAS:\n${ledgers.map(l => `- ${l.name}: balance ${formatCurrency(l.balance)} (${l.transactionCount} transacciones)`).join('\n')}`
+      : '';
+
     const summaryText = `
-RESUMEN FINANCIERO ACTUAL DEL USUARIO:
-- Balance personal: ${formatCurrency(summary.personalBalance)} (ingresos: ${formatCurrency(summary.personalIncome)}, gastos: ${formatCurrency(summary.personalExpenses)})
-- Balance negocio: ${formatCurrency(summary.businessBalance)} (ingresos: ${formatCurrency(summary.businessIncome)}, gastos: ${formatCurrency(summary.businessExpenses)})
+RESUMEN FINANCIERO GLOBAL:
+- Ingresos totales: ${formatCurrency(summary.totalIncome)}
+- Gastos totales: ${formatCurrency(summary.totalExpenses)}
 - Balance total: ${formatCurrency(summary.totalBalance)}
+${ledgersText}
 
 ÚLTIMAS 20 TRANSACCIONES:
-${top20.map(t => `- [${t.date}] ${t.scope === 'personal' ? 'Personal' : 'Negocio'} | ${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)} | ${t.category}: ${t.description}`).join('\n')}
+${top20.map(t => {
+  const ledger = ledgers.find(l => l.id === t.ledger_id);
+  return `- [${t.date}] ${ledger ? ledger.name : t.scope} | ${t.type === 'income' ? '+' : '-'}${formatCurrency(t.amount)} | ${t.category}: ${t.description}`;
+}).join('\n')}
 
 CATEGORÍAS MÁS USADAS:
-${summary.byCategory.slice(0, 10).map(c => `- ${c.scope}/${c.type}: ${c.category} = ${formatCurrency(c.total)} (${c.count} transacciones)`).join('\n')}`;
+${summary.byCategory.slice(0, 10).map(c => `- ${c.type === 'income' ? 'Ingreso' : 'Gasto'}: ${c.category} = ${formatCurrency(c.total)} (${c.count} transacciones)`).join('\n')}`;
 
     const client = new Anthropic();
     const stream = await client.messages.create({
@@ -40,7 +49,7 @@ Tienes acceso a los datos financieros del usuario:
 ${summaryText}
 
 Puedes ayudar con:
-- Análisis de gastos e ingresos
+- Análisis de gastos e ingresos por cuenta
 - Sugerencias de categorías para nuevas transacciones
 - Consejos de ahorro y finanzas personales
 - Responder preguntas sobre el estado financiero del usuario
