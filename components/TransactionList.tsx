@@ -43,7 +43,7 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
   return (
     <div className="space-y-2">
       {transactions.map(tx => {
-        const Source = sourceBadge[tx.source];
+        const Source = sourceBadge[tx.source] ?? sourceBadge.manual;
         const SourceIcon = Source.icon;
         const txLedger = tx.ledger_id ? ledgers.find(l => l.id === tx.ledger_id) : null;
         const showLedgerBadge = !currentLedger && txLedger;

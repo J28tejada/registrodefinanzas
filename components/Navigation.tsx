@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid } from 'lucide-react';
+import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus } from 'lucide-react';
 import { useLedger } from './LedgerContext';
 import LedgerSelector from './LedgerSelector';
 import { LEDGER_COLOR_MAP } from '@/lib/types';
@@ -37,23 +37,32 @@ export default function Navigation() {
           </div>
 
           {/* Ledger switcher */}
-          <button
-            onClick={() => setSelectorOpen(true)}
-            className="w-full flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-left"
-          >
-            {ledgerColor ? (
-              <div
-                className="w-4 h-4 rounded-sm flex-shrink-0"
-                style={{ background: `linear-gradient(to right, ${ledgerColor.dark} 35%, ${ledgerColor.main} 35%)` }}
-              />
-            ) : (
-              <LayoutGrid className="w-4 h-4 text-slate-400 flex-shrink-0" />
-            )}
-            <span className="text-sm text-slate-200 flex-1 truncate">
-              {currentLedger?.name ?? 'Todas las cuentas'}
-            </span>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setSelectorOpen(true)}
+              className="flex-1 flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-left"
+            >
+              {ledgerColor ? (
+                <div
+                  className="w-4 h-4 rounded-sm flex-shrink-0"
+                  style={{ background: `linear-gradient(to right, ${ledgerColor.dark} 35%, ${ledgerColor.main} 35%)` }}
+                />
+              ) : (
+                <LayoutGrid className="w-4 h-4 text-slate-400 flex-shrink-0" />
+              )}
+              <span className="text-sm text-slate-200 flex-1 truncate">
+                {currentLedger?.name ?? 'Todas las cuentas'}
+              </span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+            </button>
+            <button
+              onClick={() => setSelectorOpen(true)}
+              title="Gestionar cuentas"
+              className="p-2 bg-slate-800 hover:bg-emerald-600 rounded-lg transition-colors text-slate-400 hover:text-white flex-shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         <nav className="flex-1 p-3 space-y-1">
@@ -82,7 +91,7 @@ export default function Navigation() {
       </aside>
 
       {/* Mobile: top bar with ledger switcher */}
-      <header className="md:hidden fixed top-0 left-0 right-0 bg-slate-900 border-b border-slate-800 z-20 px-4 py-3 flex items-center gap-3">
+      <header className="md:hidden fixed top-0 left-0 right-0 bg-slate-900 border-b border-slate-800 z-20 px-4 py-3 flex items-center gap-2">
         <div className="w-7 h-7 bg-emerald-500 rounded-lg flex items-center justify-center flex-shrink-0">
           <Wallet className="w-4 h-4 text-white" />
         </div>
@@ -102,6 +111,13 @@ export default function Navigation() {
             {currentLedger?.name ?? 'Todas las cuentas'}
           </span>
           <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+        </button>
+        <button
+          onClick={() => setSelectorOpen(true)}
+          title="Gestionar cuentas"
+          className="p-2 bg-slate-800 hover:bg-emerald-600 rounded-lg transition-colors text-slate-400 hover:text-white flex-shrink-0"
+        >
+          <Plus className="w-4 h-4" />
         </button>
       </header>
 

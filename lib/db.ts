@@ -141,7 +141,7 @@ function rowToTransaction(row: Record<string, unknown>): Transaction {
     description: row.description as string,
     date: row.date as string,
     createdAt: row.created_at as string,
-    source: row.source as Transaction['source'],
+    source: ((row.source as string) || 'manual') as Transaction['source'],
   };
 }
 
