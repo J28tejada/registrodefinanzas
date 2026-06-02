@@ -45,6 +45,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -220,9 +221,30 @@ export default function DashboardPage() {
 
       {/* Recent transactions */}
       <div>
-        <h3 className="text-sm font-medium text-slate-300 mb-3">Transacciones del mes</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-medium text-slate-300">Transacciones del mes</h3>
+          <div className="flex gap-1 bg-slate-900 border border-slate-800 rounded-lg p-1">
+            {([['all', 'Todos'], ['income', 'Ingresos'], ['expense', 'Gastos']] as const).map(([val, label]) => (
+              <button
+                key={val}
+                onClick={() => setTypeFilter(val)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  typeFilter === val
+                    ? val === 'income'
+                      ? 'bg-emerald-500/20 text-emerald-300'
+                      : val === 'expense'
+                        ? 'bg-rose-500/20 text-rose-300'
+                        : 'bg-slate-700 text-white'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         <TransactionList
-          transactions={recent}
+          transactions={typeFilter === 'all' ? recent : recent.filter(tx => tx.type === typeFilter)}
           loading={loading}
           onEdit={tx => { setEditing(tx); setModalOpen(true); }}
           onDelete={handleDelete}
