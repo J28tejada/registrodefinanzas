@@ -1,15 +1,43 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, TrendingDown, Wallet, Plus, RefreshCw } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Plus, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import SummaryCard from '@/components/SummaryCard';
 import TransactionList from '@/components/TransactionList';
 import AddTransactionModal from '@/components/AddTransactionModal';
 import { useLedger } from '@/components/LedgerContext';
 import { Summary, Transaction, formatCurrency, LEDGER_COLOR_MAP } from '@/lib/types';
 
+function getMonthBounds(year: number, month: number) {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  return {
+    start: `${year}-${pad(month + 1)}-01`,
+    end: `${year}-${pad(month + 1)}-${pad(lastDay)}`,
+    label: new Date(year, month, 1).toLocaleString('es-MX', { month: 'long', year: 'numeric' }),
+  };
+}
+
 export default function DashboardPage() {
   const { currentLedger, refreshLedgers } = useLedger();
+
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+
+  const { start: monthStart, end: monthEnd, label: monthName } = getMonthBounds(selectedYear, selectedMonth);
+
+  const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
+
+  const goToPrev = () => {
+    if (selectedMonth === 0) { setSelectedYear(y => y - 1); setSelectedMonth(11); }
+    else setSelectedMonth(m => m - 1);
+  };
+  const goToNext = () => {
+    if (isCurrentMonth) return;
+    if (selectedMonth === 11) { setSelectedYear(y => y + 1); setSelectedMonth(0); }
+    else setSelectedMonth(m => m + 1);
+  };
 
   const [summary, setSummary] = useState<Summary | null>(null);
   const [recent, setRecent] = useState<Transaction[]>([]);
@@ -17,11 +45,6 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
-
-  const now = new Date();
-  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-  const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`;
-  const monthName = now.toLocaleString('es-MX', { month: 'long', year: 'numeric' });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -79,7 +102,31 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold text-white">
               {currentLedger?.name ?? 'Dashboard'}
             </h1>
-            <p className="text-slate-400 text-sm capitalize">{monthName}</p>
+            {/* Month navigator */}
+            <div className="flex items-center gap-1 mt-0.5">
+              <button
+                onClick={goToPrev}
+                className="p-0.5 text-slate-500 hover:text-white rounded transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-sm text-slate-400 capitalize min-w-[130px] text-center">{monthName}</span>
+              <button
+                onClick={goToNext}
+                disabled={isCurrentMonth}
+                className="p-0.5 text-slate-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              {!isCurrentMonth && (
+                <button
+                  onClick={() => { setSelectedYear(now.getFullYear()); setSelectedMonth(now.getMonth()); }}
+                  className="text-xs text-emerald-400 hover:text-emerald-300 ml-1 transition-colors"
+                >
+                  Hoy
+                </button>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex gap-2">
@@ -116,10 +163,10 @@ export default function DashboardPage() {
       ) : summary ? (
         <>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <SummaryCard title="Ingresos" subtitle="este mes" amount={summary.totalIncome} icon={TrendingUp} variant="income" />
-            <SummaryCard title="Gastos" subtitle="este mes" amount={summary.totalExpenses} icon={TrendingDown} variant="expense" />
+            <SummaryCard title="Ingresos" subtitle="del mes" amount={summary.totalIncome} icon={TrendingUp} variant="income" />
+            <SummaryCard title="Gastos" subtitle="del mes" amount={summary.totalExpenses} icon={TrendingDown} variant="expense" />
             <div className="col-span-2 md:col-span-1">
-              <SummaryCard title="Balance" subtitle="este mes" amount={summary.totalBalance} icon={Wallet} variant="balance" />
+              <SummaryCard title="Balance" subtitle="del mes" amount={summary.totalBalance} icon={Wallet} variant="balance" />
             </div>
           </div>
 
@@ -130,7 +177,7 @@ export default function DashboardPage() {
                 <Wallet className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
-                <p className="text-slate-400 text-sm">Balance Total del Mes</p>
+                <p className="text-slate-400 text-sm capitalize">Balance — {monthName}</p>
                 <p className="text-xs text-slate-500">Ingresos − Gastos</p>
               </div>
             </div>
@@ -173,7 +220,7 @@ export default function DashboardPage() {
 
       {/* Recent transactions */}
       <div>
-        <h3 className="text-sm font-medium text-slate-300 mb-3">Últimas transacciones del mes</h3>
+        <h3 className="text-sm font-medium text-slate-300 mb-3">Transacciones del mes</h3>
         <TransactionList
           transactions={recent}
           loading={loading}
