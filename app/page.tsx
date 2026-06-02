@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { TrendingUp, TrendingDown, Wallet, Plus, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import SummaryCard from '@/components/SummaryCard';
 import TransactionList from '@/components/TransactionList';
@@ -21,7 +21,6 @@ function getMonthBounds(year: number, month: number) {
 
 export default function DashboardPage() {
   const { currentLedger, refreshLedgers } = useLedger();
-  const router = useRouter();
 
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
@@ -205,10 +204,10 @@ export default function DashboardPage() {
                   });
                   if (currentLedger) params.set('ledger_id', currentLedger.id);
                   return (
-                    <button
+                    <Link
                       key={`${cat.category}-${cat.type}`}
-                      onClick={() => router.push(`/transactions?${params}`)}
-                      className="w-full space-y-1 text-left group hover:bg-slate-800/50 rounded-lg px-2 py-1.5 -mx-2 transition-colors"
+                      href={`/transactions?${params}`}
+                      className="block space-y-1 group hover:bg-slate-800/50 rounded-lg px-2 py-1.5 transition-colors cursor-pointer"
                     >
                       <div className="flex justify-between text-xs">
                         <div className="flex items-center gap-2">
@@ -223,7 +222,7 @@ export default function DashboardPage() {
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                    </button>
+                    </Link>
                   );
                 })}
               </div>
