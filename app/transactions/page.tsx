@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Filter, X } from 'lucide-react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Plus, Search, Filter, X, Loader2 } from 'lucide-react';
 import TransactionList from '@/components/TransactionList';
 import AddTransactionModal from '@/components/AddTransactionModal';
 import { useLedger } from '@/components/LedgerContext';
@@ -14,7 +15,20 @@ const TYPE_TABS: { value: TransactionType | ''; label: string }[] = [
 ];
 
 export default function TransactionsPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-4xl mx-auto pt-14 md:pt-0 flex items-center justify-center h-64">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      </div>
+    }>
+      <TransactionsInner />
+    </Suspense>
+  );
+}
+
+function TransactionsInner() {
   const { currentLedger, refreshLedgers } = useLedger();
+  const searchParams = useSearchParams();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,18 +36,38 @@ export default function TransactionsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
 
+  // Initialize filters from URL params
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<TransactionType | ''>('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [paramsLoaded, setParamsLoaded] = useState(false);
+
+  // Load URL params once on mount
+  useEffect(() => {
+    const cat = searchParams.get('category') ?? '';
+    const type = searchParams.get('type') ?? '';
+    const start = searchParams.get('startDate') ?? '';
+    const end = searchParams.get('endDate') ?? '';
+
+    if (cat) setCategoryFilter(cat);
+    if (type === 'income' || type === 'expense') setTypeFilter(type);
+    if (start) { setStartDate(start); setShowFilters(true); }
+    if (end) { setEndDate(end); setShowFilters(true); }
+    setParamsLoaded(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const load = useCallback(async () => {
+    if (!paramsLoaded) return;
     setLoading(true);
     const params = new URLSearchParams();
     if (currentLedger) params.set('ledger_id', currentLedger.id);
     if (search) params.set('search', search);
     if (typeFilter) params.set('type', typeFilter);
+    if (categoryFilter) params.set('category', categoryFilter);
     if (startDate) params.set('startDate', startDate);
     if (endDate) params.set('endDate', endDate);
 
@@ -53,7 +87,7 @@ export default function TransactionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, typeFilter, startDate, endDate, currentLedger]);
+  }, [search, typeFilter, categoryFilter, startDate, endDate, currentLedger, paramsLoaded]);
 
   useEffect(() => {
     const timeout = setTimeout(load, 300);
@@ -67,10 +101,7 @@ export default function TransactionsPage() {
     refreshLedgers();
   };
 
-  const handleSave = () => {
-    load();
-    refreshLedgers();
-  };
+  const handleSave = () => { load(); refreshLedgers(); };
 
   const clearDates = () => { setStartDate(''); setEndDate(''); };
   const hasDateFilter = startDate || endDate;
@@ -114,7 +145,7 @@ export default function TransactionsPage() {
         </div>
       )}
 
-      {/* Type filter tabs — always visible */}
+      {/* Type filter tabs + search */}
       <div className="flex items-center gap-2">
         <div className="flex gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
           {TYPE_TABS.map(({ value, label }) => (
@@ -136,7 +167,6 @@ export default function TransactionsPage() {
           ))}
         </div>
 
-        {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
           <input
@@ -153,6 +183,36 @@ export default function TransactionsPage() {
           )}
         </div>
       </div>
+
+      {/* Active filters (category + date range) */}
+      {(categoryFilter || hasDateFilter) && (
+        <div className="flex flex-wrap gap-2">
+          {categoryFilter && (
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-violet-500/10 border border-violet-500/20 text-violet-300 rounded-full text-xs">
+              Categoría: {categoryFilter}
+              <button onClick={() => setCategoryFilter('')} className="hover:text-white transition-colors">
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {startDate && (
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 border border-slate-700 text-slate-300 rounded-full text-xs">
+              Desde: {startDate}
+              <button onClick={() => setStartDate('')} className="hover:text-white transition-colors">
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {endDate && (
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 border border-slate-700 text-slate-300 rounded-full text-xs">
+              Hasta: {endDate}
+              <button onClick={() => setEndDate('')} className="hover:text-white transition-colors">
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Date range filter (collapsible) */}
       {showFilters && (
@@ -186,7 +246,6 @@ export default function TransactionsPage() {
         </div>
       )}
 
-      {/* List */}
       <TransactionList
         transactions={transactions}
         loading={loading}

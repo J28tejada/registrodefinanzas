@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { TrendingUp, TrendingDown, Wallet, Plus, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import SummaryCard from '@/components/SummaryCard';
 import TransactionList from '@/components/TransactionList';
@@ -20,6 +21,7 @@ function getMonthBounds(year: number, month: number) {
 
 export default function DashboardPage() {
   const { currentLedger, refreshLedgers } = useLedger();
+  const router = useRouter();
 
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
@@ -195,22 +197,33 @@ export default function DashboardPage() {
                 {summary.byCategory.slice(0, 6).map(cat => {
                   const max = summary.byCategory[0].total;
                   const pct = Math.round((cat.total / max) * 100);
+                  const params = new URLSearchParams({
+                    category: cat.category,
+                    startDate: monthStart,
+                    endDate: monthEnd,
+                    type: cat.type,
+                  });
+                  if (currentLedger) params.set('ledger_id', currentLedger.id);
                   return (
-                    <div key={`${cat.category}-${cat.type}`} className="space-y-1">
+                    <button
+                      key={`${cat.category}-${cat.type}`}
+                      onClick={() => router.push(`/transactions?${params}`)}
+                      className="w-full space-y-1 text-left group hover:bg-slate-800/50 rounded-lg px-2 py-1.5 -mx-2 transition-colors"
+                    >
                       <div className="flex justify-between text-xs">
                         <div className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full ${cat.type === 'income' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
-                          <span className="text-slate-300">{cat.category}</span>
+                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cat.type === 'income' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                          <span className="text-slate-300 group-hover:text-white transition-colors">{cat.category}</span>
                         </div>
-                        <span className="text-slate-400">{formatCurrency(cat.total)}</span>
+                        <span className="text-slate-400 group-hover:text-slate-200 transition-colors">{formatCurrency(cat.total)}</span>
                       </div>
                       <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${cat.type === 'income' ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                          className={`h-full rounded-full transition-all ${cat.type === 'income' ? 'bg-emerald-500' : 'bg-rose-500'}`}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
