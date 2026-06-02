@@ -141,6 +141,28 @@ export function formatDate(dateStr: string): string {
   }).format(new Date(Date.UTC(y, m - 1, d)));
 }
 
+export interface EmailConnection {
+  id: string;
+  email: string;
+  access_token: string;
+  refresh_token: string | null;
+  token_expiry: number | null;
+  created_at: string;
+}
+
+export interface EmailTransaction {
+  gmail_message_id: string;
+  subject: string;
+  from_address: string;
+  sent_date: string;
+  isTransaction: boolean;
+  type: TransactionType | null;
+  amount: number | null;
+  description: string | null;
+  category: string | null;
+  confidence: number;
+}
+
 export function todayISO(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;

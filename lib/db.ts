@@ -1,5 +1,5 @@
 import { createPool, VercelPool } from '@vercel/postgres';
-import { Transaction, TransactionFilters, Summary, Ledger, LedgerWithStats } from './types';
+import { Transaction, TransactionFilters, Summary, Ledger, LedgerWithStats, EmailConnection } from './types';
 
 let _pool: VercelPool | null = null;
 function getPool(): VercelPool {
@@ -40,8 +40,18 @@ async function init() {
   try {
     await pool.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS ledger_id TEXT`);
   } catch {
-    // ignore if column already exists or DB doesn't support IF NOT EXISTS
+    // ignore if column already exists
   }
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS email_connections (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      access_token TEXT NOT NULL,
+      refresh_token TEXT,
+      token_expiry BIGINT,
+      created_at TEXT NOT NULL
+    )
+  `);
   initialized = true;
 }
 
@@ -261,4 +271,50 @@ export async function getSummary(ledger_id?: string, startDate?: string, endDate
       count: r.count as number,
     })),
   };
+}
+
+// ─── Email connection helpers ─────────────────────────────────────────────────
+
+function rowToEmailConnection(row: Record<string, unknown>): EmailConnection {
+  return {
+    id: row.id as string,
+    email: row.email as string,
+    access_token: row.access_token as string,
+    refresh_token: (row.refresh_token as string) ?? null,
+    token_expiry: row.token_expiry != null ? Number(row.token_expiry) : null,
+    created_at: row.created_at as string,
+  };
+}
+
+export async function getEmailConnection(): Promise<EmailConnection | null> {
+  await init();
+  const { rows } = await getPool().query('SELECT * FROM email_connections LIMIT 1');
+  return rows[0] ? rowToEmailConnection(rows[0]) : null;
+}
+
+export async function saveEmailConnection(data: Omit<EmailConnection, 'id' | 'created_at'>): Promise<EmailConnection> {
+  await init();
+  // Only one connection allowed — upsert by email
+  await getPool().query('DELETE FROM email_connections');
+  const id = crypto.randomUUID();
+  const created_at = new Date().toISOString();
+  await getPool().query(
+    `INSERT INTO email_connections (id, email, access_token, refresh_token, token_expiry, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [id, data.email, data.access_token, data.refresh_token ?? null, data.token_expiry ?? null, created_at],
+  );
+  return (await getEmailConnection())!;
+}
+
+export async function updateEmailTokens(id: string, accessToken: string, tokenExpiry: number | null): Promise<void> {
+  await init();
+  await getPool().query(
+    'UPDATE email_connections SET access_token = $1, token_expiry = $2 WHERE id = $3',
+    [accessToken, tokenExpiry, id],
+  );
+}
+
+export async function deleteEmailConnection(): Promise<void> {
+  await init();
+  await getPool().query('DELETE FROM email_connections');
 }
