@@ -165,8 +165,16 @@ export default function DashboardPage() {
       ) : summary ? (
         <>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <SummaryCard title="Ingresos" subtitle="del mes" amount={summary.totalIncome} icon={TrendingUp} variant="income" />
-            <SummaryCard title="Gastos" subtitle="del mes" amount={summary.totalExpenses} icon={TrendingDown} variant="expense" />
+            <SummaryCard
+              title="Ingresos" subtitle="del mes"
+              amount={summary.totalIncome} icon={TrendingUp} variant="income"
+              href={`/transactions?type=income&startDate=${monthStart}&endDate=${monthEnd}${currentLedger ? `&ledger_id=${currentLedger.id}` : ''}`}
+            />
+            <SummaryCard
+              title="Gastos" subtitle="del mes"
+              amount={summary.totalExpenses} icon={TrendingDown} variant="expense"
+              href={`/transactions?type=expense&startDate=${monthStart}&endDate=${monthEnd}${currentLedger ? `&ledger_id=${currentLedger.id}` : ''}`}
+            />
             <div className="col-span-2 md:col-span-1">
               <SummaryCard title="Balance" subtitle="del mes" amount={summary.totalBalance} icon={Wallet} variant="balance" />
             </div>

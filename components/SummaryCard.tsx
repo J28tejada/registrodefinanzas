@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { LucideIcon } from 'lucide-react';
 import { formatCurrency } from '@/lib/types';
 
@@ -7,6 +8,7 @@ interface SummaryCardProps {
   icon: LucideIcon;
   variant: 'income' | 'expense' | 'balance' | 'personal' | 'business';
   subtitle?: string;
+  href?: string;
 }
 
 const variantStyles = {
@@ -33,9 +35,9 @@ const amountStyles = {
   business: 'text-blue-400',
 };
 
-export default function SummaryCard({ title, amount, icon: Icon, variant, subtitle }: SummaryCardProps) {
+function CardContent({ title, subtitle, amount, variant, icon: Icon }: Omit<SummaryCardProps, 'href'>) {
   return (
-    <div className={`rounded-xl border p-5 ${variantStyles[variant]}`}>
+    <>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">{title}</p>
@@ -51,6 +53,24 @@ export default function SummaryCard({ title, amount, icon: Icon, variant, subtit
       {amount < 0 && variant === 'balance' && (
         <p className="text-xs text-rose-400 mt-1">Balance negativo</p>
       )}
+    </>
+  );
+}
+
+export default function SummaryCard({ href, ...props }: SummaryCardProps) {
+  const baseClass = `rounded-xl border p-5 ${variantStyles[props.variant]}`;
+
+  if (href) {
+    return (
+      <Link href={href} className={`${baseClass} block hover:brightness-110 transition-all cursor-pointer`}>
+        <CardContent {...props} />
+      </Link>
+    );
+  }
+
+  return (
+    <div className={baseClass}>
+      <CardContent {...props} />
     </div>
   );
 }
