@@ -146,13 +146,13 @@ function TransactionsInner() {
       )}
 
       {/* Type filter tabs + search */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <div className="flex gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
           {TYPE_TABS.map(({ value, label }) => (
             <button
               key={value}
               onClick={() => setTypeFilter(value)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                 typeFilter === value
                   ? value === 'income'
                     ? 'bg-emerald-500/20 text-emerald-300'

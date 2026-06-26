@@ -241,9 +241,9 @@ export default function DashboardPage() {
 
       {/* Recent transactions */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
           <h3 className="text-sm font-medium text-slate-300">Transacciones del mes</h3>
-          <div className="flex gap-1 bg-slate-900 border border-slate-800 rounded-lg p-1">
+          <div className="flex gap-1 bg-slate-900 border border-slate-800 rounded-lg p-1 self-start sm:self-auto">
             {([['all', 'Todos'], ['income', 'Ingresos'], ['expense', 'Gastos']] as const).map(([val, label]) => (
               <button
                 key={val}

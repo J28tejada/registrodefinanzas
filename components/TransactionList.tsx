@@ -90,8 +90,8 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
               </p>
             </div>
 
-            {/* Actions (visible on hover) */}
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Actions */}
+            <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
               <button
                 onClick={() => onEdit(tx)}
                 className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
