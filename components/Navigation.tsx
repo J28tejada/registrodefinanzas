@@ -7,7 +7,7 @@ import { useLedger } from './LedgerContext';
 import LedgerSelector from './LedgerSelector';
 import { LEDGER_COLOR_MAP } from '@/lib/types';
 
-const navItems = [
+const desktopNavItems = [
   { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/transactions', icon: Receipt, label: 'Transacciones' },
   { href: '/email', icon: Mail, label: 'Correo' },
@@ -16,7 +16,7 @@ const navItems = [
 
 export default function Navigation() {
   const pathname = usePathname();
-  const { currentLedger, setSelectorOpen } = useLedger();
+  const { currentLedger, setSelectorOpen, setGlobalAddOpen } = useLedger();
 
   const ledgerColor = currentLedger ? LEDGER_COLOR_MAP[currentLedger.color] : null;
 
@@ -67,7 +67,7 @@ export default function Navigation() {
         </div>
 
         <nav className="flex-1 p-3 space-y-1">
-          {navItems.map(({ href, icon: Icon, label }) => {
+          {desktopNavItems.map(({ href, icon: Icon, label }) => {
             const active = pathname === href;
             return (
               <Link
@@ -122,23 +122,56 @@ export default function Navigation() {
         </button>
       </header>
 
-      {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 z-20 flex">
-        {navItems.map(({ href, icon: Icon, label }) => {
-          const active = pathname === href;
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors ${
-                active ? 'text-emerald-400' : 'text-slate-400'
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-              {label}
-            </Link>
-          );
-        })}
+      {/* Mobile bottom nav — 5 slots with center FAB */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 z-20 flex items-end pb-safe">
+        {/* Dashboard */}
+        <Link
+          href="/"
+          className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors ${pathname === '/' ? 'text-emerald-400' : 'text-slate-400'}`}
+        >
+          <LayoutDashboard className="w-5 h-5" />
+          Dashboard
+        </Link>
+
+        {/* Transacciones */}
+        <Link
+          href="/transactions"
+          className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors ${pathname === '/transactions' ? 'text-emerald-400' : 'text-slate-400'}`}
+        >
+          <Receipt className="w-5 h-5" />
+          Transacciones
+        </Link>
+
+        {/* Center FAB — add transaction */}
+        <div className="flex-1 flex flex-col items-center justify-end pb-2">
+          <button
+            onClick={() => setGlobalAddOpen(true)}
+            className="w-14 h-14 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30 -mt-7 transition-colors"
+            aria-label="Registrar transacción"
+          >
+            <Plus className="w-7 h-7 text-white" />
+          </button>
+        </div>
+
+        {/* Chat IA — star feature */}
+        <Link
+          href="/chat"
+          className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors ${pathname === '/chat' ? 'text-emerald-400' : 'text-emerald-300/70 hover:text-emerald-300'}`}
+        >
+          <div className={`relative ${pathname !== '/chat' ? 'animate-pulse' : ''}`}>
+            <Bot className="w-5 h-5" />
+          </div>
+          Chat IA
+        </Link>
+
+        {/* Correo */}
+        <Link
+          href="/email"
+          className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors ${pathname === '/email' ? 'text-emerald-400' : 'text-slate-400'}`}
+        >
+          <Mail className="w-5 h-5" />
+          Correo
+        </Link>
       </nav>
     </>
   );

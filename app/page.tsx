@@ -20,7 +20,7 @@ function getMonthBounds(year: number, month: number) {
 }
 
 export default function DashboardPage() {
-  const { currentLedger, refreshLedgers } = useLedger();
+  const { currentLedger, refreshLedgers, transactionVersion } = useLedger();
 
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
@@ -71,7 +71,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [monthStart, monthEnd, currentLedger]);
+  }, [monthStart, monthEnd, currentLedger, transactionVersion]);
 
   useEffect(() => { load(); }, [load]);
 

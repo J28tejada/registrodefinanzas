@@ -10,6 +10,12 @@ interface LedgerContextType {
   refreshLedgers: () => Promise<void>;
   selectorOpen: boolean;
   setSelectorOpen: (open: boolean) => void;
+  // Global add-transaction modal
+  globalAddOpen: boolean;
+  setGlobalAddOpen: (v: boolean) => void;
+  // Version counter — increments every time a transaction is saved anywhere
+  transactionVersion: number;
+  notifyTransactionSaved: () => void;
 }
 
 export const LedgerContext = createContext<LedgerContextType>({
@@ -19,6 +25,10 @@ export const LedgerContext = createContext<LedgerContextType>({
   refreshLedgers: async () => {},
   selectorOpen: false,
   setSelectorOpen: () => {},
+  globalAddOpen: false,
+  setGlobalAddOpen: () => {},
+  transactionVersion: 0,
+  notifyTransactionSaved: () => {},
 });
 
 export function useLedger() {
@@ -29,7 +39,13 @@ export function LedgerProvider({ children }: { children: React.ReactNode }) {
   const [currentLedger, setCurrentLedgerState] = useState<Ledger | null>(null);
   const [ledgers, setLedgers] = useState<LedgerWithStats[]>([]);
   const [selectorOpen, setSelectorOpen] = useState(false);
+  const [globalAddOpen, setGlobalAddOpen] = useState(false);
+  const [transactionVersion, setTransactionVersion] = useState(0);
   const restoredRef = useRef(false);
+
+  const notifyTransactionSaved = useCallback(() => {
+    setTransactionVersion(v => v + 1);
+  }, []);
 
   const refreshLedgers = useCallback(async () => {
     try {
@@ -84,6 +100,10 @@ export function LedgerProvider({ children }: { children: React.ReactNode }) {
       refreshLedgers,
       selectorOpen,
       setSelectorOpen,
+      globalAddOpen,
+      setGlobalAddOpen,
+      transactionVersion,
+      notifyTransactionSaved,
     }}>
       {children}
     </LedgerContext.Provider>

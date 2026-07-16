@@ -1,7 +1,26 @@
 'use client';
 
-import { LedgerProvider } from '@/components/LedgerContext';
+import { LedgerProvider, useLedger } from '@/components/LedgerContext';
+import AddTransactionModal from '@/components/AddTransactionModal';
+
+function GlobalAddModal() {
+  const { globalAddOpen, setGlobalAddOpen, notifyTransactionSaved, refreshLedgers } = useLedger();
+  if (!globalAddOpen) return null;
+  return (
+    <AddTransactionModal
+      isOpen={globalAddOpen}
+      onClose={() => setGlobalAddOpen(false)}
+      onSave={() => { notifyTransactionSaved(); refreshLedgers(); }}
+      editingTransaction={null}
+    />
+  );
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  return <LedgerProvider>{children}</LedgerProvider>;
+  return (
+    <LedgerProvider>
+      {children}
+      <GlobalAddModal />
+    </LedgerProvider>
+  );
 }

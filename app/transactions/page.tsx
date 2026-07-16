@@ -27,7 +27,7 @@ export default function TransactionsPage() {
 }
 
 function TransactionsInner() {
-  const { currentLedger, refreshLedgers } = useLedger();
+  const { currentLedger, refreshLedgers, transactionVersion } = useLedger();
   const searchParams = useSearchParams();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -87,7 +87,7 @@ function TransactionsInner() {
     } finally {
       setLoading(false);
     }
-  }, [search, typeFilter, categoryFilter, startDate, endDate, currentLedger, paramsLoaded]);
+  }, [search, typeFilter, categoryFilter, startDate, endDate, currentLedger, paramsLoaded, transactionVersion]);
 
   useEffect(() => {
     const timeout = setTimeout(load, 300);
