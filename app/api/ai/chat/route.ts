@@ -40,7 +40,7 @@ ${summary.byCategory.slice(0, 10).map(c => `- ${c.type === 'income' ? 'Ingreso' 
 
     const client = new Anthropic();
     const stream = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-5',
       max_tokens: 1024,
       stream: true,
       system: `Eres un asistente financiero personal amigable, conciso y útil. Respondes en español.
