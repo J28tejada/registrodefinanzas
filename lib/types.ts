@@ -1,6 +1,6 @@
 export type TransactionType = 'income' | 'expense';
 export type TransactionScope = 'personal' | 'business';
-export type TransactionSource = 'manual' | 'voice' | 'ai';
+export type TransactionSource = 'manual' | 'voice' | 'ai' | 'whatsapp';
 export type LedgerColor = 'green' | 'blue' | 'purple' | 'orange' | 'red' | 'teal' | 'indigo' | 'pink';
 
 export const LEDGER_COLOR_MAP: Record<LedgerColor, { main: string; dark: string; text: string }> = {
@@ -39,6 +39,10 @@ export interface Transaction {
   date: string;
   createdAt: string;
   source: TransactionSource;
+  /** Comprobante adjunto (foto de recibo llegada por WhatsApp). */
+  receipt_url?: string | null;
+  /** Efectivo, tarjeta, transferencia… lo captura el agente si el usuario lo menciona. */
+  payment_method?: string | null;
 }
 
 export interface TransactionFilters {

@@ -2,7 +2,7 @@ import { createPool, VercelPool } from '@vercel/postgres';
 import { Transaction, TransactionFilters, Summary, Ledger, LedgerWithStats, EmailConnection } from './types';
 
 let _pool: VercelPool | null = null;
-function getPool(): VercelPool {
+export function getPool(): VercelPool {
   if (!_pool) _pool = createPool();
   return _pool;
 }
@@ -39,6 +39,18 @@ async function init() {
   // Add ledger_id column if it doesn't exist (for existing deployments)
   try {
     await pool.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS ledger_id TEXT`);
+  } catch {
+    // ignore if column already exists
+  }
+  // Receipt attached to the transaction (photo received over WhatsApp)
+  try {
+    await pool.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS receipt_url TEXT`);
+  } catch {
+    // ignore if column already exists
+  }
+  // Payment method — the WhatsApp agent captures it when the user mentions it
+  try {
+    await pool.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS payment_method TEXT`);
   } catch {
     // ignore if column already exists
   }
@@ -152,6 +164,8 @@ function rowToTransaction(row: Record<string, unknown>): Transaction {
     date: row.date as string,
     createdAt: row.created_at as string,
     source: ((row.source as string) || 'manual') as Transaction['source'],
+    receipt_url: (row.receipt_url as string) ?? null,
+    payment_method: (row.payment_method as string) ?? null,
   };
 }
 
@@ -191,9 +205,9 @@ export async function createTransaction(
   const id = crypto.randomUUID();
   const createdAt = new Date().toISOString();
   await getPool().query(
-    `INSERT INTO transactions (id, ledger_id, type, scope, amount, category, description, date, created_at, source)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-    [id, data.ledger_id ?? null, data.type, data.scope, data.amount, data.category, data.description, data.date, createdAt, data.source ?? 'manual'],
+    `INSERT INTO transactions (id, ledger_id, type, scope, amount, category, description, date, created_at, source, receipt_url, payment_method)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+    [id, data.ledger_id ?? null, data.type, data.scope, data.amount, data.category, data.description, data.date, createdAt, data.source ?? 'manual', data.receipt_url ?? null, data.payment_method ?? null],
   );
   return (await getTransactionById(id))!;
 }
@@ -216,6 +230,8 @@ export async function updateTransaction(
   if (data.description !== undefined) { updates.push(`description = $${params.length + 1}`); params.push(data.description); }
   if (data.date !== undefined) { updates.push(`date = $${params.length + 1}`); params.push(data.date); }
   if (data.source !== undefined) { updates.push(`source = $${params.length + 1}`); params.push(data.source); }
+  if (data.receipt_url !== undefined) { updates.push(`receipt_url = $${params.length + 1}`); params.push(data.receipt_url); }
+  if (data.payment_method !== undefined) { updates.push(`payment_method = $${params.length + 1}`); params.push(data.payment_method); }
 
   if (updates.length === 0) return getTransactionById(id);
 

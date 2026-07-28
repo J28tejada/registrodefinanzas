@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail } from 'lucide-react';
+import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail, MessageCircle } from 'lucide-react';
 import { useLedger } from './LedgerContext';
 import LedgerSelector from './LedgerSelector';
 import { LEDGER_COLOR_MAP } from '@/lib/types';
@@ -11,6 +11,7 @@ const desktopNavItems = [
   { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/transactions', icon: Receipt, label: 'Transacciones' },
   { href: '/email', icon: Mail, label: 'Correo' },
+  { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
   { href: '/chat', icon: Bot, label: 'Chat IA' },
 ];
 
@@ -120,6 +121,18 @@ export default function Navigation() {
         >
           <Plus className="w-4 h-4" />
         </button>
+        {/* La barra inferior ya está llena: WhatsApp vive acá en móvil */}
+        <Link
+          href="/whatsapp"
+          title="WhatsApp"
+          className={`p-2 rounded-lg transition-colors flex-shrink-0 ${
+            pathname === '/whatsapp'
+              ? 'bg-emerald-500/10 text-emerald-400'
+              : 'bg-slate-800 text-slate-400 hover:bg-emerald-600 hover:text-white'
+          }`}
+        >
+          <MessageCircle className="w-4 h-4" />
+        </Link>
       </header>
 
       {/* Mobile bottom nav — 5 slots with center FAB */}

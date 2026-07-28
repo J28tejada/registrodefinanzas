@@ -2,12 +2,14 @@
 
 import { Transaction, formatCurrency, formatDate, LEDGER_COLOR_MAP } from '@/lib/types';
 import { useLedger } from './LedgerContext';
-import { Pencil, Trash2, Mic, Bot, Pencil as PencilIcon } from 'lucide-react';
+import { Pencil, Trash2, Mic, Bot, Pencil as PencilIcon, MessageCircle, Receipt } from 'lucide-react';
 
+// Una trazabilidad que solo sirve consultando la base no le sirve al usuario (§5.5).
 const sourceBadge = {
-  voice: { icon: Mic, cls: 'text-slate-500' },
-  ai: { icon: Bot, cls: 'text-slate-500' },
-  manual: { icon: PencilIcon, cls: 'text-slate-600' },
+  voice: { icon: Mic, cls: 'text-slate-500', label: 'por voz' },
+  ai: { icon: Bot, cls: 'text-slate-500', label: 'con IA' },
+  manual: { icon: PencilIcon, cls: 'text-slate-600', label: 'a mano' },
+  whatsapp: { icon: MessageCircle, cls: 'text-emerald-500', label: 'vía WhatsApp' },
 };
 
 interface TransactionListProps {
@@ -72,14 +74,34 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
+              <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 flex-wrap">
                 <span>{tx.category}</span>
                 <span>·</span>
                 <span>{formatDate(tx.date)}</span>
+                {tx.payment_method && (
+                  <>
+                    <span>·</span>
+                    <span>{tx.payment_method}</span>
+                  </>
+                )}
                 <span>·</span>
-                <span className={`flex items-center gap-0.5 ${Source.cls}`}>
+                <span className={`flex items-center gap-1 ${Source.cls}`} title={Source.label}>
                   <SourceIcon className="w-3 h-3" />
+                  {tx.source === 'whatsapp' && <span>vía WhatsApp</span>}
                 </span>
+                {tx.receipt_url && (
+                  <>
+                    <span>·</span>
+                    <a
+                      href={tx.receipt_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-slate-400 hover:text-emerald-400 transition-colors"
+                    >
+                      <Receipt className="w-3 h-3" /> recibo
+                    </a>
+                  </>
+                )}
               </div>
             </div>
 
