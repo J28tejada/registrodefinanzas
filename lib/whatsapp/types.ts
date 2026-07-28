@@ -1,4 +1,6 @@
-import { TransactionType } from '@/lib/types';
+import { Ledger, TransactionScope, TransactionType, UserSettings } from '@/lib/types';
+import { Formatters } from '@/lib/format';
+import { Db } from '@/lib/db';
 
 /** Un movimiento propuesto por el agente, todavía sin escribir. */
 export interface MovimientoPropuesto {
@@ -14,10 +16,10 @@ export interface MovimientoPropuesto {
   cantidad: number;
   /**
    * null = falta preguntarle al usuario si van juntas o separadas.
-   * Nunca lo decide el modelo (ver §5.4 de la guía).
+   * Nunca lo decide el modelo.
    */
   agrupar: boolean | null;
-  /** Comprobante adjunto, si el movimiento nació de una foto. */
+  /** Ruta del comprobante en el storage, si el movimiento nació de una foto. */
   receipt_url: string | null;
 }
 
@@ -29,6 +31,7 @@ export interface PendingPayload {
 
 export interface PendingAction {
   id: string;
+  user_id: string;
   phone: string;
   kind: PendingKind;
   payload: PendingPayload;
@@ -40,19 +43,10 @@ export interface PendingAction {
 
 export interface WhatsappNumber {
   id: string;
+  user_id: string;
   phone: string;
   ledger_id: string | null;
-  label: string;
   active: boolean;
-  created_at: string;
-}
-
-export interface WhatsappLinkCode {
-  id: string;
-  code: string;
-  ledger_id: string | null;
-  expires_at: string;
-  used_at: string | null;
   created_at: string;
 }
 
@@ -62,6 +56,19 @@ export interface WhatsappMessage {
   direction: 'in' | 'out';
   body: string;
   created_at: string;
+}
+
+/**
+ * Todo lo que hace falta para atender un mensaje: quién es, con qué moneda y
+ * zona horaria trabaja, y en qué cuenta se anota.
+ */
+export interface Contexto {
+  db: Db;
+  numero: WhatsappNumber;
+  settings: UserSettings;
+  fmt: Formatters;
+  ledger: Ledger | null;
+  scope: TransactionScope;
 }
 
 export function tipoToTransactionType(tipo: MovimientoPropuesto['tipo']): TransactionType {

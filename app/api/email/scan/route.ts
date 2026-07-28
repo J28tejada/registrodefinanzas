@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getEmailConnection } from '@/lib/db';
+import { conSesion } from '@/lib/supabase/session';
 import { fetchBankEmails } from '@/lib/gmail';
 import { EmailTransaction } from '@/lib/types';
+
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY ?? '');
 
@@ -46,34 +50,36 @@ Si el correo NO es una transacción financiera, devuelve: {"isTransaction": fals
 }
 
 export async function GET() {
-  try {
-    const connection = await getEmailConnection();
-    if (!connection) {
-      return NextResponse.json({ error: 'No hay cuenta de correo conectada' }, { status: 401 });
+  return conSesion(async db => {
+    try {
+      const connection = await getEmailConnection(db);
+      if (!connection) {
+        return NextResponse.json({ error: 'No hay cuenta de correo conectada' }, { status: 401 });
+      }
+
+      const emails = await fetchBankEmails(connection.access_token, connection.refresh_token);
+
+      const results: EmailTransaction[] = [];
+
+      for (const email of emails) {
+        const parsed = await parseEmailWithAI(email.subject, email.from, email.body);
+
+        results.push({
+          gmail_message_id: email.id,
+          subject: email.subject,
+          from_address: email.from,
+          sent_date: email.date,
+          ...parsed,
+        });
+      }
+
+      const transactions = results.filter(r => r.isTransaction && (r.confidence ?? 0) > 0.4);
+
+      return NextResponse.json({ transactions, total_scanned: emails.length });
+    } catch (err) {
+      console.error('Email scan error:', err);
+      const message = err instanceof Error ? err.message : 'Error al escanear correos';
+      return NextResponse.json({ error: message }, { status: 500 });
     }
-
-    const emails = await fetchBankEmails(connection.access_token, connection.refresh_token);
-
-    const results: EmailTransaction[] = [];
-
-    for (const email of emails) {
-      const parsed = await parseEmailWithAI(email.subject, email.from, email.body);
-
-      results.push({
-        gmail_message_id: email.id,
-        subject: email.subject,
-        from_address: email.from,
-        sent_date: email.date,
-        ...parsed,
-      });
-    }
-
-    const transactions = results.filter(r => r.isTransaction && (r.confidence ?? 0) > 0.4);
-
-    return NextResponse.json({ transactions, total_scanned: emails.length });
-  } catch (err) {
-    console.error('Email scan error:', err);
-    const message = err instanceof Error ? err.message : 'Error al escanear correos';
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+  });
 }

@@ -1,7 +1,8 @@
 'use client';
 
-import { Transaction, formatCurrency, formatDate, LEDGER_COLOR_MAP } from '@/lib/types';
+import { Transaction, LEDGER_COLOR_MAP } from '@/lib/types';
 import { useLedger } from './LedgerContext';
+import { useFormatters } from './SettingsContext';
 import { Pencil, Trash2, Mic, Bot, Pencil as PencilIcon, MessageCircle, Receipt } from 'lucide-react';
 
 // Una trazabilidad que solo sirve consultando la base no le sirve al usuario (§5.5).
@@ -21,6 +22,7 @@ interface TransactionListProps {
 
 export default function TransactionList({ transactions, onEdit, onDelete, loading }: TransactionListProps) {
   const { currentLedger, ledgers } = useLedger();
+  const fmt = useFormatters();
 
   if (loading) {
     return (
@@ -77,7 +79,7 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
               <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 flex-wrap">
                 <span>{tx.category}</span>
                 <span>·</span>
-                <span>{formatDate(tx.date)}</span>
+                <span>{fmt.date(tx.date)}</span>
                 {tx.payment_method && (
                   <>
                     <span>·</span>
@@ -93,7 +95,7 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
                   <>
                     <span>·</span>
                     <a
-                      href={tx.receipt_url}
+                      href={`/api/receipts?path=${encodeURIComponent(tx.receipt_url)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-slate-400 hover:text-emerald-400 transition-colors"
@@ -108,7 +110,7 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
             {/* Amount */}
             <div className="text-right flex-shrink-0">
               <p className={`font-semibold ${tx.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {tx.type === 'income' ? '+' : '−'}{formatCurrency(tx.amount)}
+                {tx.type === 'income' ? '+' : '−'}{fmt.money(tx.amount)}
               </p>
             </div>
 

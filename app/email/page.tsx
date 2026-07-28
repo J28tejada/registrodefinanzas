@@ -7,7 +7,8 @@ import {
   Unlink, Download, ChevronDown, ExternalLink,
 } from 'lucide-react';
 import { useLedger } from '@/components/LedgerContext';
-import { EmailTransaction, LEDGER_COLOR_MAP, formatCurrency, todayISO } from '@/lib/types';
+import { useFormatters } from '@/components/SettingsContext';
+import { EmailTransaction, LEDGER_COLOR_MAP } from '@/lib/types';
 
 interface ImportRow extends EmailTransaction {
   selected: boolean;
@@ -26,6 +27,7 @@ export default function EmailPage() {
 function EmailPageInner() {
   const searchParams = useSearchParams();
   const { ledgers, refreshLedgers } = useLedger();
+  const fmt = useFormatters();
 
   const [connected, setConnected] = useState(false);
   const [connectedEmail, setConnectedEmail] = useState('');
@@ -104,7 +106,7 @@ function EmailPageInner() {
           ...t,
           selected: true,
           ledger_id: defaultLedgerId,
-          date_override: todayISO(),
+          date_override: fmt.today(),
         })),
       );
     } catch (err) {
@@ -354,7 +356,7 @@ function EmailPageInner() {
                               <p className="text-xs text-slate-500 truncate mt-0.5">{row.subject}</p>
                             </div>
                             <p className={`text-sm font-bold flex-shrink-0 ${row.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                              {row.type === 'income' ? '+' : '−'}{formatCurrency(row.amount ?? 0)}
+                              {row.type === 'income' ? '+' : '−'}{fmt.money(row.amount ?? 0)}
                             </p>
                           </div>
 

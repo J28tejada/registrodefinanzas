@@ -2,33 +2,31 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { TrendingUp, TrendingDown, Wallet, Plus, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Plus, RefreshCw, ChevronLeft, ChevronRight, Target } from 'lucide-react';
 import SummaryCard from '@/components/SummaryCard';
 import TransactionList from '@/components/TransactionList';
 import AddTransactionModal from '@/components/AddTransactionModal';
+import BudgetBar from '@/components/BudgetBar';
 import { useLedger } from '@/components/LedgerContext';
-import { Summary, Transaction, formatCurrency, LEDGER_COLOR_MAP } from '@/lib/types';
-
-function getMonthBounds(year: number, month: number) {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const lastDay = new Date(year, month + 1, 0).getDate();
-  return {
-    start: `${year}-${pad(month + 1)}-01`,
-    end: `${year}-${pad(month + 1)}-${pad(lastDay)}`,
-    label: new Date(year, month, 1).toLocaleString('es-MX', { month: 'long', year: 'numeric' }),
-  };
-}
+import { useFormatters } from '@/components/SettingsContext';
+import { BudgetProgress, Summary, Transaction, LEDGER_COLOR_MAP } from '@/lib/types';
+import { limitesDelMes } from '@/lib/format';
 
 export default function DashboardPage() {
   const { currentLedger, refreshLedgers, transactionVersion } = useLedger();
+  const fmt = useFormatters();
 
-  const now = new Date();
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  // "Hoy" sale de la zona horaria del usuario, no de la del navegador.
+  const hoy = fmt.today();
+  const [anioActual, mesActual] = hoy.split('-').map(Number);
+  const [selectedYear, setSelectedYear] = useState(anioActual);
+  const [selectedMonth, setSelectedMonth] = useState(mesActual - 1);
 
-  const { start: monthStart, end: monthEnd, label: monthName } = getMonthBounds(selectedYear, selectedMonth);
+  const mesISO = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-01`;
+  const { start: monthStart, end: monthEnd } = limitesDelMes(mesISO);
+  const monthName = fmt.monthLabel(mesISO);
 
-  const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
+  const isCurrentMonth = selectedYear === anioActual && selectedMonth === mesActual - 1;
 
   const goToPrev = () => {
     if (selectedMonth === 0) { setSelectedYear(y => y - 1); setSelectedMonth(11); }
@@ -40,8 +38,14 @@ export default function DashboardPage() {
     else setSelectedMonth(m => m + 1);
   };
 
+  const irAlMesActual = () => {
+    setSelectedYear(anioActual);
+    setSelectedMonth(mesActual - 1);
+  };
+
   const [summary, setSummary] = useState<Summary | null>(null);
   const [recent, setRecent] = useState<Transaction[]>([]);
+  const [budgets, setBudgets] = useState<BudgetProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -55,19 +59,22 @@ export default function DashboardPage() {
       const params = new URLSearchParams({ startDate: monthStart, endDate: monthEnd });
       if (currentLedger) params.set('ledger_id', currentLedger.id);
 
-      const [sumRes, txRes] = await Promise.all([
+      const [sumRes, txRes, budRes] = await Promise.all([
         fetch(`/api/summary?${params}`),
         fetch(`/api/transactions?${params}`),
+        fetch(`/api/budgets?month=${monthStart.slice(0, 7)}`),
       ]);
-      const [sumData, txData] = await Promise.all([sumRes.json(), txRes.json()]);
+      const [sumData, txData, budData] = await Promise.all([sumRes.json(), txRes.json(), budRes.json()]);
       if (!sumRes.ok || sumData.error) {
-        setError('No se pudo conectar a la base de datos. Verifica que Vercel Postgres esté configurado.');
+        // El motivo real: un "no se pudo conectar" genérico no dice qué arreglar.
+        setError(sumData.error ?? 'No se pudieron cargar los datos.');
       } else {
         setSummary(sumData);
         setRecent(Array.isArray(txData) ? txData.slice(0, 10) : []);
+        setBudgets(budRes.ok && Array.isArray(budData.budgets) ? budData.budgets : []);
       }
-    } catch {
-      setError('Error al cargar los datos. Intenta de nuevo.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar los datos.');
     } finally {
       setLoading(false);
     }
@@ -122,7 +129,7 @@ export default function DashboardPage() {
               </button>
               {!isCurrentMonth && (
                 <button
-                  onClick={() => { setSelectedYear(now.getFullYear()); setSelectedMonth(now.getMonth()); }}
+                  onClick={irAlMesActual}
                   className="text-xs text-emerald-400 hover:text-emerald-300 ml-1 transition-colors"
                 >
                   Hoy
@@ -192,9 +199,29 @@ export default function DashboardPage() {
               </div>
             </div>
             <p className={`text-2xl font-bold ${summary.totalBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {formatCurrency(summary.totalBalance)}
+              {fmt.money(summary.totalBalance)}
             </p>
           </div>
+
+          {/* Presupuestos del mes */}
+          {budgets.length > 0 && (
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                  <Target className="w-4 h-4 text-emerald-400" /> Presupuestos del mes
+                </h3>
+                <Link href="/budgets" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors">
+                  Ver todos
+                </Link>
+              </div>
+              <div className="space-y-3">
+                {[...budgets]
+                  .sort((a, b) => b.percent - a.percent)
+                  .slice(0, 4)
+                  .map(b => <BudgetBar key={b.id} budget={b} compact />)}
+              </div>
+            </div>
+          )}
 
           {/* Category breakdown */}
           {summary.byCategory.length > 0 && (
@@ -222,7 +249,7 @@ export default function DashboardPage() {
                           <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cat.type === 'income' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
                           <span className="text-slate-300 group-hover:text-white transition-colors">{cat.category}</span>
                         </div>
-                        <span className="text-slate-400 group-hover:text-slate-200 transition-colors">{formatCurrency(cat.total)}</span>
+                        <span className="text-slate-400 group-hover:text-slate-200 transition-colors">{fmt.money(cat.total)}</span>
                       </div>
                       <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
                         <div

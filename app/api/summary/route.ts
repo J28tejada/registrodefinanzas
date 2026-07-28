@@ -1,16 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSummary } from '@/lib/db';
+import { conSesion } from '@/lib/supabase/session';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = req.nextUrl;
-    const ledger_id = searchParams.get('ledger_id') ?? undefined;
-    const startDate = searchParams.get('startDate') ?? undefined;
-    const endDate = searchParams.get('endDate') ?? undefined;
-    const summary = await getSummary(ledger_id, startDate, endDate);
-    return NextResponse.json(summary);
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: 'Error al obtener resumen' }, { status: 500 });
-  }
+  return conSesion(async db => {
+    try {
+      const { searchParams } = req.nextUrl;
+      const summary = await getSummary(
+        db,
+        searchParams.get('ledger_id') ?? undefined,
+        searchParams.get('startDate') ?? undefined,
+        searchParams.get('endDate') ?? undefined,
+      );
+      return NextResponse.json(summary);
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : String(err) },
+        { status: 500 },
+      );
+    }
+  });
 }

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { todayISO } from '@/lib/types';
+import { getSettings } from '@/lib/db';
+import { requireDb } from '@/lib/supabase/session';
+import { hoyEnZona } from '@/lib/format';
+
+export const dynamic = 'force-dynamic';
 
 const SYSTEM_PROMPT = `Eres un asistente de finanzas personales. El usuario ingresó una descripción de una transacción (puede ser texto escrito o transcripción de voz en español).
 
@@ -35,6 +39,13 @@ Reglas:
 
 export async function POST(req: NextRequest) {
   try {
+    let db;
+    try {
+      db = await requireDb();
+    } catch {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+    }
+
     const { text } = await req.json();
     if (!text?.trim()) {
       return NextResponse.json({ error: 'Texto requerido' }, { status: 400 });
@@ -44,13 +55,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'API key no configurada' }, { status: 500 });
     }
 
+    // "Hoy" es el de la zona del usuario, no el del servidor.
+    const settings = await getSettings(db);
+
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-3.1-flash-lite',
+      model: process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite',
       systemInstruction: SYSTEM_PROMPT,
     });
 
-    const result = await model.generateContent(`Fecha actual: ${todayISO()}\n\nTexto del usuario: "${text}"`);
+    const result = await model.generateContent(`Fecha actual: ${hoyEnZona(settings.timezone)}\n\nTexto del usuario: "${text}"`);
     const responseText = result.response.text().trim()
       .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
 

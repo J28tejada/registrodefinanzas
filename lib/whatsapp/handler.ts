@@ -1,8 +1,8 @@
 /**
- * El camino que recorre todo mensaje entrante, en este orden (§2):
+ * El camino que recorre todo mensaje entrante, en este orden:
  *
- *   1. ¿código de vinculación?      → vincular teléfono ↔ app
- *   2. ¿número vinculado?           → si no, invitar a vincular
+ *   1. ¿código de vinculación?      → vincular teléfono ↔ usuario
+ *   2. ¿número autorizado?          → si no, invitar a vincular
  *   3. ¿responde a algo pendiente?  → APLICAR (determinista, sin modelo)
  *   4. correr el agente
  *
@@ -10,10 +10,12 @@
  * repetido del flujo y no debe gastar una llamada ni depender de que el modelo
  * recuerde qué propuso.
  */
-import { getLedgerById } from '@/lib/db';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { getLedgerById, getSettings } from '@/lib/db';
 import { TransactionScope } from '@/lib/types';
+import { makeFormatters } from '@/lib/format';
 import { MODEL } from './config';
-import { consumeLinkCode, getNumberByPhone, pendienteVigente, actualizarPendiente } from './db';
+import { actualizarPendiente, consumeLinkCode, getNumberByPhone, pendienteVigente } from './db';
 import { CuotaAgotadaError, ModeloNoDisponibleError, correrAgente } from './agent';
 import {
   aplicar,
@@ -23,11 +25,13 @@ import {
   necesitaAgrupacion,
   resumirMovimientos,
 } from './pending';
+import { Contexto, WhatsappNumber } from './types';
 
 export interface Entrada {
+  supabase: SupabaseClient;
   phone: string;
   texto: string;
-  /** "🎤 Escuché: ..." o "🧾 Leí: ...", para que revise antes de confirmar (§5.7). */
+  /** "🎤 Escuché: ..." o "🧾 Leí: ...", para que revise antes de confirmar. */
   eco: string | null;
   receiptUrl: string | null;
 }
@@ -45,51 +49,62 @@ function conEco(eco: string | null, cuerpo: string): string {
   return eco ? `${eco}\n\n${cuerpo}` : cuerpo;
 }
 
+/** Arma todo lo que hace falta para atender a este número. */
+export async function construirContexto(
+  supabase: SupabaseClient,
+  numero: WhatsappNumber,
+): Promise<Contexto> {
+  const db = { supabase, userId: numero.user_id };
+  const settings = await getSettings(db);
+  const ledger = numero.ledger_id ? await getLedgerById(db, numero.ledger_id) : null;
+  const scope: TransactionScope = ledger?.type ?? 'personal';
+  return { db, numero, settings, fmt: makeFormatters(settings), ledger, scope };
+}
+
 export async function handleInboundMessage(entrada: Entrada): Promise<string> {
-  const { phone, texto, eco, receiptUrl } = entrada;
+  const { supabase, phone, texto, eco, receiptUrl } = entrada;
 
   // 1. Código de vinculación
-  const numero = await getNumberByPhone(phone);
+  const numero = await getNumberByPhone(supabase, phone);
   if (!numero) {
     const codigo = posibleCodigo(texto);
     if (codigo) {
-      const vinculado = await consumeLinkCode(codigo, phone);
+      const vinculado = await consumeLinkCode(supabase, codigo, phone);
       if (vinculado) {
-        const ledger = vinculado.ledger_id ? await getLedgerById(vinculado.ledger_id) : null;
-        return `Listo, quedaste vinculado ✅\nVoy a anotar en: ${ledger?.name ?? 'todas las cuentas'}.\nMandame algo como "gasté 800 en el súper" y te lo confirmo antes de guardarlo.`;
+        const ctx = await construirContexto(supabase, vinculado);
+        return `Listo, quedaste vinculado ✅\nVoy a anotar en: ${ctx.ledger?.name ?? 'todas las cuentas'}, en ${ctx.settings.currency}.\nMandame algo como "gasté 800 en el súper" y te lo confirmo antes de guardarlo.`;
       }
-      return `Ese código no sirve: o ya se usó o venció (duran 15 minutos). Generá uno nuevo en la app, en la sección WhatsApp.`;
+      return 'Ese código no sirve: o ya se usó o venció (duran 15 minutos). Generá uno nuevo en la app, en la sección WhatsApp.';
     }
   }
 
-  // 2. ¿Vinculado?
+  // 2. ¿Autorizado?
   if (!numero) {
-    return `Este número no está vinculado a la app, así que no puedo anotar nada todavía.\nAbrí la app → WhatsApp, generá el código de 6 letras y mandámelo por acá.`;
+    return 'Este número no está vinculado a ninguna cuenta, así que no puedo anotar nada.\nEntrá a la app → WhatsApp, generá el código de 6 letras y mandámelo por acá.';
   }
 
-  const ledger = numero.ledger_id ? await getLedgerById(numero.ledger_id) : null;
-  const scope: TransactionScope = ledger?.type ?? 'personal';
-  const nombreCuenta = ledger?.name ?? 'todas las cuentas';
+  const ctx = await construirContexto(supabase, numero);
 
   // 3. ¿Responde a algo pendiente?
-  const pendiente = await pendienteVigente(phone);
+  const pendiente = await pendienteVigente(supabase, phone);
   if (pendiente) {
     const movs = pendiente.payload.movimientos ?? [];
 
     if (necesitaAgrupacion(movs)) {
-      // La pregunta de agrupación hace de confirmación (§5.4).
+      // La pregunta de agrupación hace de confirmación.
       const agrupacion = claseAgrupacion(texto);
       if (agrupacion) {
         const resueltos = movs.map(m => (m.cantidad > 1 ? { ...m, agrupar: agrupacion === 'juntos' } : m));
         const actualizada = await actualizarPendiente(
+          supabase,
           pendiente.id,
           { movimientos: resueltos },
-          resumirMovimientos(resueltos),
+          resumirMovimientos(resueltos, ctx),
         );
-        return conEco(eco, await aplicar(actualizada, numero));
+        return conEco(eco, await aplicar(actualizada, ctx));
       }
       const clase = claseRespuesta(texto);
-      if (clase === 'no') return conEco(eco, await cancelar(pendiente));
+      if (clase === 'no') return conEco(eco, await cancelar(pendiente, ctx));
       if (clase === 'si') {
         // Un "sí" no resuelve la pregunta: hay que insistir, no adivinar.
         return conEco(eco, `${pendiente.summary}\nDecime "separados" o "juntos" y lo anoto.`);
@@ -97,15 +112,15 @@ export async function handleInboundMessage(entrada: Entrada): Promise<string> {
       // null → sigue al modelo: puede ser una corrección.
     } else {
       const clase = claseRespuesta(texto);
-      if (clase === 'si') return conEco(eco, await aplicar(pendiente, numero));
-      if (clase === 'no') return conEco(eco, await cancelar(pendiente));
+      if (clase === 'si') return conEco(eco, await aplicar(pendiente, ctx));
+      if (clase === 'no') return conEco(eco, await cancelar(pendiente, ctx));
       // null → sigue al modelo: "sí pero eran 300" es una corrección.
     }
   }
 
   // 4. El agente
   try {
-    const respuesta = await correrAgente(numero, scope, nombreCuenta, texto, receiptUrl);
+    const respuesta = await correrAgente(ctx, texto, receiptUrl);
     return conEco(eco, respuesta.texto);
   } catch (err) {
     return conEco(eco, mensajeDeError(err, pendiente !== null));
@@ -113,8 +128,8 @@ export async function handleInboundMessage(entrada: Entrada): Promise<string> {
 }
 
 /**
- * §5.6: todo mensaje dice lo que el sistema sabe. "Uy, tuve un problema" es
- * carísimo de diagnosticar para alguien que no puede abrir los logs.
+ * Todo mensaje dice lo que el sistema sabe. "Uy, tuve un problema" es carísimo
+ * de diagnosticar para alguien que no puede abrir los logs.
  */
 function mensajeDeError(err: unknown, habiaPendiente: boolean): string {
   const colaPendiente = habiaPendiente

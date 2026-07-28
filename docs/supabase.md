@@ -1,0 +1,113 @@
+# Supabase: base de datos, login y storage
+
+La app corre sobre Supabase. Cada usuario tiene sus propias cuentas,
+movimientos y presupuestos, y **RLS lo hace cumplir en la base**, no en el
+código: aunque una consulta se olvide de filtrar, Postgres no devuelve filas
+ajenas.
+
+---
+
+## Puesta en marcha
+
+### 1. Crear el proyecto
+
+En [supabase.com](https://supabase.com) → New project. Anotá la contraseña de
+la base: no se vuelve a mostrar.
+
+### 2. Correr la migración
+
+Database → SQL Editor → New query, pegá
+[`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql)
+entero y ejecutalo. Eso crea:
+
+| | |
+|---|---|
+| `user_settings` | moneda, formato regional y zona horaria de cada usuario |
+| `ledgers`, `transactions` | cuentas y movimientos |
+| `budgets` | topes mensuales por categoría |
+| `email_connections` | tokens de Gmail |
+| `whatsapp_*`, `pending_actions` | el agente de WhatsApp |
+| funciones `summary_by_category`, `ledger_stats`, `spent_by_category` | los `GROUP BY`, que PostgREST no sabe hacer |
+| bucket `receipts` | comprobantes, privado |
+| políticas RLS | una por tabla: `user_id = auth.uid()` |
+
+Es idempotente: se puede volver a correr sin romper nada.
+
+### 3. Variables de entorno
+
+Project Settings → API:
+
+```
+NEXT_PUBLIC_SUPABASE_URL         https://TU_PROYECTO.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY    la clave "anon public"
+SUPABASE_SERVICE_ROLE_KEY        la clave "service_role"
+```
+
+`SUPABASE_SERVICE_ROLE_KEY` **salta RLS**. La usa únicamente el webhook de
+WhatsApp, que llega sin sesión de navegador y resuelve al usuario por el
+teléfono vinculado. Nunca la pongas en una variable `NEXT_PUBLIC_`: viajaría al
+navegador y cualquiera podría leer y escribir los datos de todos.
+
+### 4. Correo de confirmación
+
+Authentication → Providers → Email viene activado por defecto y pide confirmar
+la dirección. Agregá tu dominio en Authentication → URL Configuration →
+Redirect URLs:
+
+```
+https://tu-app.vercel.app/auth/callback
+http://localhost:3000/auth/callback
+```
+
+Sin eso, el enlace del correo rebota. Para probar rápido podés desactivar
+"Confirm email" en Providers → Email.
+
+---
+
+## Cómo se conecta el código
+
+| Archivo | Cliente | Para qué |
+|---|---|---|
+| `lib/supabase/browser.ts` | anon, navegador | login y logout |
+| `lib/supabase/server.ts` | anon + cookies | rutas y componentes de servidor; pasa por RLS |
+| `lib/supabase/admin.ts` | service role | webhook de WhatsApp y cron; salta RLS |
+| `lib/supabase/session.ts` | — | `requireDb()` y `conSesion()`: no hay forma de consultar sin decir de quién son los datos |
+| `middleware.ts` | — | refresca la sesión y manda a `/login` lo que no tiene |
+
+Todas las funciones de `lib/db.ts` reciben un `Db = { supabase, userId }` y
+filtran por `user_id` **siempre**, incluso donde RLS ya lo haría. Es redundante
+con la sesión del usuario y es lo único que separa a un usuario de otro en el
+camino de la service role.
+
+---
+
+## Migrar datos de la instalación anterior
+
+Si venías de la versión con Vercel Postgres, los datos no se mueven solos.
+Como no había usuarios, todo pertenece a la persona que usaba la app:
+
+1. Creá tu usuario en la app nueva (`/login` → crear cuenta) y anotá su id:
+   Authentication → Users, columna UID.
+2. Exportá las tablas viejas a CSV (`ledgers`, `transactions`).
+3. Importalas en Supabase (Table Editor → Import data from CSV) a tablas
+   temporales, y de ahí insertá con tu `user_id`:
+
+```sql
+insert into public.ledgers (id, user_id, name, color, type, description, created_at)
+select id::uuid, 'TU-USER-ID'::uuid, name, color, type, description, created_at::timestamptz
+  from ledgers_import;
+
+insert into public.transactions
+       (id, user_id, ledger_id, type, scope, amount, category, description, date, source, created_at)
+select id::uuid, 'TU-USER-ID'::uuid, nullif(ledger_id,'')::uuid, type, scope,
+       amount::numeric, category, description, date::date,
+       coalesce(nullif(source,''), 'manual'), created_at::timestamptz
+  from transactions_import;
+```
+
+Ojo con dos cosas: los ids viejos eran texto y las columnas nuevas son `uuid`
+(si no eran UUID válidos, dejá que la base genere ids nuevos y no copies la
+columna `id`); y `date` pasó de texto a `date`.
+
+Hacelo antes de que la gente empiece a cargar datos nuevos: no hay
+deduplicación.

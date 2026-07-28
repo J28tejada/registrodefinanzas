@@ -1,11 +1,12 @@
 /**
- * Audio e imagen se convierten a texto y siguen el camino normal (§5.8):
- * no hay flujo paralelo, así heredan confirmación, agrupado y trazabilidad.
+ * Audio e imagen se convierten a texto y siguen el camino normal: no hay flujo
+ * paralelo, así heredan confirmación, agrupado y trazabilidad.
  */
+import { SupabaseClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { MODEL, geminiApiKey } from './config';
 import { getBase64FromMediaMessage } from './evolution';
-import { guardarMedia } from './db';
+import { guardarRecibo } from './db';
 
 /** WhatsApp manda "audio/ogg; codecs=opus"; Gemini quiere el tipo pelado. */
 function mimeLimpio(mime: string): string {
@@ -31,13 +32,13 @@ Devolvé solo la transcripción.`;
 
 const PROMPT_IMAGEN = `Es la foto de un recibo, factura o comprobante. Describí en UNA línea lo que dice,
 incluyendo comercio, monto total y fecha si se ven. Copiá los números tal cual aparecen, no los redondees
-ni los conviertas. Si no se distingue un dato, no lo inventes: omitilo.
+ni los conviertas, y respetá la moneda que figure. Si no se distingue un dato, no lo inventes: omitilo.
 Devolvé solo esa línea, sin comentarios.`;
 
 export interface MedioLeido {
   /** El texto que entra al flujo normal como si lo hubiera escrito el usuario. */
   texto: string;
-  /** Lo que mostramos para que detecte una lectura errada ANTES de confirmar (§5.7). */
+  /** Lo que mostramos para que detecte una lectura errada ANTES de confirmar. */
   eco: string;
   /** Ruta del comprobante guardado, si era una imagen. */
   receiptUrl: string | null;
@@ -47,24 +48,25 @@ export async function transcribirAudio(mensajeCrudo: unknown): Promise<MedioLeid
   const { base64, mimetype } = await getBase64FromMediaMessage(mensajeCrudo);
   const texto = await generar(mimetype, base64, PROMPT_AUDIO);
   if (!texto) throw new Error('La transcripción vino vacía.');
-  return {
-    texto,
-    eco: `🎤 Escuché: "${texto}"`,
-    receiptUrl: null,
-  };
+  return { texto, eco: `🎤 Escuché: "${texto}"`, receiptUrl: null };
 }
 
 export async function leerImagen(
+  supabase: SupabaseClient,
+  userId: string,
   mensajeCrudo: unknown,
-  phone: string,
   caption: string,
 ): Promise<MedioLeido> {
   const { base64, mimetype } = await getBase64FromMediaMessage(mensajeCrudo);
 
   // Guardar ANTES de leer y aunque la lectura falle: un recibo que se lee y se
-  // descarta pierde justo la evidencia (§5.8).
-  const mediaId = await guardarMedia(phone, mimeLimpio(mimetype), base64);
-  const receiptUrl = `/api/whatsapp/media/${mediaId}`;
+  // descarta pierde justo la evidencia.
+  const receiptUrl = await guardarRecibo(
+    supabase,
+    userId,
+    mimeLimpio(mimetype),
+    new Uint8Array(Buffer.from(base64, 'base64')),
+  );
 
   let lectura: string;
   try {
@@ -75,9 +77,5 @@ export async function leerImagen(
   }
 
   const texto = caption.trim() ? `${caption.trim()}\n${lectura}` : lectura;
-  return {
-    texto,
-    eco: `🧾 Leí: "${lectura}"`,
-    receiptUrl,
-  };
+  return { texto, eco: `🧾 Leí: "${lectura}"`, receiptUrl };
 }

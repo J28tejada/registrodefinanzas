@@ -75,14 +75,15 @@ function TransactionsInner() {
       const res = await fetch(`/api/transactions?${params}`);
       const data = await res.json();
       if (!res.ok || data.error) {
-        setError('No se pudo conectar a la base de datos. Verifica que Vercel Postgres esté configurado.');
+        // El motivo real: un mensaje genérico no dice qué hay que arreglar.
+        setError(data.error ?? 'No se pudieron cargar las transacciones.');
         setTransactions([]);
       } else {
         setError(null);
         setTransactions(Array.isArray(data) ? data : []);
       }
-    } catch {
-      setError('Error al cargar los datos. Intenta de nuevo.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar los datos.');
       setTransactions([]);
     } finally {
       setLoading(false);

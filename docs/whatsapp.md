@@ -30,7 +30,7 @@ app/api/whatsapp/webhook/route.ts
    ▼
 lib/whatsapp/handler.ts
    │
-   ├─ 1. ¿código de vinculación?      → vincula teléfono ↔ app
+   ├─ 1. ¿código de vinculación?      → vincula teléfono ↔ usuario
    ├─ 2. ¿número autorizado?          → si no, invita a vincular
    ├─ 3. ¿responde a algo pendiente?  → APLICA (determinista, sin modelo)
    └─ 4. lib/whatsapp/agent.ts (Gemini + herramientas)
@@ -51,9 +51,14 @@ respuesta por Evolution
 | `app/whatsapp/page.tsx` | Vinculación y diagnóstico |
 
 Las tablas (`whatsapp_numbers`, `whatsapp_link_codes`, `whatsapp_messages`,
-`pending_actions`, `whatsapp_media`) se crean solas en el primer request, igual
-que el resto del esquema de la app. Las columnas nuevas de `transactions`
-(`receipt_url`, `payment_method`) se agregan con `ADD COLUMN IF NOT EXISTS`.
+`pending_actions`) y el bucket `receipts` salen de
+[`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql),
+junto con el resto del esquema. Ver [`docs/supabase.md`](supabase.md).
+
+**El teléfono identifica a la persona.** Un número pertenece a un solo usuario,
+y el webhook —que llega sin sesión de navegador— resuelve de quién son las
+finanzas a partir de ahí. Por eso entra con la service role y filtra por
+`user_id` a mano en cada consulta.
 
 ---
 
@@ -82,21 +87,24 @@ La URL que imprime el túnel es `EVOLUTION_API_URL`.
 En Vercel → Settings → Environment Variables (o `.env.local` en desarrollo):
 
 ```
-EVOLUTION_API_URL         https://tu-tunel.example.com
-EVOLUTION_API_KEY         la que pusiste en AUTHENTICATION_API_KEY
-EVOLUTION_INSTANCE        finanzas
-EVOLUTION_WEBHOOK_TOKEN   una cadena larga al azar
-NEXT_PUBLIC_APP_URL       https://tu-app.vercel.app
-GOOGLE_AI_API_KEY         llave de Google AI Studio
-GEMINI_MODEL              gemini-3.1-flash-lite
-WHATSAPP_TIMEZONE         America/Mexico_City
+EVOLUTION_API_URL          https://tu-tunel.example.com
+EVOLUTION_API_KEY          la que pusiste en AUTHENTICATION_API_KEY
+EVOLUTION_INSTANCE         finanzas
+EVOLUTION_WEBHOOK_TOKEN    una cadena larga al azar
+NEXT_PUBLIC_APP_URL        https://tu-app.vercel.app
+GOOGLE_AI_API_KEY          llave de Google AI Studio
+GEMINI_MODEL               gemini-3.1-flash-lite
+SUPABASE_SERVICE_ROLE_KEY  la del proyecto de Supabase
 ```
 
 `EVOLUTION_WEBHOOK_TOKEN` no es opcional: sin él el webhook devuelve 503 y no
-procesa nada. Un webhook abierto es una vía para escribir en tus finanzas.
+procesa nada. Un webhook abierto es una vía para escribir en las finanzas de
+cualquiera.
 
-`WHATSAPP_TIMEZONE` tampoco es un detalle. Vercel corre en UTC: sin esa
-variable, un gasto de las nueve de la noche queda anotado al día siguiente.
+La moneda y la zona horaria **no** son variables de entorno: las elige cada
+usuario en Configuración, y el agente las lee de ahí. Eso importa más de lo que
+parece — el servidor corre en UTC, así que sin la zona del usuario un gasto de
+las nueve de la noche quedaría anotado al día siguiente.
 
 ### 3. Instancia y webhook
 
@@ -125,10 +133,16 @@ invitación a vincularse y nada más.
 
 ```
 vos:  gasté 800 en el súper
-bot:  ¿Anoto un gasto de $800.00 en Súper del sábado (Alimentación)?
+bot:  ¿Anoto un gasto de RD$800.00 en Súper del sábado (Alimentación)?
 vos:  sí
-bot:  Listo ✅ −$800.00 · Súper del sábado · Alimentación · 26/07
+bot:  Listo ✅ −RD$800.00 · Súper del sábado · Alimentación · 26/07
+      Guardado en: Personal
+
+      ⚠️ Alimentación: te pasaste del presupuesto por RD$1,200.00
+      (RD$9,200.00 de RD$8,000.00).
 ```
+
+El símbolo sale de la moneda que elegiste en Configuración.
 
 ---
 
@@ -206,6 +220,15 @@ Todo lo que escribe el agente lleva `source = 'whatsapp'`, y la lista de
 transacciones lo muestra como *vía WhatsApp*. Una trazabilidad que solo sirve
 consultando la base no le sirve al usuario.
 
+### El aviso de presupuesto no lo da el modelo
+
+Cuando un gasto confirmado deja una categoría al 80% o por encima del tope, el
+mensaje lo agrega `aplicar()`, no el modelo. Es una cuenta, no una
+interpretación: tiene que salir siempre que corresponda, y no puede depender de
+que el modelo se acuerde de mirar. Si el cálculo falla, el aviso se omite pero
+la confirmación del gasto sale igual: un problema mirando presupuestos no puede
+tapar que la plata sí quedó anotada.
+
 ---
 
 ## Trampas conocidas
@@ -255,8 +278,8 @@ minuto antes de salir a buscar el bug.
 
 Los esquemas de las herramientas viajan en **cada** llamada al modelo, así que
 cada herramienta suelta encarece todos los mensajes, se use o no. Por eso hay
-dos y no cinco: `registrar_movimiento` y `consultar` (parametrizada, en vez de
-una herramienta por tipo de consulta).
+tres y no ocho: `registrar_movimiento`, `consultar` (parametrizada, en vez de
+una herramienta por tipo de consulta) y `presupuesto`.
 
 `consultar` devuelve **texto compacto, no JSON**, porque el resultado vuelve al
 modelo y se paga como contexto en esa llamada y en el historial siguiente:
@@ -273,10 +296,17 @@ chicos no llega al mínimo cacheable, así que cada token de más se paga siempr
 
 ## Qué quedó afuera
 
-- **Presupuestos por categoría.** La guía los marca como el mayor diferencial en
-  finanzas personales, pero la app todavía no tiene el concepto. Cuando lo
-  tenga, es una tercera herramienta.
 - **Mensajes a terceros.** No hay: el agente le responde a quien le escribió y
   nada más. Eso evita el riesgo de que WhatsApp cierre el número por spam.
 - **`metodo_pago` desde la app.** El agente lo captura y se guarda en
   `transactions.payment_method`, pero el formulario manual todavía no lo pide.
+- **Una instancia de Evolution por usuario.** Hay una sola, compartida: todos
+  los usuarios le escriben al mismo número de WhatsApp y se distinguen por su
+  teléfono. Alcanza mientras el número sea tuyo; si querés que cada usuario
+  conecte el suyo, `EVOLUTION_INSTANCE` tiene que dejar de ser una variable de
+  entorno y pasar a ser una columna.
+
+  Consecuencia inmediata: **crear la instancia o cerrarle la sesión afecta a
+  todos**. Por eso `/api/whatsapp/instance` está detrás de `ADMIN_EMAILS`. Sin
+  esa variable queda abierto a cualquier usuario autenticado — cómodo mientras
+  seas el único, peligroso apenas haya una segunda cuenta. Definila.

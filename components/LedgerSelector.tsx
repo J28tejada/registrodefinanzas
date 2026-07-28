@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { X, Plus, Check, Pencil, Trash2, LayoutGrid } from 'lucide-react';
 import { useLedger } from './LedgerContext';
-import { Ledger, LedgerWithStats, LedgerColor, LEDGER_COLOR_MAP, formatCurrency } from '@/lib/types';
+import { useFormatters } from './SettingsContext';
+import { Ledger, LedgerWithStats, LedgerColor, LEDGER_COLOR_MAP } from '@/lib/types';
 
 const COLOR_OPTIONS: LedgerColor[] = ['green', 'blue', 'purple', 'orange', 'red', 'teal', 'indigo', 'pink'];
 
@@ -17,6 +18,7 @@ interface LedgerCardProps {
 
 function LedgerCard({ ledger, isActive, onSelect, onEdit, onDelete }: LedgerCardProps) {
   const color = LEDGER_COLOR_MAP[ledger.color];
+  const fmt = useFormatters();
   const [showActions, setShowActions] = useState(false);
 
   return (
@@ -63,7 +65,7 @@ function LedgerCard({ ledger, isActive, onSelect, onEdit, onDelete }: LedgerCard
       <div className="px-0.5">
         <p className="text-sm font-medium text-white truncate">{ledger.name}</p>
         <p className={`text-xs font-semibold ${ledger.balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-          {formatCurrency(ledger.balance)}
+          {fmt.money(ledger.balance)}
         </p>
         <p className="text-xs text-slate-500">{ledger.transactionCount} transacciones</p>
       </div>

@@ -25,6 +25,7 @@ interface Estado {
   webhookUrl: string | null;
   webhookConfigurado: boolean | null;
   modelo: string;
+  moneda: string;
   zonaHoraria: string;
   numeros: NumeroVinculado[];
 }
@@ -214,6 +215,8 @@ export default function WhatsappPage() {
           </dd>
           <dt className="text-slate-500">Modelo</dt>
           <dd className="text-slate-300 font-mono break-all">{estado?.modelo}</dd>
+          <dt className="text-slate-500">Moneda</dt>
+          <dd className="text-slate-300">{estado?.moneda}</dd>
           <dt className="text-slate-500">Zona horaria</dt>
           <dd className="text-slate-300">{estado?.zonaHoraria}</dd>
           {estado?.webhookUrl && (
@@ -315,8 +318,8 @@ export default function WhatsappPage() {
         <div>
           <p className="font-semibold text-white text-sm">2. Autorizá tu número</p>
           <p className="text-xs text-slate-400 mt-0.5">
-            Generá un código y mandáselo por WhatsApp al bot. Sin esto, cualquiera que le escriba
-            podría anotar movimientos en tus cuentas.
+            Generá un código y mandáselo por WhatsApp al bot. Así el número queda atado a
+            tu cuenta y nadie más puede anotar movimientos en tus finanzas.
           </p>
         </div>
 
@@ -415,7 +418,8 @@ export default function WhatsappPage() {
             'Escribí "gasté 800 en el súper" y te lo confirmo antes de guardarlo',
             'Mandá una nota de voz: te muestro lo que escuché para que lo revises',
             'Fotografiá el recibo: queda adjunto al movimiento',
-            'Preguntá "¿cuánto gasté este mes?" o "¿en qué se me va la plata?"',
+            'Preguntá "¿cuánto gasté este mes?" o "¿cómo voy con el presupuesto?"',
+            'Te aviso ahí mismo cuando un gasto te pase del tope de la categoría',
           ].map(t => (
             <li key={t} className="flex items-start gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />

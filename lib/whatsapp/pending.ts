@@ -1,14 +1,14 @@
 /**
- * El corazón determinista del flujo (§5.1 y §5.4).
+ * El corazón determinista del flujo.
  *
  * Nada de lo que hay acá pasa por el modelo: la respuesta del usuario se
  * clasifica en código y el payload guardado se aplica tal cual se propuso.
  */
-import { createTransaction, getLedgerById } from '@/lib/db';
-import { formatCurrency, TransactionScope } from '@/lib/types';
+import { createTransaction, getBudgetProgress } from '@/lib/db';
+import { limitesDelMes } from '@/lib/format';
 import { cerrarPendiente } from './db';
 import { fechaCorta } from './config';
-import { MovimientoPropuesto, PendingAction, WhatsappNumber, tipoToTransactionType } from './types';
+import { Contexto, MovimientoPropuesto, PendingAction, tipoToTransactionType } from './types';
 
 // ─── Clasificación de respuestas ──────────────────────────────────────────────
 
@@ -79,7 +79,7 @@ const TOKENS_JUNTOS = ['juntos', 'junto', 'juntas', 'junta', 'juntalos', 'juntal
 const TOKENS_SEPARADOS = ['separados', 'separado', 'separadas', 'separada', 'separalos', 'separalas', 'separa', 'aparte', 'individual', 'individuales', 'divididos', 'dividido', 'divide', 'dividelos', 'independientes'];
 
 /**
- * 'juntos' | 'separados' | null para la pregunta de agrupación (§5.4).
+ * 'juntos' | 'separados' | null para la pregunta de agrupación.
  * Acá sí alcanza con buscar la palabra clave: el universo de respuestas es
  * chico y los dos conjuntos no se pisan.
  */
@@ -105,19 +105,19 @@ export function necesitaAgrupacion(movs: MovimientoPropuesto[]): boolean {
   return movs.some(m => m.cantidad > 1 && m.agrupar === null);
 }
 
-function describirMovimiento(m: MovimientoPropuesto): string {
+function describirMovimiento(m: MovimientoPropuesto, ctx: Contexto): string {
   const clase = m.tipo === 'gasto' ? 'gasto' : 'ingreso';
-  const total = m.monto * m.cantidad;
+  const money = ctx.fmt.money;
   let linea: string;
 
   if (m.cantidad > 1 && m.agrupar === null) {
-    linea = `${m.cantidad} × ${m.descripcion} de ${formatCurrency(m.monto)} c/u`;
+    linea = `${m.cantidad} × ${m.descripcion} de ${money(m.monto)} c/u`;
   } else if (m.cantidad > 1 && m.agrupar) {
-    linea = `${clase} de ${formatCurrency(total)} en ${m.descripcion} (${m.cantidad} unidades)`;
+    linea = `${clase} de ${money(m.monto * m.cantidad)} en ${m.descripcion} (${m.cantidad} unidades)`;
   } else if (m.cantidad > 1) {
-    linea = `${m.cantidad} ${clase}s de ${formatCurrency(m.monto)} en ${m.descripcion}`;
+    linea = `${m.cantidad} ${clase}s de ${money(m.monto)} en ${m.descripcion}`;
   } else {
-    linea = `${clase} de ${formatCurrency(m.monto)} en ${m.descripcion}`;
+    linea = `${clase} de ${money(m.monto)} en ${m.descripcion}`;
   }
 
   const meta = [m.categoria, fechaCorta(m.fecha), m.metodo_pago].filter(Boolean).join(', ');
@@ -125,14 +125,14 @@ function describirMovimiento(m: MovimientoPropuesto): string {
 }
 
 /** El texto que ve el modelo y que se le transmite al usuario. */
-export function resumirMovimientos(movs: MovimientoPropuesto[]): string {
-  const lineas = movs.map(describirMovimiento);
+export function resumirMovimientos(movs: MovimientoPropuesto[], ctx: Contexto): string {
+  const lineas = movs.map(m => describirMovimiento(m, ctx));
   const base = lineas.length === 1 ? lineas[0] : lineas.map(l => `• ${l}`).join('\n');
 
   const pendienteAgrupar = movs.find(m => m.cantidad > 1 && m.agrupar === null);
   if (pendienteAgrupar) {
     const { cantidad, monto } = pendienteAgrupar;
-    return `${base}\n¿Lo anoto como ${cantidad} registros de ${formatCurrency(monto)} o uno solo de ${formatCurrency(monto * cantidad)}? (separados / juntos)`;
+    return `${base}\n¿Lo anoto como ${cantidad} registros de ${ctx.fmt.money(monto)} o uno solo de ${ctx.fmt.money(monto * cantidad)}? (separados / juntos)`;
   }
   return base;
 }
@@ -141,15 +141,13 @@ export function resumirMovimientos(movs: MovimientoPropuesto[]): string {
 
 /**
  * Escribe la pendiente exactamente como fue propuesta y devuelve un mensaje que
- * dice qué quedó guardado y dónde (§5.6: el mensaje lleva el dato que
- * desambigua).
+ * dice qué quedó guardado, dónde, y si algún presupuesto se pasó.
  */
-export async function aplicar(pendiente: PendingAction, numero: WhatsappNumber): Promise<string> {
-  const ledger = numero.ledger_id ? await getLedgerById(numero.ledger_id) : null;
-  const scope: TransactionScope = ledger?.type ?? 'personal';
+export async function aplicar(pendiente: PendingAction, ctx: Contexto): Promise<string> {
   const movs = pendiente.payload.movimientos;
-
   const lineas: string[] = [];
+  const categoriasTocadas = new Set<string>();
+
   for (const m of movs) {
     // Si quedó sin decidir, el default es agrupar: el monto total no cambia.
     const agrupar = m.cantidad > 1 ? m.agrupar !== false : true;
@@ -158,10 +156,10 @@ export async function aplicar(pendiente: PendingAction, numero: WhatsappNumber):
     const descripcion = agrupar && m.cantidad > 1 ? `${m.descripcion} (×${m.cantidad})` : m.descripcion;
 
     for (let i = 0; i < veces; i++) {
-      await createTransaction({
-        ledger_id: numero.ledger_id,
+      await createTransaction(ctx.db, {
+        ledger_id: ctx.numero.ledger_id,
         type: tipoToTransactionType(m.tipo),
-        scope,
+        scope: ctx.scope,
         amount: monto,
         category: m.categoria,
         description: descripcion,
@@ -172,18 +170,46 @@ export async function aplicar(pendiente: PendingAction, numero: WhatsappNumber):
       });
     }
 
+    if (m.tipo === 'gasto') categoriasTocadas.add(m.categoria);
+
     const signo = m.tipo === 'gasto' ? '−' : '+';
-    const detalle = `${signo}${formatCurrency(monto)} · ${descripcion} · ${m.categoria} · ${fechaCorta(m.fecha)}`;
+    const detalle = `${signo}${ctx.fmt.money(monto)} · ${descripcion} · ${m.categoria} · ${fechaCorta(m.fecha)}`;
     lineas.push(veces > 1 ? `${veces} × ${detalle}` : detalle);
   }
 
-  await cerrarPendiente(pendiente.id, 'confirmed');
+  await cerrarPendiente(ctx.db.supabase, pendiente.id, 'confirmed');
 
-  const destino = ledger ? ledger.name : 'sin cuenta asignada';
-  return `Listo ✅\n${lineas.map(l => `• ${l}`).join('\n')}\nGuardado en: ${destino}`;
+  const destino = ctx.ledger ? ctx.ledger.name : 'sin cuenta asignada';
+  const aviso = await avisoDePresupuesto(ctx, [...categoriasTocadas]);
+
+  return `Listo ✅\n${lineas.map(l => `• ${l}`).join('\n')}\nGuardado en: ${destino}${aviso}`;
 }
 
-export async function cancelar(pendiente: PendingAction): Promise<string> {
-  await cerrarPendiente(pendiente.id, 'cancelled');
+/**
+ * El aviso de presupuesto va acá y no en el modelo: es una cuenta, no una
+ * interpretación, y tiene que salir siempre que corresponda.
+ */
+async function avisoDePresupuesto(ctx: Contexto, categorias: string[]): Promise<string> {
+  if (categorias.length === 0) return '';
+
+  try {
+    const { start, end } = limitesDelMes(ctx.fmt.today());
+    const progreso = await getBudgetProgress(ctx.db, start, end);
+    const avisos = progreso
+      .filter(b => categorias.includes(b.category) && b.percent >= 80)
+      .map(b =>
+        b.percent >= 100
+          ? `⚠️ ${b.category}: te pasaste del presupuesto por ${ctx.fmt.money(-b.remaining)} (${ctx.fmt.money(b.spent)} de ${ctx.fmt.money(b.amount)}).`
+          : `🟡 ${b.category}: vas por ${ctx.fmt.money(b.spent)} de ${ctx.fmt.money(b.amount)} este mes, te quedan ${ctx.fmt.money(b.remaining)}.`,
+      );
+    return avisos.length > 0 ? `\n\n${avisos.join('\n')}` : '';
+  } catch {
+    // Un fallo mirando presupuestos no puede tapar que el gasto sí se guardó.
+    return '';
+  }
+}
+
+export async function cancelar(pendiente: PendingAction, ctx: Contexto): Promise<string> {
+  await cerrarPendiente(ctx.db.supabase, pendiente.id, 'cancelled');
   return `Cancelado, no anoté nada ❌\n(era: ${pendiente.summary.split('\n')[0]})`;
 }

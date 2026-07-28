@@ -1,6 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import { LucideIcon } from 'lucide-react';
-import { formatCurrency } from '@/lib/types';
+import { useFormatters } from './SettingsContext';
 
 interface SummaryCardProps {
   title: string;
@@ -36,6 +38,7 @@ const amountStyles = {
 };
 
 function CardContent({ title, subtitle, amount, variant, icon: Icon }: Omit<SummaryCardProps, 'href'>) {
+  const fmt = useFormatters();
   return (
     <>
       <div className="flex items-start justify-between">
@@ -48,7 +51,7 @@ function CardContent({ title, subtitle, amount, variant, icon: Icon }: Omit<Summ
         </div>
       </div>
       <p className={`text-2xl font-bold mt-3 ${amountStyles[variant]}`}>
-        {formatCurrency(Math.abs(amount))}
+        {fmt.money(Math.abs(amount))}
       </p>
       {amount < 0 && variant === 'balance' && (
         <p className="text-xs text-rose-400 mt-1">Balance negativo</p>

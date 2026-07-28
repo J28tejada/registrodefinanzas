@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail, MessageCircle } from 'lucide-react';
+import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail, MessageCircle, Target, Settings } from 'lucide-react';
 import { useLedger } from './LedgerContext';
 import LedgerSelector from './LedgerSelector';
 import { LEDGER_COLOR_MAP } from '@/lib/types';
@@ -10,9 +10,18 @@ import { LEDGER_COLOR_MAP } from '@/lib/types';
 const desktopNavItems = [
   { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/transactions', icon: Receipt, label: 'Transacciones' },
+  { href: '/budgets', icon: Target, label: 'Presupuestos' },
   { href: '/email', icon: Mail, label: 'Correo' },
   { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
   { href: '/chat', icon: Bot, label: 'Chat IA' },
+  { href: '/settings', icon: Settings, label: 'Configuración' },
+];
+
+/** En móvil no entran todos abajo: estos van como iconos en la barra de arriba. */
+const mobileTopItems = [
+  { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
+  { href: '/email', icon: Mail, label: 'Correo' },
+  { href: '/settings', icon: Settings, label: 'Configuración' },
 ];
 
 export default function Navigation() {
@@ -114,25 +123,22 @@ export default function Navigation() {
           </span>
           <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
         </button>
-        <button
-          onClick={() => setSelectorOpen(true)}
-          title="Gestionar cuentas"
-          className="p-2 bg-slate-800 hover:bg-emerald-600 rounded-lg transition-colors text-slate-400 hover:text-white flex-shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
-        {/* La barra inferior ya está llena: WhatsApp vive acá en móvil */}
-        <Link
-          href="/whatsapp"
-          title="WhatsApp"
-          className={`p-2 rounded-lg transition-colors flex-shrink-0 ${
-            pathname === '/whatsapp'
-              ? 'bg-emerald-500/10 text-emerald-400'
-              : 'bg-slate-800 text-slate-400 hover:bg-emerald-600 hover:text-white'
-          }`}
-        >
-          <MessageCircle className="w-4 h-4" />
-        </Link>
+        {/* La barra inferior tiene cinco lugares: el resto vive acá en móvil */}
+        {mobileTopItems.map(({ href, icon: Icon, label }) => (
+          <Link
+            key={href}
+            href={href}
+            title={label}
+            aria-label={label}
+            className={`p-2 rounded-lg transition-colors flex-shrink-0 ${
+              pathname === href
+                ? 'bg-emerald-500/10 text-emerald-400'
+                : 'bg-slate-800 text-slate-400 hover:bg-emerald-600 hover:text-white'
+            }`}
+          >
+            <Icon className="w-4 h-4" />
+          </Link>
+        ))}
       </header>
 
       {/* Mobile bottom nav — 5 slots with center FAB */}
@@ -177,13 +183,13 @@ export default function Navigation() {
           Chat IA
         </Link>
 
-        {/* Correo */}
+        {/* Presupuestos */}
         <Link
-          href="/email"
-          className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors ${pathname === '/email' ? 'text-emerald-400' : 'text-slate-400'}`}
+          href="/budgets"
+          className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors ${pathname === '/budgets' ? 'text-emerald-400' : 'text-slate-400'}`}
         >
-          <Mail className="w-5 h-5" />
-          Correo
+          <Target className="w-5 h-5" />
+          Presupuesto
         </Link>
       </nav>
     </>

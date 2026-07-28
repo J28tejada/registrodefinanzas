@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { actualizarCuerpoMensaje, logInbound, logOutbound } from '@/lib/whatsapp/db';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { actualizarCuerpoMensaje, getNumberByPhone, logInbound, logOutbound } from '@/lib/whatsapp/db';
 import { handleInboundMessage } from '@/lib/whatsapp/handler';
 import { leerImagen, transcribirAudio } from '@/lib/whatsapp/media';
 import { sendText } from '@/lib/whatsapp/evolution';
@@ -40,7 +42,7 @@ function interpretarWebhook(data: Json): Entrante | null {
   const remoteJid = key?.remoteJid as string | undefined;
   if (!remoteJid) return null;
 
-  // Solo el dueño de la plata: nada de grupos ni estados (§9).
+  // Solo el dueño de la plata: nada de grupos ni estados.
   if (remoteJid.endsWith('@g.us') || remoteJid.startsWith('status@')) return null;
   if (key?.fromMe === true) return null;
 
@@ -91,7 +93,7 @@ function tokenValido(req: NextRequest): boolean {
 
 export async function POST(req: NextRequest) {
   if (!process.env.EVOLUTION_WEBHOOK_TOKEN) {
-    // Sin token cualquiera puede postearle movimientos a tus finanzas.
+    // Sin token cualquiera puede postearle movimientos a las finanzas ajenas.
     return NextResponse.json(
       { error: 'EVOLUTION_WEBHOOK_TOKEN no está configurado: el webhook está cerrado.' },
       { status: 503 },
@@ -108,6 +110,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Cuerpo inválido' }, { status: 400 });
   }
 
+  let supabase: SupabaseClient;
+  try {
+    supabase = createAdminClient();
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : String(err) },
+      { status: 503 },
+    );
+  }
+
   // Con webhookByEvents en false llega un solo objeto; `data` puede venir
   // suelto o en lista según la versión.
   const crudo = body.data ?? body;
@@ -116,7 +128,7 @@ export async function POST(req: NextRequest) {
   const resultados: string[] = [];
   for (const evento of eventos) {
     try {
-      resultados.push(await procesar(evento));
+      resultados.push(await procesar(supabase, evento));
     } catch (err) {
       console.error('[whatsapp] error procesando evento:', err);
       resultados.push('error');
@@ -128,41 +140,53 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, resultados });
 }
 
-async function procesar(data: Json): Promise<string> {
+async function procesar(supabase: SupabaseClient, data: Json): Promise<string> {
   const entrante = interpretarWebhook(data);
   if (!entrante) return 'ignorado';
 
   const { phone, waMessageId, tipo } = entrante;
 
+  // Quién es el dueño del teléfono. Puede ser null: alguien que todavía no se
+  // vinculó igual recibe respuesta, y el mensaje queda registrado sin usuario.
+  const numero = await getNumberByPhone(supabase, phone);
+  const userId = numero?.user_id ?? null;
+
   // Marcar el mensaje antes de trabajar: si Evolution reintenta mientras
   // transcribimos, el segundo intento no duplica nada.
   const provisional = tipo === 'texto' ? entrante.texto : `[${entrante.descripcionTipo}]`;
-  const mensajeId = await logInbound(phone, provisional, waMessageId);
+  const mensajeId = await logInbound(supabase, userId, phone, provisional, waMessageId);
   if (!mensajeId) return 'duplicado';
 
   if (tipo === 'no-soportado') {
-    await responder(phone, `Solo puedo leer texto, notas de voz y fotos. Eso que mandaste es "${entrante.descripcionTipo}" y no lo puedo interpretar.`);
+    await responder(supabase, userId, phone, `Solo puedo leer texto, notas de voz y fotos. Eso que mandaste es "${entrante.descripcionTipo}" y no lo puedo interpretar.`);
     return 'no-soportado';
   }
 
-  // Audio e imagen se convierten a texto y siguen el camino normal (§5.8).
+  // Audio e imagen se convierten a texto y siguen el camino normal.
   let texto = entrante.texto;
   let eco: string | null = null;
   let receiptUrl: string | null = null;
 
   if (tipo === 'audio' || tipo === 'imagen') {
+    // Una foto de alguien sin vincular no se guarda: no hay a quién atribuirla.
+    if (tipo === 'imagen' && !userId) {
+      await responder(supabase, null, phone, 'Este número no está vinculado a ninguna cuenta, así que no puedo guardar recibos. Entrá a la app → WhatsApp y mandame el código de 6 letras.');
+      return 'sin-vincular';
+    }
     try {
       const leido = tipo === 'audio'
         ? await transcribirAudio(data)
-        : await leerImagen(data, phone, entrante.texto);
+        : await leerImagen(supabase, userId!, data, entrante.texto);
       texto = leido.texto;
       eco = leido.eco;
       receiptUrl = leido.receiptUrl;
-      await actualizarCuerpoMensaje(mensajeId, texto);
+      await actualizarCuerpoMensaje(supabase, mensajeId, texto);
     } catch (err) {
       const detalle = err instanceof Error ? err.message : String(err);
       const guardado = (err as { receiptUrl?: string }).receiptUrl;
       await responder(
+        supabase,
+        userId,
         phone,
         `No pude leer tu ${entrante.descripcionTipo}. Motivo: ${detalle.slice(0, 200)}` +
         (guardado ? '\nLa foto quedó guardada igual, no se perdió.' : '') +
@@ -172,13 +196,18 @@ async function procesar(data: Json): Promise<string> {
     }
   }
 
-  const respuesta = await handleInboundMessage({ phone, texto, eco, receiptUrl });
-  await responder(phone, respuesta);
+  const respuesta = await handleInboundMessage({ supabase, phone, texto, eco, receiptUrl });
+  await responder(supabase, userId, phone, respuesta);
   return 'ok';
 }
 
-async function responder(phone: string, texto: string) {
-  await logOutbound(phone, texto);
+async function responder(
+  supabase: SupabaseClient,
+  userId: string | null,
+  phone: string,
+  texto: string,
+) {
+  await logOutbound(supabase, userId, phone, texto);
   try {
     await sendText(phone, texto);
   } catch (err) {

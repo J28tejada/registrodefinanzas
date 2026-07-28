@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { X, Loader2, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
-import { Transaction, TransactionType, TransactionScope, getCategories, todayISO, AIInterpretation, LEDGER_COLOR_MAP } from '@/lib/types';
+import { Transaction, TransactionType, TransactionScope, getCategories, AIInterpretation, LEDGER_COLOR_MAP } from '@/lib/types';
 import { useLedger } from './LedgerContext';
+import { useFormatters } from './SettingsContext';
 import VoiceInput from './VoiceInput';
 
 interface AddTransactionModalProps {
@@ -26,6 +27,7 @@ export default function AddTransactionModal({
   isOpen, onClose, onSave, editingTransaction,
 }: AddTransactionModalProps) {
   const { currentLedger, ledgers } = useLedger();
+  const fmt = useFormatters();
 
   const defaultLedgerId = currentLedger?.id ?? (ledgers[0]?.id ?? '');
 
@@ -35,7 +37,8 @@ export default function AddTransactionModal({
     amount: '',
     category: '',
     description: '',
-    date: todayISO(),
+    // "Hoy" en la zona del usuario, no en la del navegador.
+    date: fmt.today(),
   };
 
   const [form, setForm] = useState<FormData>(defaultForm);
@@ -60,7 +63,7 @@ export default function AddTransactionModal({
         date: editingTransaction.date,
       });
     } else {
-      setForm({ ...defaultForm, date: todayISO(), ledger_id: currentLedger?.id ?? (ledgers[0]?.id ?? '') });
+      setForm({ ...defaultForm, date: fmt.today(), ledger_id: currentLedger?.id ?? (ledgers[0]?.id ?? '') });
     }
     setInterpretation(null);
     setError('');

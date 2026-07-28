@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectInstance, createInstance, logoutInstance, setWebhook } from '@/lib/whatsapp/evolution';
+import { esAdmin } from '@/lib/supabase/admins';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,12 @@ export const dynamic = 'force-dynamic';
  *   salir     → cierra la sesión
  */
 export async function POST(req: NextRequest) {
+  // La instancia es compartida: crearla o cerrarle la sesión afecta a todos.
+  const permiso = await esAdmin();
+  if (!permiso.ok) {
+    return NextResponse.json({ error: permiso.motivo }, { status: 403 });
+  }
+
   let accion = '';
   let numero: string | undefined;
   try {

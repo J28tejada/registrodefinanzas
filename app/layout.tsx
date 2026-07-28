@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import Navigation from '@/components/Navigation';
+import AppShell from '@/components/AppShell';
 import { Providers } from './providers';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Registro de Finanzas',
-  description: 'Gestiona tus finanzas con múltiples cuentas e IA',
+  description: 'Gestiona tus finanzas con múltiples cuentas, presupuestos e IA',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -16,12 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es">
       <body className={`${inter.className} bg-slate-950 text-white min-h-screen`}>
         <Providers>
-          <div className="flex min-h-screen">
-            <Navigation />
-            <main className="flex-1 md:ml-60 p-4 md:p-6 pb-24 md:pb-6">
-              {children}
-            </main>
-          </div>
+          <AppShell>{children}</AppShell>
         </Providers>
       </body>
     </html>
