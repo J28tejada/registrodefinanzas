@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { todayISO } from '@/lib/types';
 
 const SYSTEM_PROMPT = `Eres un asistente de finanzas personales. El usuario ingresó una descripción de una transacción (puede ser texto escrito o transcripción de voz en español).
@@ -40,28 +40,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Texto requerido' }, { status: 400 });
     }
 
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!process.env.GOOGLE_AI_API_KEY) {
       return NextResponse.json({ error: 'API key no configurada' }, { status: 500 });
     }
 
-    const client = new Anthropic();
-    const message = await client.messages.create({
-      model: 'claude-sonnet-5',
-      max_tokens: 512,
-      system: SYSTEM_PROMPT,
-      messages: [{
-        role: 'user',
-        content: `Fecha actual: ${todayISO()}\n\nTexto del usuario: "${text}"`,
-      }],
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-3.1-flash-lite',
+      systemInstruction: SYSTEM_PROMPT,
     });
 
-    const content = message.content[0];
-    if (content.type !== 'text') {
-      return NextResponse.json({ error: 'Respuesta inesperada de IA' }, { status: 500 });
-    }
+    const result = await model.generateContent(`Fecha actual: ${todayISO()}\n\nTexto del usuario: "${text}"`);
+    const responseText = result.response.text().trim()
+      .replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
 
-    const jsonText = content.text.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
-    const parsed = JSON.parse(jsonText);
+    const parsed = JSON.parse(responseText);
     return NextResponse.json(parsed);
   } catch (err) {
     console.error('Error interpretando:', err);

@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getEmailConnection } from '@/lib/db';
 import { fetchBankEmails } from '@/lib/gmail';
 import { EmailTransaction } from '@/lib/types';
 
-const client = new Anthropic();
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY ?? '');
 
 async function parseEmailWithAI(
   subject: string,
@@ -33,19 +33,13 @@ Categorías válidas para ingresos: Salario, Freelance, Ventas, Servicios presta
 
 Si el correo NO es una transacción financiera, devuelve: {"isTransaction": false, "type": null, "amount": null, "description": null, "category": null, "confidence": 0}`;
 
-  const response = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 256,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = (response.content[0] as { type: string; text: string }).text.trim();
-
-  // Strip markdown code fences if present
-  const clean = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
+  const result = await model.generateContent(prompt);
+  const text = result.response.text().trim()
+    .replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
 
   try {
-    return JSON.parse(clean);
+    return JSON.parse(text);
   } catch {
     return { isTransaction: false, type: null, amount: null, description: null, category: null, confidence: 0 };
   }
@@ -74,7 +68,6 @@ export async function GET() {
       });
     }
 
-    // Only return emails that look like transactions (confidence > 0.4)
     const transactions = results.filter(r => r.isTransaction && (r.confidence ?? 0) > 0.4);
 
     return NextResponse.json({ transactions, total_scanned: emails.length });
