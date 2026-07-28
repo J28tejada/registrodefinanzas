@@ -1,101 +1,108 @@
 /**
- * Acceso a las tablas del agente.
+ * Acceso a las tablas de los canales de chat.
  *
- * El webhook no trae sesión de navegador, así que entra con la service role
- * (que salta RLS) y resuelve el usuario a partir del teléfono vinculado. Por
- * eso acá el `user_id` se filtra a mano siempre: es lo único que separa a un
+ * Los webhooks no traen sesión de navegador, así que entran con la service role
+ * (que salta RLS) y resuelven el usuario a partir de la conversación vinculada.
+ * Por eso acá el `user_id` se filtra a mano siempre: es lo único que separa a un
  * usuario de otro en este camino.
  */
 import { SupabaseClient } from '@supabase/supabase-js';
-import { createAdminClient } from '@/lib/supabase/admin';
 import { LINK_CODE_TTL_MIN, PENDING_TTL_MIN } from './config';
 import {
+  Channel,
+  ChatLink,
+  ChatMessage,
   PendingAction,
   PendingKind,
   PendingPayload,
-  WhatsappMessage,
-  WhatsappNumber,
 } from './types';
-
-export function adminDb(): SupabaseClient {
-  return createAdminClient();
-}
 
 function fallar(contexto: string, error: { message: string } | null): never {
   throw new Error(`${contexto}: ${error?.message ?? 'error desconocido'}`);
 }
 
-// ─── Números vinculados ───────────────────────────────────────────────────────
+// ─── Conversaciones vinculadas ────────────────────────────────────────────────
 
-function rowToNumber(row: Record<string, unknown>): WhatsappNumber {
+function rowToLink(row: Record<string, unknown>): ChatLink {
   return {
     id: row.id as string,
     user_id: row.user_id as string,
-    phone: row.phone as string,
+    channel: row.channel as Channel,
+    external_id: row.external_id as string,
     ledger_id: (row.ledger_id as string) ?? null,
     active: Boolean(row.active),
     created_at: row.created_at as string,
   };
 }
 
-/** Quién es el dueño de este teléfono. null = no está autorizado. */
-export async function getNumberByPhone(
+/** De quién es esta conversación. null = no está autorizada. */
+export async function getLink(
   supabase: SupabaseClient,
-  phone: string,
-): Promise<WhatsappNumber | null> {
+  channel: Channel,
+  externalId: string,
+): Promise<ChatLink | null> {
   const { data, error } = await supabase
-    .from('whatsapp_numbers').select('*').eq('phone', phone).eq('active', true).maybeSingle();
-  if (error) fallar('No se pudo verificar el número', error);
-  return data ? rowToNumber(data) : null;
+    .from('chat_links').select('*')
+    .eq('channel', channel).eq('external_id', externalId).eq('active', true)
+    .maybeSingle();
+  if (error) fallar('No se pudo verificar la conversación', error);
+  return data ? rowToLink(data) : null;
 }
 
-export async function getNumbersForUser(
+export async function getLinksForUser(
   supabase: SupabaseClient,
   userId: string,
-): Promise<WhatsappNumber[]> {
-  const { data, error } = await supabase
-    .from('whatsapp_numbers').select('*').eq('user_id', userId).order('created_at');
-  if (error) fallar('No se pudieron leer los números vinculados', error);
-  return (data ?? []).map(rowToNumber);
+  channel?: Channel,
+): Promise<ChatLink[]> {
+  let q = supabase.from('chat_links').select('*').eq('user_id', userId);
+  if (channel) q = q.eq('channel', channel);
+  const { data, error } = await q.order('created_at');
+  if (error) fallar('No se pudieron leer las conversaciones vinculadas', error);
+  return (data ?? []).map(rowToLink);
 }
 
-/** Todos los números activos, para el recordatorio del cron. */
-export async function getAllActiveNumbers(supabase: SupabaseClient): Promise<WhatsappNumber[]> {
-  const { data, error } = await supabase.from('whatsapp_numbers').select('*').eq('active', true);
-  if (error) fallar('No se pudieron leer los números vinculados', error);
-  return (data ?? []).map(rowToNumber);
+/** Todas las conversaciones activas, para el recordatorio del cron. */
+export async function getAllActiveLinks(supabase: SupabaseClient): Promise<ChatLink[]> {
+  const { data, error } = await supabase.from('chat_links').select('*').eq('active', true);
+  if (error) fallar('No se pudieron leer las conversaciones vinculadas', error);
+  return (data ?? []).map(rowToLink);
 }
 
-export async function unlinkNumber(
+export async function unlink(
   supabase: SupabaseClient,
   userId: string,
   id: string,
 ): Promise<boolean> {
   const { data, error } = await supabase
-    .from('whatsapp_numbers').delete().eq('user_id', userId).eq('id', id).select('id');
-  if (error) fallar('No se pudo desvincular el número', error);
+    .from('chat_links').delete().eq('user_id', userId).eq('id', id).select('id');
+  if (error) fallar('No se pudo desvincular', error);
   return (data ?? []).length > 0;
 }
 
-export async function setNumberLedger(
+export async function setLinkLedger(
   supabase: SupabaseClient,
   userId: string,
   id: string,
   ledgerId: string | null,
 ): Promise<void> {
   const { error } = await supabase
-    .from('whatsapp_numbers').update({ ledger_id: ledgerId }).eq('user_id', userId).eq('id', id);
-  if (error) fallar('No se pudo cambiar la cuenta del número', error);
+    .from('chat_links').update({ ledger_id: ledgerId }).eq('user_id', userId).eq('id', id);
+  if (error) fallar('No se pudo cambiar la cuenta', error);
 }
 
 // ─── Códigos de vinculación ───────────────────────────────────────────────────
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sin I, O, 0, 1
 
+/**
+ * Un código sirve para cualquier canal: el usuario lo genera una vez y lo manda
+ * por donde quiera. `channel` nulo significa exactamente eso.
+ */
 export async function createLinkCode(
   supabase: SupabaseClient,
   userId: string,
   ledgerId: string | null,
+  channel: Channel | null = null,
 ): Promise<{ code: string; expires_at: string }> {
   const bytes = crypto.getRandomValues(new Uint8Array(6));
   const code = Array.from(bytes, b => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('');
@@ -103,15 +110,16 @@ export async function createLinkCode(
 
   // Un código vivo a la vez por usuario: los anteriores dejan de servir.
   await supabase
-    .from('whatsapp_link_codes')
+    .from('chat_link_codes')
     .update({ used_at: new Date().toISOString() })
     .eq('user_id', userId)
     .is('used_at', null);
 
-  const { error } = await supabase.from('whatsapp_link_codes').insert({
+  const { error } = await supabase.from('chat_link_codes').insert({
     user_id: userId,
     code,
     ledger_id: ledgerId,
+    channel,
     expires_at: expiresAt,
   });
   if (error) fallar('No se pudo generar el código', error);
@@ -120,61 +128,72 @@ export async function createLinkCode(
 }
 
 /**
- * Consume un código y vincula el teléfono al usuario que lo generó.
- * Devuelve null si el código no existe, ya se usó o venció.
+ * Consume un código y vincula la conversación al usuario que lo generó.
+ * Devuelve null si el código no existe, ya se usó, venció o era para otro canal.
  */
 export async function consumeLinkCode(
   supabase: SupabaseClient,
   code: string,
-  phone: string,
-): Promise<WhatsappNumber | null> {
+  channel: Channel,
+  externalId: string,
+): Promise<ChatLink | null> {
   const { data: fila, error } = await supabase
-    .from('whatsapp_link_codes')
+    .from('chat_link_codes')
     .update({ used_at: new Date().toISOString() })
     .eq('code', code.toUpperCase())
     .is('used_at', null)
     .gt('expires_at', new Date().toISOString())
+    .or(`channel.is.null,channel.eq.${channel}`)
     .select()
     .maybeSingle();
   if (error) fallar('No se pudo validar el código', error);
   if (!fila) return null;
 
   const { data, error: errorAlta } = await supabase
-    .from('whatsapp_numbers')
+    .from('chat_links')
     .upsert(
       {
         user_id: fila.user_id as string,
-        phone,
+        channel,
+        external_id: externalId,
         ledger_id: (fila.ledger_id as string) ?? null,
         active: true,
       },
-      { onConflict: 'phone' },
+      { onConflict: 'channel,external_id' },
     )
     .select()
     .single();
-  if (errorAlta) fallar('No se pudo vincular el número', errorAlta);
-  return rowToNumber(data);
+  if (errorAlta) fallar('No se pudo vincular la conversación', errorAlta);
+  return rowToLink(data);
 }
 
 // ─── Bitácora ─────────────────────────────────────────────────────────────────
 
 /**
- * Guarda un mensaje entrante y devuelve su id, o null si ese mensaje de
- * WhatsApp ya estaba registrado: Evolution reintenta los webhooks y sin esto un
- * mismo "sí" se procesaría dos veces.
+ * Guarda un mensaje entrante y devuelve su id, o null si ya estaba registrado:
+ * los proveedores reintentan los webhooks y sin esto un mismo "sí" se
+ * procesaría dos veces.
  */
 export async function logInbound(
   supabase: SupabaseClient,
   userId: string | null,
-  phone: string,
+  channel: Channel,
+  externalId: string,
   body: string,
-  waMessageId: string | null,
+  providerMessageId: string | null,
 ): Promise<string | null> {
   const { data, error } = await supabase
-    .from('whatsapp_messages')
+    .from('chat_messages')
     .upsert(
-      { user_id: userId, phone, wa_message_id: waMessageId, direction: 'in', body },
-      { onConflict: 'wa_message_id', ignoreDuplicates: true },
+      {
+        user_id: userId,
+        channel,
+        external_id: externalId,
+        provider_message_id: providerMessageId,
+        direction: 'in',
+        body,
+      },
+      { onConflict: 'channel,provider_message_id', ignoreDuplicates: true },
     )
     .select('id');
   if (error) fallar('No se pudo registrar el mensaje', error);
@@ -187,38 +206,42 @@ export async function actualizarCuerpoMensaje(
   id: string,
   body: string,
 ): Promise<void> {
-  await supabase.from('whatsapp_messages').update({ body }).eq('id', id);
+  await supabase.from('chat_messages').update({ body }).eq('id', id);
 }
 
 export async function logOutbound(
   supabase: SupabaseClient,
   userId: string | null,
-  phone: string,
+  channel: Channel,
+  externalId: string,
   body: string,
 ): Promise<void> {
   const { error } = await supabase
-    .from('whatsapp_messages')
-    .insert({ user_id: userId, phone, direction: 'out', body });
-  if (error) console.error('[whatsapp] no se pudo registrar la salida:', error.message);
+    .from('chat_messages')
+    .insert({ user_id: userId, channel, external_id: externalId, direction: 'out', body });
+  if (error) console.error('[chat] no se pudo registrar la salida:', error.message);
 }
 
 /** Últimos mensajes en orden cronológico, para armar el contexto del agente. */
 export async function recentMessages(
   supabase: SupabaseClient,
-  phone: string,
+  channel: Channel,
+  externalId: string,
   limit = 10,
-): Promise<WhatsappMessage[]> {
+): Promise<ChatMessage[]> {
   const { data, error } = await supabase
-    .from('whatsapp_messages')
-    .select('id, phone, direction, body, created_at')
-    .eq('phone', phone)
+    .from('chat_messages')
+    .select('id, channel, external_id, direction, body, created_at')
+    .eq('channel', channel)
+    .eq('external_id', externalId)
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) fallar('No se pudo leer la conversación', error);
   return (data ?? [])
     .map(r => ({
       id: r.id as string,
-      phone: r.phone as string,
+      channel: r.channel as Channel,
+      external_id: r.external_id as string,
       direction: r.direction as 'in' | 'out',
       body: r.body as string,
       created_at: r.created_at as string,
@@ -232,7 +255,8 @@ function rowToPending(row: Record<string, unknown>): PendingAction {
   return {
     id: row.id as string,
     user_id: row.user_id as string,
-    phone: row.phone as string,
+    channel: row.channel as Channel,
+    external_id: row.external_id as string,
     kind: row.kind as PendingKind,
     payload: row.payload as PendingPayload,
     summary: (row.summary as string) ?? '',
@@ -242,30 +266,34 @@ function rowToPending(row: Record<string, unknown>): PendingAction {
   };
 }
 
-/** La pendiente viva del teléfono, si no venció. Marca las vencidas de paso. */
+/** La pendiente viva de la conversación, si no venció. Marca las vencidas de paso. */
 export async function pendienteVigente(
   supabase: SupabaseClient,
-  phone: string,
+  channel: Channel,
+  externalId: string,
 ): Promise<PendingAction | null> {
-  const ahora = new Date().toISOString();
   await supabase
     .from('pending_actions')
     .update({ status: 'expired' })
-    .eq('phone', phone)
+    .eq('channel', channel)
+    .eq('external_id', externalId)
     .eq('status', 'pending')
-    .lte('expires_at', ahora);
+    .lte('expires_at', new Date().toISOString());
 
   const { data, error } = await supabase
-    .from('pending_actions').select('*').eq('phone', phone).eq('status', 'pending').maybeSingle();
+    .from('pending_actions').select('*')
+    .eq('channel', channel).eq('external_id', externalId).eq('status', 'pending')
+    .maybeSingle();
   if (error) fallar('No se pudo leer la acción pendiente', error);
   return data ? rowToPending(data) : null;
 }
 
-/** Crea una pendiente nueva, descartando cualquier otra viva del mismo teléfono. */
+/** Crea una pendiente nueva, descartando cualquier otra viva de la conversación. */
 export async function crearPendiente(
   supabase: SupabaseClient,
   userId: string,
-  phone: string,
+  channel: Channel,
+  externalId: string,
   kind: PendingKind,
   payload: PendingPayload,
   summary: string,
@@ -273,14 +301,16 @@ export async function crearPendiente(
   await supabase
     .from('pending_actions')
     .update({ status: 'cancelled' })
-    .eq('phone', phone)
+    .eq('channel', channel)
+    .eq('external_id', externalId)
     .eq('status', 'pending');
 
   const { data, error } = await supabase
     .from('pending_actions')
     .insert({
       user_id: userId,
-      phone,
+      channel,
+      external_id: externalId,
       kind,
       payload,
       summary,

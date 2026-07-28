@@ -1,4 +1,4 @@
-/** Config compartida del agente de WhatsApp. */
+/** Config compartida de los canales de chat. */
 
 /** Modelo de Gemini. Mientras estés en tier gratuito, usá una variante lite. */
 export const MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';

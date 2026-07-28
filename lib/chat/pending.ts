@@ -1,5 +1,5 @@
 /**
- * El corazón determinista del flujo.
+ * El corazón determinista del flujo, igual para todos los canales.
  *
  * Nada de lo que hay acá pasa por el modelo: la respuesta del usuario se
  * clasifica en código y el payload guardado se aplica tal cual se propuso.
@@ -157,14 +157,14 @@ export async function aplicar(pendiente: PendingAction, ctx: Contexto): Promise<
 
     for (let i = 0; i < veces; i++) {
       await createTransaction(ctx.db, {
-        ledger_id: ctx.numero.ledger_id,
+        ledger_id: ctx.link.ledger_id,
         type: tipoToTransactionType(m.tipo),
         scope: ctx.scope,
         amount: monto,
         category: m.categoria,
         description: descripcion,
         date: m.fecha,
-        source: 'whatsapp',
+        source: ctx.link.channel === 'telegram' ? 'telegram' : 'whatsapp',
         receipt_url: m.receipt_url ?? null,
         payment_method: m.metodo_pago ?? null,
       });

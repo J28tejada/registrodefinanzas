@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectInstance, createInstance, logoutInstance, setWebhook } from '@/lib/whatsapp/evolution';
+import { connectInstance, createInstance, logoutInstance, setWebhook } from '@/lib/chat/transports/evolution';
 import { esAdmin } from '@/lib/supabase/admins';
 
 export const dynamic = 'force-dynamic';

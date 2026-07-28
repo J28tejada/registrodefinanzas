@@ -1,8 +1,8 @@
 /**
- * El camino que recorre todo mensaje entrante, en este orden:
+ * El camino que recorre todo mensaje entrante, venga de donde venga:
  *
- *   1. ¿código de vinculación?      → vincular teléfono ↔ usuario
- *   2. ¿número autorizado?          → si no, invitar a vincular
+ *   1. ¿código de vinculación?      → vincular conversación ↔ usuario
+ *   2. ¿conversación autorizada?    → si no, invitar a vincular
  *   3. ¿responde a algo pendiente?  → APLICAR (determinista, sin modelo)
  *   4. correr el agente
  *
@@ -15,7 +15,7 @@ import { getLedgerById, getSettings } from '@/lib/db';
 import { TransactionScope } from '@/lib/types';
 import { makeFormatters } from '@/lib/format';
 import { MODEL } from './config';
-import { actualizarPendiente, consumeLinkCode, getNumberByPhone, pendienteVigente } from './db';
+import { actualizarPendiente, consumeLinkCode, getLink, pendienteVigente } from './db';
 import { CuotaAgotadaError, ModeloNoDisponibleError, correrAgente } from './agent';
 import {
   aplicar,
@@ -25,11 +25,12 @@ import {
   necesitaAgrupacion,
   resumirMovimientos,
 } from './pending';
-import { Contexto, WhatsappNumber } from './types';
+import { CHANNEL_LABEL, Channel, ChatLink, Contexto } from './types';
 
 export interface Entrada {
   supabase: SupabaseClient;
-  phone: string;
+  channel: Channel;
+  externalId: string;
   texto: string;
   /** "🎤 Escuché: ..." o "🧾 Leí: ...", para que revise antes de confirmar. */
   eco: string | null;
@@ -49,44 +50,44 @@ function conEco(eco: string | null, cuerpo: string): string {
   return eco ? `${eco}\n\n${cuerpo}` : cuerpo;
 }
 
-/** Arma todo lo que hace falta para atender a este número. */
+/** Arma todo lo que hace falta para atender esta conversación. */
 export async function construirContexto(
   supabase: SupabaseClient,
-  numero: WhatsappNumber,
+  link: ChatLink,
 ): Promise<Contexto> {
-  const db = { supabase, userId: numero.user_id };
+  const db = { supabase, userId: link.user_id };
   const settings = await getSettings(db);
-  const ledger = numero.ledger_id ? await getLedgerById(db, numero.ledger_id) : null;
+  const ledger = link.ledger_id ? await getLedgerById(db, link.ledger_id) : null;
   const scope: TransactionScope = ledger?.type ?? 'personal';
-  return { db, numero, settings, fmt: makeFormatters(settings), ledger, scope };
+  return { db, link, settings, fmt: makeFormatters(settings), ledger, scope };
 }
 
 export async function handleInboundMessage(entrada: Entrada): Promise<string> {
-  const { supabase, phone, texto, eco, receiptUrl } = entrada;
+  const { supabase, channel, externalId, texto, eco, receiptUrl } = entrada;
 
   // 1. Código de vinculación
-  const numero = await getNumberByPhone(supabase, phone);
-  if (!numero) {
+  const link = await getLink(supabase, channel, externalId);
+  if (!link) {
     const codigo = posibleCodigo(texto);
     if (codigo) {
-      const vinculado = await consumeLinkCode(supabase, codigo, phone);
+      const vinculado = await consumeLinkCode(supabase, codigo, channel, externalId);
       if (vinculado) {
         const ctx = await construirContexto(supabase, vinculado);
         return `Listo, quedaste vinculado ✅\nVoy a anotar en: ${ctx.ledger?.name ?? 'todas las cuentas'}, en ${ctx.settings.currency}.\nMandame algo como "gasté 800 en el súper" y te lo confirmo antes de guardarlo.`;
       }
-      return 'Ese código no sirve: o ya se usó o venció (duran 15 minutos). Generá uno nuevo en la app, en la sección WhatsApp.';
+      return 'Ese código no sirve: o ya se usó o venció (duran 15 minutos). Generá uno nuevo en la app.';
     }
   }
 
-  // 2. ¿Autorizado?
-  if (!numero) {
-    return 'Este número no está vinculado a ninguna cuenta, así que no puedo anotar nada.\nEntrá a la app → WhatsApp, generá el código de 6 letras y mandámelo por acá.';
+  // 2. ¿Autorizada?
+  if (!link) {
+    return `Esta conversación no está vinculada a ninguna cuenta, así que no puedo anotar nada.\nEntrá a la app → ${CHANNEL_LABEL[channel]}, generá el código de 6 letras y mandámelo por acá.`;
   }
 
-  const ctx = await construirContexto(supabase, numero);
+  const ctx = await construirContexto(supabase, link);
 
   // 3. ¿Responde a algo pendiente?
-  const pendiente = await pendienteVigente(supabase, phone);
+  const pendiente = await pendienteVigente(supabase, channel, externalId);
   if (pendiente) {
     const movs = pendiente.payload.movimientos ?? [];
 

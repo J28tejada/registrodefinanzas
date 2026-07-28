@@ -4,6 +4,11 @@ Implementación de [`agente-whatsapp-finanzas-personales.md`](../agente-whatsapp
 sobre esta app. El usuario escribe, dicta o fotografía un recibo por WhatsApp y
 el movimiento queda anotado — siempre después de una confirmación.
 
+> El mismo agente funciona por Telegram, que se configura en cinco minutos y no
+> necesita servidor propio ni túnel: ver [`docs/telegram.md`](telegram.md).
+> Todo lo que decide qué se registra vive en `lib/chat/` y es común a los dos
+> canales; acá se documenta lo específico de WhatsApp, que es la parte cara.
+
 ```
 Usuario  ──WhatsApp──▶  "gasté 800 en el súper"
                         "¿Anoto un gasto de $800.00 en Supermercado?"
@@ -28,12 +33,12 @@ app/api/whatsapp/webhook/route.ts
    ├─ ¿imagen? → Evolution descifra → se GUARDA → Gemini lee → texto
    │
    ▼
-lib/whatsapp/handler.ts
+lib/chat/handler.ts
    │
    ├─ 1. ¿código de vinculación?      → vincula teléfono ↔ usuario
    ├─ 2. ¿número autorizado?          → si no, invita a vincular
    ├─ 3. ¿responde a algo pendiente?  → APLICA (determinista, sin modelo)
-   └─ 4. lib/whatsapp/agent.ts (Gemini + herramientas)
+   └─ 4. lib/chat/agent.ts (Gemini + herramientas)
               │
               └─ la herramienta NO escribe: deja una acción PENDIENTE
    ▼
@@ -42,15 +47,15 @@ respuesta por Evolution
 
 | Archivo | Qué hace |
 |---|---|
-| `lib/whatsapp/evolution.ts` | Cliente de Evolution API |
-| `lib/whatsapp/db.ts` | Tablas y helpers propios del agente |
-| `lib/whatsapp/pending.ts` | Lo determinista: clasificar sí/no, agrupar, escribir |
-| `lib/whatsapp/agent.ts` | Prompt, herramientas y bucle del modelo |
-| `lib/whatsapp/media.ts` | Audio → texto, foto → texto (y la foto se guarda) |
-| `lib/whatsapp/handler.ts` | El orden de los cuatro pasos de arriba |
+| `lib/chat/transports/evolution.ts` | Cliente de Evolution API |
+| `lib/chat/db.ts` | Tablas y helpers propios del agente |
+| `lib/chat/pending.ts` | Lo determinista: clasificar sí/no, agrupar, escribir |
+| `lib/chat/agent.ts` | Prompt, herramientas y bucle del modelo |
+| `lib/chat/media.ts` | Audio → texto, foto → texto (y la foto se guarda) |
+| `lib/chat/handler.ts` | El orden de los cuatro pasos de arriba |
 | `app/whatsapp/page.tsx` | Vinculación y diagnóstico |
 
-Las tablas (`whatsapp_numbers`, `whatsapp_link_codes`, `whatsapp_messages`,
+Las tablas (`chat_links`, `chat_link_codes`, `chat_messages`,
 `pending_actions`) y el bucket `receipts` salen de
 [`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql),
 junto con el resto del esquema. Ver [`docs/supabase.md`](supabase.md).
@@ -154,7 +159,7 @@ Las tres primeras son las que cambian el diseño; el resto es plomería.
 
 `registrar_movimiento` guarda `{kind, payload, summary}` en `pending_actions` y
 le devuelve al modelo *"PENDIENTE: … Pedile confirmación; no lo des por hecho"*.
-Quien escribe es `aplicar()` en `pending.ts`, cuando el usuario confirma.
+Quien escribe es `aplicar()` en `lib/chat/pending.ts`, cuando el usuario confirma.
 
 Tres consecuencias:
 

@@ -1,6 +1,6 @@
 export type TransactionType = 'income' | 'expense';
 export type TransactionScope = 'personal' | 'business';
-export type TransactionSource = 'manual' | 'voice' | 'ai' | 'whatsapp';
+export type TransactionSource = 'manual' | 'voice' | 'ai' | 'whatsapp' | 'telegram';
 export type LedgerColor = 'green' | 'blue' | 'purple' | 'orange' | 'red' | 'teal' | 'indigo' | 'pink';
 
 export const LEDGER_COLOR_MAP: Record<LedgerColor, { main: string; dark: string; text: string }> = {

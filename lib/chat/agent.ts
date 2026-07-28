@@ -1,5 +1,6 @@
 /**
- * El agente: interpreta lenguaje natural y llama herramientas.
+ * El agente: interpreta lenguaje natural y llama herramientas. Es el mismo para
+ * todos los canales; lo único que cambia es por dónde entra y sale el texto.
  *
  * Regla que ordena todo el archivo: las herramientas NO escriben.
  * `registrar_movimiento` deja una acción pendiente y le devuelve al modelo un
@@ -35,7 +36,7 @@ export class ModeloNoDisponibleError extends Error {}
  */
 function systemPrompt(ctx: Contexto): string {
   const cuenta = ctx.ledger?.name ?? 'todas las cuentas';
-  return `Asistente de finanzas personales. El usuario te manda notas cortas por WhatsApp, en español coloquial y con errores: entendelas y registralas con tus herramientas. Si pregunta por datos ya registrados, buscalos con "consultar"; si pregunta por topes de gasto, usá "presupuesto".
+  return `Asistente de finanzas personales. El usuario te manda notas cortas por chat, en español coloquial y con errores: entendelas y registralas con tus herramientas. Si pregunta por datos ya registrados, buscalos con "consultar"; si pregunta por topes de gasto, usá "presupuesto".
 Cuenta activa: ${cuenta}. Moneda: ${ctx.settings.currency}. Ahora: ${ctx.fmt.now()}.
 
 REGLAS
@@ -178,7 +179,8 @@ async function registrarMovimiento(args: Record<string, unknown>, turno: Turno):
     const p = await crearPendiente(
       ctx.db.supabase,
       ctx.db.userId,
-      ctx.numero.phone,
+      ctx.link.channel,
+      ctx.link.external_id,
       'registrar_movimientos',
       { movimientos: turno.borradores },
       turno.resumen,
@@ -199,7 +201,7 @@ async function consultar(args: Record<string, unknown>, turno: Turno): Promise<s
   const limiteCrudo = Number(args.limite);
   const limite = Number.isFinite(limiteCrudo) && limiteCrudo > 0 ? Math.min(Math.floor(limiteCrudo), 20) : 5;
   const recurso = args.recurso === 'categorias' || args.recurso === 'balance' ? args.recurso : 'movimientos';
-  const ledgerId = ctx.numero.ledger_id ?? undefined;
+  const ledgerId = ctx.link.ledger_id ?? undefined;
 
   const resumen = await getSummary(ctx.db, ledgerId, desde, hasta);
   const cabecera =
@@ -300,7 +302,7 @@ export async function correrAgente(
   });
 
   // El mensaje actual ya está en la bitácora: entra aparte, no en el historial.
-  const previos = (await recentMessages(ctx.db.supabase, ctx.numero.phone, 11)).slice(0, -1);
+  const previos = (await recentMessages(ctx.db.supabase, ctx.link.channel, ctx.link.external_id, 11)).slice(0, -1);
   const chat = model.startChat({ history: historial(previos) });
 
   try {

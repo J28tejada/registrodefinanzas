@@ -1,26 +1,34 @@
 /**
  * Audio e imagen se convierten a texto y siguen el camino normal: no hay flujo
  * paralelo, así heredan confirmación, agrupado y trazabilidad.
+ *
+ * Acá los medios ya llegan descargados: cada canal se encarga de conseguirlos
+ * a su manera (Evolution los descifra, Telegram los sirve por getFile).
  */
 import { SupabaseClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { MODEL, geminiApiKey } from './config';
-import { getBase64FromMediaMessage } from './evolution';
 import { guardarRecibo } from './db';
+import { MedioDescargado } from './types';
 
 /** WhatsApp manda "audio/ogg; codecs=opus"; Gemini quiere el tipo pelado. */
-function mimeLimpio(mime: string): string {
+export function mimeLimpio(mime: string): string {
   return mime.split(';')[0].trim().toLowerCase();
 }
 
-async function generar(mimeType: string, base64: string, prompt: string): Promise<string> {
+async function generar(medio: MedioDescargado, prompt: string): Promise<string> {
   const apiKey = geminiApiKey();
   if (!apiKey) throw new Error('Falta GOOGLE_AI_API_KEY: no puedo leer audios ni fotos.');
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: MODEL });
   const result = await model.generateContent([
-    { inlineData: { mimeType: mimeLimpio(mimeType), data: base64 } },
+    {
+      inlineData: {
+        mimeType: mimeLimpio(medio.mimeType),
+        data: Buffer.from(medio.bytes).toString('base64'),
+      },
+    },
     { text: prompt },
   ]);
   return result.response.text().trim();
@@ -44,9 +52,8 @@ export interface MedioLeido {
   receiptUrl: string | null;
 }
 
-export async function transcribirAudio(mensajeCrudo: unknown): Promise<MedioLeido> {
-  const { base64, mimetype } = await getBase64FromMediaMessage(mensajeCrudo);
-  const texto = await generar(mimetype, base64, PROMPT_AUDIO);
+export async function transcribirAudio(medio: MedioDescargado): Promise<MedioLeido> {
+  const texto = await generar(medio, PROMPT_AUDIO);
   if (!texto) throw new Error('La transcripción vino vacía.');
   return { texto, eco: `🎤 Escuché: "${texto}"`, receiptUrl: null };
 }
@@ -54,23 +61,16 @@ export async function transcribirAudio(mensajeCrudo: unknown): Promise<MedioLeid
 export async function leerImagen(
   supabase: SupabaseClient,
   userId: string,
-  mensajeCrudo: unknown,
+  medio: MedioDescargado,
   caption: string,
 ): Promise<MedioLeido> {
-  const { base64, mimetype } = await getBase64FromMediaMessage(mensajeCrudo);
-
   // Guardar ANTES de leer y aunque la lectura falle: un recibo que se lee y se
   // descarta pierde justo la evidencia.
-  const receiptUrl = await guardarRecibo(
-    supabase,
-    userId,
-    mimeLimpio(mimetype),
-    new Uint8Array(Buffer.from(base64, 'base64')),
-  );
+  const receiptUrl = await guardarRecibo(supabase, userId, mimeLimpio(medio.mimeType), medio.bytes);
 
   let lectura: string;
   try {
-    lectura = await generar(mimetype, base64, PROMPT_IMAGEN);
+    lectura = await generar(medio, PROMPT_IMAGEN);
   } catch (err) {
     const detalle = err instanceof Error ? err.message : String(err);
     throw Object.assign(new Error(`No pude leer la foto: ${detalle}`), { receiptUrl });

@@ -4,10 +4,10 @@ import { NextRequest, NextResponse } from 'next/server';
 /** Rutas que se pueden ver sin sesión. */
 const PUBLICAS = ['/login', '/auth/callback', '/auth/error'];
 /**
- * El webhook y el cron no traen sesión de navegador: se autentican con su
+ * Los webhooks y el cron no traen sesión de navegador: se autentican con su
  * propio token y resuelven al usuario por su cuenta.
  */
-const SIN_SESION = ['/api/whatsapp/webhook', '/api/whatsapp/cron'];
+const SIN_SESION = ['/api/whatsapp/webhook', '/api/telegram/webhook', '/api/chats/cron'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

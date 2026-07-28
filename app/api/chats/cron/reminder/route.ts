@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllTransactions, getSettings } from '@/lib/db';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { getAllActiveNumbers, logOutbound } from '@/lib/whatsapp/db';
-import { sendText, evolutionConfig } from '@/lib/whatsapp/evolution';
+import { getAllActiveLinks, logOutbound } from '@/lib/chat/db';
+import { evolutionConfig, sendText } from '@/lib/chat/transports/evolution';
+import { sendMessage, telegramToken } from '@/lib/chat/transports/telegram';
+import { Channel } from '@/lib/chat/types';
 import { hoyEnZona } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
@@ -28,10 +30,6 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  if (!evolutionConfig()) {
-    return NextResponse.json({ enviados: 0, motivo: 'Evolution no está configurado' });
-  }
-
   let supabase;
   try {
     supabase = createAdminClient();
@@ -42,38 +40,42 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const numeros = await getAllActiveNumbers(supabase);
-  if (numeros.length === 0) {
-    return NextResponse.json({ enviados: 0, motivo: 'No hay números vinculados' });
+  const links = await getAllActiveLinks(supabase);
+  if (links.length === 0) {
+    return NextResponse.json({ enviados: 0, motivo: 'No hay conversaciones vinculadas' });
   }
 
   const enviados: string[] = [];
   const omitidos: string[] = [];
-  const fallidos: { phone: string; error: string }[] = [];
+  const fallidos: { channel: Channel; externalId: string; error: string }[] = [];
 
-  for (const numero of numeros) {
-    const db = { supabase, userId: numero.user_id };
+  for (const link of links) {
+    const db = { supabase, userId: link.user_id };
     try {
       const settings = await getSettings(db);
       const hoy = hoyEnZona(settings.timezone);
 
       const delDia = await getAllTransactions(db, {
-        ledger_id: numero.ledger_id ?? undefined,
+        ledger_id: link.ledger_id ?? undefined,
         startDate: hoy,
         endDate: hoy,
         limit: 1,
       });
       if (delDia.length > 0) {
-        omitidos.push(numero.phone);
+        omitidos.push(link.external_id);
         continue;
       }
 
       const texto = '¿Anotaste tus gastos de hoy? Si querés, mandámelos por acá y los registro.';
-      await logOutbound(supabase, numero.user_id, numero.phone, texto);
-      await sendText(numero.phone, texto);
-      enviados.push(numero.phone);
+      await logOutbound(supabase, link.user_id, link.channel, link.external_id, texto);
+      await enviar(link.channel, link.external_id, texto);
+      enviados.push(link.external_id);
     } catch (err) {
-      fallidos.push({ phone: numero.phone, error: err instanceof Error ? err.message : String(err) });
+      fallidos.push({
+        channel: link.channel,
+        externalId: link.external_id,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -84,4 +86,14 @@ export async function GET(req: NextRequest) {
     motivoOmitidos: omitidos.length > 0 ? 'ya tenían movimientos hoy' : null,
     fallidos,
   });
+}
+
+async function enviar(channel: Channel, externalId: string, texto: string) {
+  if (channel === 'telegram') {
+    if (!telegramToken()) throw new Error('Telegram no está configurado (falta TELEGRAM_BOT_TOKEN)');
+    await sendMessage(externalId, texto);
+    return;
+  }
+  if (!evolutionConfig()) throw new Error('Evolution no está configurado');
+  await sendText(externalId, texto);
 }

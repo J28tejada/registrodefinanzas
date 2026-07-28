@@ -2,6 +2,14 @@ import { Ledger, TransactionScope, TransactionType, UserSettings } from '@/lib/t
 import { Formatters } from '@/lib/format';
 import { Db } from '@/lib/db';
 
+/** Por dónde entró el mensaje. Nada de lo que decide qué se registra depende de esto. */
+export type Channel = 'whatsapp' | 'telegram';
+
+export const CHANNEL_LABEL: Record<Channel, string> = {
+  whatsapp: 'WhatsApp',
+  telegram: 'Telegram',
+};
+
 /** Un movimiento propuesto por el agente, todavía sin escribir. */
 export interface MovimientoPropuesto {
   tipo: 'ingreso' | 'gasto';
@@ -32,7 +40,8 @@ export interface PendingPayload {
 export interface PendingAction {
   id: string;
   user_id: string;
-  phone: string;
+  channel: Channel;
+  external_id: string;
   kind: PendingKind;
   payload: PendingPayload;
   summary: string;
@@ -41,18 +50,21 @@ export interface PendingAction {
   expires_at: string | null;
 }
 
-export interface WhatsappNumber {
+/** Una conversación autorizada: un número de WhatsApp o un chat de Telegram. */
+export interface ChatLink {
   id: string;
   user_id: string;
-  phone: string;
+  channel: Channel;
+  external_id: string;
   ledger_id: string | null;
   active: boolean;
   created_at: string;
 }
 
-export interface WhatsappMessage {
+export interface ChatMessage {
   id: string;
-  phone: string;
+  channel: Channel;
+  external_id: string;
   direction: 'in' | 'out';
   body: string;
   created_at: string;
@@ -64,11 +76,30 @@ export interface WhatsappMessage {
  */
 export interface Contexto {
   db: Db;
-  numero: WhatsappNumber;
+  link: ChatLink;
   settings: UserSettings;
   fmt: Formatters;
   ledger: Ledger | null;
   scope: TransactionScope;
+}
+
+/** Un mensaje entrante, ya normalizado por el transporte del canal. */
+export interface MensajeEntrante {
+  channel: Channel;
+  /** Teléfono o chat_id: identifica la conversación dentro del canal. */
+  externalId: string;
+  /** Id del mensaje en el proveedor, para no procesarlo dos veces. */
+  providerMessageId: string | null;
+  tipo: 'texto' | 'audio' | 'imagen' | 'no-soportado';
+  texto: string;
+  /** Cómo describirle al usuario lo que mandó, cuando no lo podemos leer. */
+  descripcionTipo: string;
+}
+
+/** Un medio ya descargado y descifrado por el transporte. */
+export interface MedioDescargado {
+  bytes: Uint8Array;
+  mimeType: string;
 }
 
 export function tipoToTransactionType(tipo: MovimientoPropuesto['tipo']): TransactionType {

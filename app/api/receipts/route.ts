@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { conSesion } from '@/lib/supabase/session';
-import { urlFirmadaRecibo } from '@/lib/whatsapp/db';
+import { urlFirmadaRecibo } from '@/lib/chat/db';
 
 export const dynamic = 'force-dynamic';
 

@@ -3,14 +3,15 @@
 import { Transaction, LEDGER_COLOR_MAP } from '@/lib/types';
 import { useLedger } from './LedgerContext';
 import { useFormatters } from './SettingsContext';
-import { Pencil, Trash2, Mic, Bot, Pencil as PencilIcon, MessageCircle, Receipt } from 'lucide-react';
+import { Pencil, Trash2, Mic, Bot, Pencil as PencilIcon, MessageCircle, Send, Receipt } from 'lucide-react';
 
-// Una trazabilidad que solo sirve consultando la base no le sirve al usuario (§5.5).
+// Una trazabilidad que solo sirve consultando la base no le sirve al usuario.
 const sourceBadge = {
-  voice: { icon: Mic, cls: 'text-slate-500', label: 'por voz' },
-  ai: { icon: Bot, cls: 'text-slate-500', label: 'con IA' },
-  manual: { icon: PencilIcon, cls: 'text-slate-600', label: 'a mano' },
-  whatsapp: { icon: MessageCircle, cls: 'text-emerald-500', label: 'vía WhatsApp' },
+  voice: { icon: Mic, cls: 'text-slate-500', label: 'por voz', texto: '' },
+  ai: { icon: Bot, cls: 'text-slate-500', label: 'con IA', texto: '' },
+  manual: { icon: PencilIcon, cls: 'text-slate-600', label: 'a mano', texto: '' },
+  whatsapp: { icon: MessageCircle, cls: 'text-emerald-500', label: 'vía WhatsApp', texto: 'vía WhatsApp' },
+  telegram: { icon: Send, cls: 'text-sky-400', label: 'vía Telegram', texto: 'vía Telegram' },
 };
 
 interface TransactionListProps {
@@ -89,7 +90,7 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
                 <span>·</span>
                 <span className={`flex items-center gap-1 ${Source.cls}`} title={Source.label}>
                   <SourceIcon className="w-3 h-3" />
-                  {tx.source === 'whatsapp' && <span>vía WhatsApp</span>}
+                  {Source.texto && <span>{Source.texto}</span>}
                 </span>
                 {tx.receipt_url && (
                   <>

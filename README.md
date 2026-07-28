@@ -16,7 +16,7 @@ zona horaria.
 4. En **Configuración** elegí moneda, formato y zona horaria (arranca en DOP,
    es-DO, America/Santo_Domingo).
 
-## Agente de WhatsApp
+## Agente de chat
 
 Escribís, dictás o fotografiás el recibo, y el movimiento queda anotado después
 de confirmarlo:
@@ -29,7 +29,12 @@ bot:  Listo ✅ −RD$800.00 · Súper del sábado · Alimentación · 26/07
       ⚠️ Alimentación: te pasaste del presupuesto por RD$1,200.00
 ```
 
-Puesta en marcha y decisiones de diseño: [`docs/whatsapp.md`](docs/whatsapp.md).
+Funciona por **Telegram** y por **WhatsApp**, con el mismo agente detrás.
+Telegram se configura en cinco minutos y no necesita servidor propio;
+WhatsApp necesita Evolution API y un túnel.
+
+- [`docs/telegram.md`](docs/telegram.md) — empezá por acá, es lo más simple
+- [`docs/whatsapp.md`](docs/whatsapp.md) — Evolution, Baileys y sus trampas
 
 ## Estructura
 
@@ -38,5 +43,6 @@ Puesta en marcha y decisiones de diseño: [`docs/whatsapp.md`](docs/whatsapp.md)
 | `lib/db.ts` | Todo el acceso a datos; cada función pide de quién son |
 | `lib/supabase/` | Clientes (navegador, servidor, service role) y sesión |
 | `lib/format.ts` | Moneda, fechas y zona horaria del usuario |
-| `lib/whatsapp/` | El agente: Evolution, herramientas y lo determinista |
+| `lib/chat/` | El agente: herramientas, confirmación determinista y presupuestos |
+| `lib/chat/transports/` | Lo único que sabe de canales: Evolution y Telegram |
 | `supabase/migrations/` | El esquema, con RLS |
