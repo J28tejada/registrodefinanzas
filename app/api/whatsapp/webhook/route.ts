@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { actualizarCuerpoMensaje, getNumberByPhone, logInbound, logOutbound } from '@/lib/whatsapp/db';
-import { handleInboundMessage } from '@/lib/whatsapp/handler';
-import { leerImagen, transcribirAudio } from '@/lib/whatsapp/media';
-import { sendText } from '@/lib/whatsapp/evolution';
+import { actualizarCuerpoMensaje, getLink, logInbound, logOutbound } from '@/lib/chat/db';
+import { handleInboundMessage } from '@/lib/chat/handler';
+import { leerImagen, transcribirAudio } from '@/lib/chat/media';
+import { getBase64FromMediaMessage, sendText } from '@/lib/chat/transports/evolution';
+import { MensajeEntrante } from '@/lib/chat/types';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -29,15 +30,7 @@ function desenvolver(message: Json | undefined): Json | undefined {
   return actual;
 }
 
-interface Entrante {
-  phone: string;
-  waMessageId: string | null;
-  tipo: 'texto' | 'audio' | 'imagen' | 'no-soportado';
-  texto: string;
-  descripcionTipo: string;
-}
-
-function interpretarWebhook(data: Json): Entrante | null {
+function interpretarWebhook(data: Json): MensajeEntrante | null {
   const key = data.key as Json | undefined;
   const remoteJid = key?.remoteJid as string | undefined;
   if (!remoteJid) return null;
@@ -46,28 +39,28 @@ function interpretarWebhook(data: Json): Entrante | null {
   if (remoteJid.endsWith('@g.us') || remoteJid.startsWith('status@')) return null;
   if (key?.fromMe === true) return null;
 
-  const phone = remoteJid.split('@')[0].split(':')[0];
-  const waMessageId = (key?.id as string) ?? null;
+  const externalId = remoteJid.split('@')[0].split(':')[0];
+  const providerMessageId = (key?.id as string) ?? null;
   const message = desenvolver(data.message as Json | undefined);
   if (!message) return null;
 
+  const base = { channel: 'whatsapp' as const, externalId, providerMessageId };
   const extendido = message.extendedTextMessage as Json | undefined;
   const imagen = message.imageMessage as Json | undefined;
   const audio = message.audioMessage as Json | undefined;
 
   if (typeof message.conversation === 'string' && message.conversation.trim()) {
-    return { phone, waMessageId, tipo: 'texto', texto: message.conversation.trim(), descripcionTipo: 'texto' };
+    return { ...base, tipo: 'texto', texto: message.conversation.trim(), descripcionTipo: 'texto' };
   }
   if (typeof extendido?.text === 'string' && extendido.text.trim()) {
-    return { phone, waMessageId, tipo: 'texto', texto: extendido.text.trim(), descripcionTipo: 'texto' };
+    return { ...base, tipo: 'texto', texto: extendido.text.trim(), descripcionTipo: 'texto' };
   }
   if (audio) {
-    return { phone, waMessageId, tipo: 'audio', texto: '', descripcionTipo: 'nota de voz' };
+    return { ...base, tipo: 'audio', texto: '', descripcionTipo: 'nota de voz' };
   }
   if (imagen) {
     return {
-      phone,
-      waMessageId,
+      ...base,
       tipo: 'imagen',
       texto: typeof imagen.caption === 'string' ? imagen.caption : '',
       descripcionTipo: 'foto',
@@ -75,7 +68,7 @@ function interpretarWebhook(data: Json): Entrante | null {
   }
 
   const tipoCrudo = Object.keys(message).find(k => k.endsWith('Message')) ?? 'desconocido';
-  return { phone, waMessageId, tipo: 'no-soportado', texto: '', descripcionTipo: tipoCrudo };
+  return { ...base, tipo: 'no-soportado', texto: '', descripcionTipo: tipoCrudo };
 }
 
 // ─── Endpoint ─────────────────────────────────────────────────────────────────
@@ -144,21 +137,19 @@ async function procesar(supabase: SupabaseClient, data: Json): Promise<string> {
   const entrante = interpretarWebhook(data);
   if (!entrante) return 'ignorado';
 
-  const { phone, waMessageId, tipo } = entrante;
+  const { externalId, providerMessageId, tipo } = entrante;
 
-  // Quién es el dueño del teléfono. Puede ser null: alguien que todavía no se
-  // vinculó igual recibe respuesta, y el mensaje queda registrado sin usuario.
-  const numero = await getNumberByPhone(supabase, phone);
-  const userId = numero?.user_id ?? null;
+  const link = await getLink(supabase, 'whatsapp', externalId);
+  const userId = link?.user_id ?? null;
 
   // Marcar el mensaje antes de trabajar: si Evolution reintenta mientras
   // transcribimos, el segundo intento no duplica nada.
   const provisional = tipo === 'texto' ? entrante.texto : `[${entrante.descripcionTipo}]`;
-  const mensajeId = await logInbound(supabase, userId, phone, provisional, waMessageId);
+  const mensajeId = await logInbound(supabase, userId, 'whatsapp', externalId, provisional, providerMessageId);
   if (!mensajeId) return 'duplicado';
 
   if (tipo === 'no-soportado') {
-    await responder(supabase, userId, phone, `Solo puedo leer texto, notas de voz y fotos. Eso que mandaste es "${entrante.descripcionTipo}" y no lo puedo interpretar.`);
+    await responder(supabase, userId, externalId, `Solo puedo leer texto, notas de voz y fotos. Eso que mandaste es "${entrante.descripcionTipo}" y no lo puedo interpretar.`);
     return 'no-soportado';
   }
 
@@ -170,13 +161,15 @@ async function procesar(supabase: SupabaseClient, data: Json): Promise<string> {
   if (tipo === 'audio' || tipo === 'imagen') {
     // Una foto de alguien sin vincular no se guarda: no hay a quién atribuirla.
     if (tipo === 'imagen' && !userId) {
-      await responder(supabase, null, phone, 'Este número no está vinculado a ninguna cuenta, así que no puedo guardar recibos. Entrá a la app → WhatsApp y mandame el código de 6 letras.');
+      await responder(supabase, null, externalId, 'Este número no está vinculado a ninguna cuenta, así que no puedo guardar recibos. Entrá a la app → WhatsApp y mandame el código de 6 letras.');
       return 'sin-vincular';
     }
     try {
+      // Los medios viajan cifrados extremo a extremo: solo Evolution los descifra.
+      const medio = await getBase64FromMediaMessage(data);
       const leido = tipo === 'audio'
-        ? await transcribirAudio(data)
-        : await leerImagen(supabase, userId!, data, entrante.texto);
+        ? await transcribirAudio(medio)
+        : await leerImagen(supabase, userId!, medio, entrante.texto);
       texto = leido.texto;
       eco = leido.eco;
       receiptUrl = leido.receiptUrl;
@@ -187,7 +180,7 @@ async function procesar(supabase: SupabaseClient, data: Json): Promise<string> {
       await responder(
         supabase,
         userId,
-        phone,
+        externalId,
         `No pude leer tu ${entrante.descripcionTipo}. Motivo: ${detalle.slice(0, 200)}` +
         (guardado ? '\nLa foto quedó guardada igual, no se perdió.' : '') +
         '\n¿Me lo escribís?',
@@ -196,8 +189,15 @@ async function procesar(supabase: SupabaseClient, data: Json): Promise<string> {
     }
   }
 
-  const respuesta = await handleInboundMessage({ supabase, phone, texto, eco, receiptUrl });
-  await responder(supabase, userId, phone, respuesta);
+  const respuesta = await handleInboundMessage({
+    supabase,
+    channel: 'whatsapp',
+    externalId,
+    texto,
+    eco,
+    receiptUrl,
+  });
+  await responder(supabase, userId, externalId, respuesta);
   return 'ok';
 }
 
@@ -207,7 +207,7 @@ async function responder(
   phone: string,
   texto: string,
 ) {
-  await logOutbound(supabase, userId, phone, texto);
+  await logOutbound(supabase, userId, 'whatsapp', phone, texto);
   try {
     await sendText(phone, texto);
   } catch (err) {

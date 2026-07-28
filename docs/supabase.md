@@ -16,9 +16,9 @@ la base: no se vuelve a mostrar.
 
 ### 2. Correr la migración
 
-Database → SQL Editor → New query, pegá
-[`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql)
-entero y ejecutalo. Eso crea:
+Database → SQL Editor → New query, pegá los archivos de
+[`supabase/migrations/`](../supabase/migrations/) **en orden** y ejecutalos:
+primero `0001_init.sql`, después `0002_canales.sql`. Eso crea:
 
 | | |
 |---|---|
@@ -26,7 +26,7 @@ entero y ejecutalo. Eso crea:
 | `ledgers`, `transactions` | cuentas y movimientos |
 | `budgets` | topes mensuales por categoría |
 | `email_connections` | tokens de Gmail |
-| `whatsapp_*`, `pending_actions` | el agente de WhatsApp |
+| `chat_links`, `chat_link_codes`, `chat_messages`, `pending_actions` | los agentes de WhatsApp y Telegram |
 | funciones `summary_by_category`, `ledger_stats`, `spent_by_category` | los `GROUP BY`, que PostgREST no sabe hacer |
 | bucket `receipts` | comprobantes, privado |
 | políticas RLS | una por tabla: `user_id = auth.uid()` |
@@ -72,6 +72,7 @@ Sin eso, el enlace del correo rebota. Para probar rápido podés desactivar
 | `lib/supabase/server.ts` | anon + cookies | rutas y componentes de servidor; pasa por RLS |
 | `lib/supabase/admin.ts` | service role | webhook de WhatsApp y cron; salta RLS |
 | `lib/supabase/session.ts` | — | `requireDb()` y `conSesion()`: no hay forma de consultar sin decir de quién son los datos |
+| `lib/supabase/admins.ts` | — | `ADMIN_EMAILS`: quién puede tocar la conexión de los canales, que es compartida |
 | `middleware.ts` | — | refresca la sesión y manda a `/login` lo que no tiene |
 
 Todas las funciones de `lib/db.ts` reciben un `Db = { supabase, userId }` y

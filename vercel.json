@@ -5,7 +5,7 @@
   "installCommand": "npm install",
   "crons": [
     {
-      "path": "/api/whatsapp/cron/reminder",
+      "path": "/api/chats/cron/reminder",
       "schedule": "0 1 * * *"
     }
   ]

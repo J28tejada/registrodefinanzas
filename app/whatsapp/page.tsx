@@ -4,17 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import {
   MessageCircle, CheckCircle2, AlertCircle, Loader2, Unlink, RefreshCw,
-  KeyRound, Copy, Smartphone, QrCode, Link2, ChevronDown,
+  Smartphone, QrCode, Link2,
 } from 'lucide-react';
-import { useLedger } from '@/components/LedgerContext';
-import { LEDGER_COLOR_MAP } from '@/lib/types';
-
-interface NumeroVinculado {
-  id: string;
-  phone: string;
-  ledger_id: string | null;
-  created_at: string;
-}
+import ChatLinkPanel, { ChatLinkRow } from '@/components/ChatLinkPanel';
 
 interface Estado {
   configurado: boolean;
@@ -27,7 +19,7 @@ interface Estado {
   modelo: string;
   moneda: string;
   zonaHoraria: string;
-  numeros: NumeroVinculado[];
+  chats: ChatLinkRow[];
 }
 
 const ESTADO_TEXTO: Record<string, { texto: string; clase: string }> = {
@@ -39,16 +31,12 @@ const ESTADO_TEXTO: Record<string, { texto: string; clase: string }> = {
 };
 
 export default function WhatsappPage() {
-  const { ledgers } = useLedger();
-
   const [estado, setEstado] = useState<Estado | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [aviso, setAviso] = useState('');
   const [ocupado, setOcupado] = useState('');
 
-  const [codigo, setCodigo] = useState<string | null>(null);
-  const [ledgerDestino, setLedgerDestino] = useState('');
   const [telefono, setTelefono] = useState('');
   const [qr, setQr] = useState<string | null>(null);
   const [pairingCode, setPairingCode] = useState<string | null>(null);
@@ -104,39 +92,6 @@ export default function WhatsappPage() {
     }
   };
 
-  const generarCodigo = async () => {
-    setOcupado('codigo');
-    setError('');
-    try {
-      const res = await fetch('/api/whatsapp/link-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ledger_id: ledgerDestino || null }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'No se pudo generar el código');
-      setCodigo(data.code);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo generar el código');
-    } finally {
-      setOcupado('');
-    }
-  };
-
-  const desvincular = async (id: string, phone: string) => {
-    if (!confirm(`¿Desvincular el número ${phone}? Dejará de poder anotar movimientos.`)) return;
-    await fetch(`/api/whatsapp/numbers/${id}`, { method: 'DELETE' });
-    await cargarEstado();
-  };
-
-  const cambiarCuenta = async (id: string, ledgerId: string) => {
-    await fetch(`/api/whatsapp/numbers/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ledger_id: ledgerId || null }),
-    });
-    await cargarEstado();
-  };
 
   if (cargando) {
     return (
@@ -313,102 +268,14 @@ export default function WhatsappPage() {
         </div>
       )}
 
-      {/* Paso 2: vincular el número a la app */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
-        <div>
-          <p className="font-semibold text-white text-sm">2. Autorizá tu número</p>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Generá un código y mandáselo por WhatsApp al bot. Así el número queda atado a
-            tu cuenta y nadie más puede anotar movimientos en tus finanzas.
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-xs text-slate-500">Anotar en la cuenta</label>
-          <div className="relative">
-            <select
-              value={ledgerDestino}
-              onChange={e => setLedgerDestino(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 pr-8 text-sm text-white focus:outline-none focus:border-emerald-500 appearance-none"
-            >
-              <option value="">Sin cuenta asignada</option>
-              {ledgers.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-            </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-          </div>
-        </div>
-
-        <button
-          onClick={generarCodigo}
-          disabled={ocupado !== ''}
-          className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
-        >
-          {ocupado === 'codigo' ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
-          Generar código de vinculación
-        </button>
-
-        {codigo && (
-          <div className="bg-slate-800 rounded-xl p-4 text-center space-y-2">
-            <p className="text-xs text-slate-400">Mandá este código por WhatsApp al bot</p>
-            <div className="flex items-center justify-center gap-2">
-              <p className="text-3xl font-mono font-bold tracking-[0.2em] text-emerald-400">{codigo}</p>
-              <button
-                onClick={() => navigator.clipboard?.writeText(codigo)}
-                className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-                title="Copiar"
-              >
-                <Copy className="w-4 h-4" />
-              </button>
-            </div>
-            <p className="text-xs text-slate-500">Vence en 15 minutos y sirve una sola vez.</p>
-          </div>
-        )}
-      </div>
-
-      {/* Números vinculados */}
-      <div className="space-y-2">
-        <p className="text-sm font-medium text-slate-300">Números autorizados</p>
-        {estado?.numeros.length === 0 && (
-          <div className="text-center py-8 text-slate-500 text-sm bg-slate-900 border border-slate-800 rounded-2xl">
-            Todavía no hay ninguno.
-          </div>
-        )}
-        {estado?.numeros.map(n => {
-          const ledger = ledgers.find(l => l.id === n.ledger_id);
-          const color = ledger ? LEDGER_COLOR_MAP[ledger.color] : null;
-          return (
-            <div key={n.id} className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex items-center gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-white font-medium">+{n.phone}</p>
-                <div className="relative mt-1">
-                  <select
-                    value={n.ledger_id ?? ''}
-                    onChange={e => cambiarCuenta(n.id, e.target.value)}
-                    className="bg-slate-800 border border-slate-700 rounded-md pl-6 pr-6 py-1 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 appearance-none"
-                  >
-                    <option value="">Sin cuenta asignada</option>
-                    {ledgers.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                  </select>
-                  {color && (
-                    <div
-                      className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 rounded-sm pointer-events-none"
-                      style={{ background: `linear-gradient(to right, ${color.dark} 35%, ${color.main} 35%)` }}
-                    />
-                  )}
-                  <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400 pointer-events-none" />
-                </div>
-              </div>
-              <button
-                onClick={() => desvincular(n.id, n.phone)}
-                className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors flex-shrink-0"
-                title="Desvincular"
-              >
-                <Unlink className="w-4 h-4" />
-              </button>
-            </div>
-          );
-        })}
-      </div>
+      {/* Paso 2: autorizar el numero */}
+      <ChatLinkPanel
+        channel="whatsapp"
+        chats={estado?.chats ?? []}
+        formatearId={id => `+${id}`}
+        onCambio={cargarEstado}
+        instrucciones={<>Generá un código y mandáselo por WhatsApp al bot. Así ese número queda atado a tu cuenta y nadie más puede anotar movimientos en tus finanzas.</>}
+      />
 
       {/* Cómo se usa */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">

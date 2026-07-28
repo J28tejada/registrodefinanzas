@@ -2,6 +2,7 @@
  * Cliente de Evolution API (self-hosted, Baileys).
  * Toda llamada lleva el header `apikey`.
  */
+import { MedioDescargado } from '../types';
 
 export interface EvolutionConfig {
   url: string;
@@ -150,9 +151,7 @@ export async function sendText(phone: string, text: string) {
  * a un `.enc` que solo Evolution puede descifrar. Hay que pedirle el archivo
  * mandándole el mensaje completo tal como llegó.
  */
-export async function getBase64FromMediaMessage(
-  message: unknown,
-): Promise<{ base64: string; mimetype: string }> {
+export async function getBase64FromMediaMessage(message: unknown): Promise<MedioDescargado> {
   const cfg = requireEvolution();
   const data = await call<Record<string, unknown>>(
     'POST',
@@ -161,5 +160,8 @@ export async function getBase64FromMediaMessage(
   );
   const base64 = (data.base64 as string) ?? '';
   if (!base64) throw new Error('Evolution devolvió el medio sin base64');
-  return { base64, mimetype: (data.mimetype as string) ?? 'application/octet-stream' };
+  return {
+    bytes: new Uint8Array(Buffer.from(base64, 'base64')),
+    mimeType: (data.mimetype as string) ?? 'application/octet-stream',
+  };
 }

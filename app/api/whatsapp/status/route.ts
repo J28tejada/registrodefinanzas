@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getNumbersForUser } from '@/lib/whatsapp/db';
-import { connectionState, evolutionConfig, getWebhook, webhookUrl } from '@/lib/whatsapp/evolution';
-import { MODEL, geminiApiKey } from '@/lib/whatsapp/config';
+import { getLinksForUser } from '@/lib/chat/db';
+import { connectionState, evolutionConfig, getWebhook, webhookUrl } from '@/lib/chat/transports/evolution';
+import { MODEL, geminiApiKey } from '@/lib/chat/config';
 import { conSesion } from '@/lib/supabase/session';
 import { getSettings } from '@/lib/db';
 
@@ -21,8 +21,8 @@ export async function GET() {
       !geminiApiKey() && 'GOOGLE_AI_API_KEY',
     ].filter(Boolean) as string[];
 
-    const [numeros, settings] = await Promise.all([
-      getNumbersForUser(db.supabase, db.userId),
+    const [chats, settings] = await Promise.all([
+      getLinksForUser(db.supabase, db.userId, 'whatsapp'),
       getSettings(db),
     ]);
 
@@ -63,7 +63,7 @@ export async function GET() {
       modelo: MODEL,
       moneda: settings.currency,
       zonaHoraria: settings.timezone,
-      numeros,
+      chats,
     });
   });
 }
