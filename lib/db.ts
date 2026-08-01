@@ -4,6 +4,9 @@ import {
   BudgetProgress,
   EmailConnection,
   Ledger,
+  LedgerInvite,
+  LedgerMember,
+  LedgerRole,
   LedgerWithStats,
   Summary,
   Transaction,
@@ -85,13 +88,34 @@ function rowToLedger(row: Record<string, unknown>): Ledger {
   };
 }
 
+/**
+ * Las cuentas propias y aquellas donde el usuario fue invitado.
+ *
+ * No filtra por `user_id`: eso dejaría fuera las compartidas, donde el dueño es
+ * otro. El recorte lo hace la membresía, que es lo que RLS también exige.
+ */
 export async function getAllLedgersWithStats(db: Db): Promise<LedgerWithStats[]> {
-  const [ledgersRes, statsRes] = await Promise.all([
-    db.supabase.from('ledgers').select('*').eq('user_id', db.userId).order('created_at'),
+  const { data: misMembresias, error: memberError } = await db.supabase
+    .from('ledger_members')
+    .select('ledger_id, role')
+    .eq('user_id', db.userId);
+  if (memberError) fallar('No se pudieron leer las cuentas', memberError);
+
+  const ids = (misMembresias ?? []).map(m => m.ledger_id as string);
+  if (ids.length === 0) return [];
+
+  const rolePorCuenta = new Map<string, LedgerRole>(
+    (misMembresias ?? []).map(m => [m.ledger_id as string, (m.role as LedgerRole) ?? 'member']),
+  );
+
+  const [ledgersRes, statsRes, miembrosRes] = await Promise.all([
+    db.supabase.from('ledgers').select('*').in('id', ids).order('created_at'),
     db.supabase.rpc('ledger_stats', { p_user: db.userId }),
+    db.supabase.from('ledger_members').select('ledger_id').in('ledger_id', ids),
   ]);
   if (ledgersRes.error) fallar('No se pudieron leer las cuentas', ledgersRes.error);
   if (statsRes.error) fallar('No se pudieron calcular los totales de las cuentas', statsRes.error);
+  if (miembrosRes.error) fallar('No se pudieron contar los miembros', miembrosRes.error);
 
   const stats = new Map<string, { tx_count: number; balance: number }>(
     ((statsRes.data ?? []) as Record<string, unknown>[]).map(r => [
@@ -100,18 +124,47 @@ export async function getAllLedgersWithStats(db: Db): Promise<LedgerWithStats[]>
     ]),
   );
 
+  const conteo = new Map<string, number>();
+  for (const fila of miembrosRes.data ?? []) {
+    const id = fila.ledger_id as string;
+    conteo.set(id, (conteo.get(id) ?? 0) + 1);
+  }
+
   return (ledgersRes.data ?? []).map(row => ({
     ...rowToLedger(row),
     transactionCount: stats.get(row.id as string)?.tx_count ?? 0,
     balance: stats.get(row.id as string)?.balance ?? 0,
+    role: rolePorCuenta.get(row.id as string) ?? 'member',
+    memberCount: conteo.get(row.id as string) ?? 1,
   }));
 }
 
 export async function getLedgerById(db: Db, id: string): Promise<Ledger | null> {
+  // Sin `.eq('user_id')`: eso escondería las cuentas compartidas, donde el dueño
+  // es otro. El recorte lo hace la membresía, comprobada abajo.
   const { data, error } = await db.supabase
-    .from('ledgers').select('*').eq('user_id', db.userId).eq('id', id).maybeSingle();
+    .from('ledgers').select('*').eq('id', id).maybeSingle();
   if (error) fallar('No se pudo leer la cuenta', error);
-  return data ? rowToLedger(data) : null;
+  if (!data) return null;
+
+  // Con la sesión del usuario RLS ya filtró, pero con la service role (el
+  // webhook de WhatsApp) no filtra nada: sin este chequeo, un número vinculado
+  // podría leer la cuenta de cualquiera pasando su id.
+  if (data.user_id !== db.userId && !(await getLedgerRole(db, id))) return null;
+
+  return rowToLedger(data);
+}
+
+/** El rol del usuario en la cuenta, o null si no tiene acceso. */
+export async function getLedgerRole(db: Db, ledgerId: string): Promise<LedgerRole | null> {
+  const { data, error } = await db.supabase
+    .from('ledger_members')
+    .select('role')
+    .eq('ledger_id', ledgerId)
+    .eq('user_id', db.userId)
+    .maybeSingle();
+  if (error) fallar('No se pudo verificar el acceso a la cuenta', error);
+  return data ? ((data.role as LedgerRole) ?? 'member') : null;
 }
 
 export async function createLedger(
@@ -130,6 +183,14 @@ export async function createLedger(
     .select()
     .single();
   if (error) fallar('No se pudo crear la cuenta', error);
+
+  // Quien la crea queda como dueño. Sin esta fila la cuenta no aparecería:
+  // el listado se arma desde las membresías, no desde `ledgers.user_id`.
+  const { error: memberError } = await db.supabase
+    .from('ledger_members')
+    .insert({ ledger_id: data.id, user_id: db.userId, role: 'owner' });
+  if (memberError) fallar('No se pudo registrar el dueño de la cuenta', memberError);
+
   return rowToLedger(data);
 }
 
@@ -152,10 +213,15 @@ export async function updateLedger(
 }
 
 export async function deleteLedger(db: Db, id: string): Promise<{ ok: boolean; error?: string }> {
+  if ((await getLedgerRole(db, id)) !== 'owner') {
+    return { ok: false, error: 'Solo el dueño puede eliminar la cuenta.' };
+  }
+
+  // Sin filtrar por user_id: si la cuenta está compartida también cuentan los
+  // movimientos de la otra persona, que se perderían al borrarla.
   const { count, error: countError } = await db.supabase
     .from('transactions')
     .select('id', { count: 'exact', head: true })
-    .eq('user_id', db.userId)
     .eq('ledger_id', id);
   if (countError) fallar('No se pudo verificar la cuenta', countError);
   if ((count ?? 0) > 0) {
@@ -166,6 +232,127 @@ export async function deleteLedger(db: Db, id: string): Promise<{ ok: boolean; e
     .from('ledgers').delete().eq('user_id', db.userId).eq('id', id);
   if (error) fallar('No se pudo eliminar la cuenta', error);
   return { ok: true };
+}
+
+// ─── Miembros e invitaciones ──────────────────────────────────────────────────
+
+export async function getLedgerMembers(db: Db, ledgerId: string): Promise<LedgerMember[]> {
+  const { data, error } = await db.supabase
+    .from('ledger_members')
+    .select('user_id, ledger_id, role, joined_at, profiles(email, display_name)')
+    .eq('ledger_id', ledgerId)
+    .order('joined_at');
+  if (error) fallar('No se pudieron leer los miembros', error);
+
+  return (data ?? []).map(fila => {
+    const perfil = fila.profiles as unknown as { email?: string; display_name?: string } | null;
+    const email = perfil?.email ?? '';
+    return {
+      user_id: fila.user_id as string,
+      ledger_id: fila.ledger_id as string,
+      role: (fila.role as LedgerRole) ?? 'member',
+      email,
+      name: perfil?.display_name || email.split('@')[0] || 'Sin nombre',
+      joined_at: fila.joined_at as string,
+    };
+  }).sort((a, b) => (a.role === 'owner' ? -1 : b.role === 'owner' ? 1 : 0));
+}
+
+/** Quita a alguien de la cuenta. Al dueño no se lo puede quitar. */
+export async function removeLedgerMember(
+  db: Db,
+  ledgerId: string,
+  targetUserId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const miRol = await getLedgerRole(db, ledgerId);
+  if (!miRol) return { ok: false, error: 'Sin acceso a esta cuenta.' };
+
+  const esSalidaPropia = targetUserId === db.userId;
+  if (miRol !== 'owner' && !esSalidaPropia) {
+    return { ok: false, error: 'Solo el dueño puede quitar a otros miembros.' };
+  }
+
+  const { data: objetivo, error: lookupError } = await db.supabase
+    .from('ledger_members')
+    .select('role')
+    .eq('ledger_id', ledgerId)
+    .eq('user_id', targetUserId)
+    .maybeSingle();
+  if (lookupError) fallar('No se pudo leer el miembro', lookupError);
+  if (!objetivo) return { ok: false, error: 'Esa persona no está en la cuenta.' };
+  if (objetivo.role === 'owner') {
+    return { ok: false, error: 'No se puede quitar al dueño de la cuenta.' };
+  }
+
+  const { error } = await db.supabase
+    .from('ledger_members').delete().eq('ledger_id', ledgerId).eq('user_id', targetUserId);
+  if (error) fallar('No se pudo quitar al miembro', error);
+  return { ok: true };
+}
+
+/** Sin 0/O ni 1/I: el código se dicta y se tipea a mano. */
+const ALFABETO_CODIGO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function generarCodigo(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(6));
+  return Array.from(bytes, b => ALFABETO_CODIGO[b % ALFABETO_CODIGO.length]).join('');
+}
+
+/**
+ * Crea un código nuevo y borra los anteriores de esa cuenta: así un código que
+ * se compartió de más deja de servir en cuanto se genera otro.
+ */
+export async function createInvite(db: Db, ledgerId: string): Promise<LedgerInvite | { error: string }> {
+  if ((await getLedgerRole(db, ledgerId)) !== 'owner') {
+    return { error: 'Solo el dueño puede invitar.' };
+  }
+
+  const cuenta = await getLedgerById(db, ledgerId);
+  if (!cuenta) return { error: 'Cuenta no encontrada.' };
+
+  const { error: delError } = await db.supabase
+    .from('ledger_invites').delete().eq('ledger_id', ledgerId);
+  if (delError) fallar('No se pudieron limpiar las invitaciones anteriores', delError);
+
+  const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const code = generarCodigo();
+
+  const { error } = await db.supabase.from('ledger_invites').insert({
+    code,
+    ledger_id: ledgerId,
+    created_by: db.userId,
+    expires_at: expires,
+  });
+  if (error) fallar('No se pudo crear la invitación', error);
+
+  return { code, ledger_id: ledgerId, ledger_name: cuenta.name, expires_at: expires };
+}
+
+/** A qué cuenta invita un código, sin unirse todavía. */
+export async function peekInvite(
+  db: Db,
+  code: string,
+): Promise<{ ledger_name: string; expires_at: string } | null> {
+  const { data, error } = await db.supabase.rpc('ver_invitacion', { p_code: code });
+  if (error) fallar('No se pudo leer la invitación', error);
+  const fila = (data ?? [])[0] as { ledger_name: string; expires_at: string } | undefined;
+  return fila ?? null;
+}
+
+export async function acceptInvite(
+  db: Db,
+  code: string,
+): Promise<{ ok: true; ledger_id: string; ledger_name: string } | { ok: false; error: string }> {
+  const { data, error } = await db.supabase.rpc('aceptar_invitacion', { p_code: code });
+  if (error) {
+    if (error.message.includes('CODIGO_INVALIDO')) return { ok: false, error: 'Código de invitación inválido.' };
+    if (error.message.includes('CODIGO_EXPIRADO')) return { ok: false, error: 'Esta invitación ya expiró. Pedí una nueva.' };
+    if (error.message.includes('NO_AUTENTICADO')) return { ok: false, error: 'Tenés que iniciar sesión.' };
+    return { ok: false, error: 'No se pudo aceptar la invitación.' };
+  }
+  const fila = (data ?? [])[0] as { ledger_id: string; ledger_name: string } | undefined;
+  if (!fila) return { ok: false, error: 'Código de invitación inválido.' };
+  return { ok: true, ledger_id: fila.ledger_id, ledger_name: fila.ledger_name };
 }
 
 // ─── Movimientos ──────────────────────────────────────────────────────────────
@@ -187,13 +374,32 @@ function rowToTransaction(row: Record<string, unknown>): Transaction {
   };
 }
 
+/** Ids de las cuentas donde el usuario es dueño o miembro. */
+async function misCuentas(db: Db): Promise<string[]> {
+  const { data, error } = await db.supabase
+    .from('ledger_members').select('ledger_id').eq('user_id', db.userId);
+  if (error) fallar('No se pudieron leer las cuentas del usuario', error);
+  return (data ?? []).map(m => m.ledger_id as string);
+}
+
 export async function getAllTransactions(
   db: Db,
   filters?: TransactionFilters,
 ): Promise<Transaction[]> {
-  let q = db.supabase.from('transactions').select('*').eq('user_id', db.userId);
+  let q = db.supabase.from('transactions').select('*');
 
-  if (filters?.ledger_id) q = q.eq('ledger_id', filters.ledger_id);
+  if (filters?.ledger_id) {
+    // Pidió una cuenta puntual: alcanza con comprobar que tenga acceso.
+    if (!(await getLedgerRole(db, filters.ledger_id))) return [];
+    q = q.eq('ledger_id', filters.ledger_id);
+  } else {
+    // Vista global: lo propio más lo que cargaron otros en cuentas compartidas.
+    // Sin esto, con la service role (que salta RLS) se verían movimientos ajenos.
+    const cuentas = await misCuentas(db);
+    q = cuentas.length > 0
+      ? q.or(`user_id.eq.${db.userId},ledger_id.in.(${cuentas.join(',')})`)
+      : q.eq('user_id', db.userId);
+  }
   if (filters?.type) q = q.eq('type', filters.type);
   if (filters?.scope) q = q.eq('scope', filters.scope);
   if (filters?.category) q = q.eq('category', filters.category);
@@ -210,17 +416,38 @@ export async function getAllTransactions(
   return (data ?? []).map(rowToTransaction);
 }
 
+/**
+ * Un movimiento es alcanzable si es propio o si vive en una cuenta compartida
+ * del usuario. Lo segundo es lo que permite corregir lo que cargó la pareja.
+ */
+async function puedeTocarMovimiento(db: Db, tx: Transaction | null): Promise<boolean> {
+  if (!tx) return false;
+  if (!tx.ledger_id) return true; // sin cuenta solo lo ve su dueño, y RLS ya filtró
+  return (await getLedgerRole(db, tx.ledger_id)) !== null;
+}
+
 export async function getTransactionById(db: Db, id: string): Promise<Transaction | null> {
   const { data, error } = await db.supabase
-    .from('transactions').select('*').eq('user_id', db.userId).eq('id', id).maybeSingle();
+    .from('transactions').select('*').eq('id', id).maybeSingle();
   if (error) fallar('No se pudo leer el movimiento', error);
-  return data ? rowToTransaction(data) : null;
+  if (!data) return null;
+
+  const tx = rowToTransaction(data);
+  // Con la service role RLS no filtra: el chequeo de acceso va acá.
+  if (data.user_id !== db.userId && !(await puedeTocarMovimiento(db, tx))) return null;
+  return tx;
 }
 
 export async function createTransaction(
   db: Db,
   datos: Omit<Transaction, 'id' | 'createdAt'>,
 ): Promise<Transaction> {
+  // Con la service role RLS no valida nada: sin esto, el webhook podría anotar
+  // un gasto en la cuenta de otra persona.
+  if (datos.ledger_id && !(await getLedgerRole(db, datos.ledger_id))) {
+    throw new Error('No tenés acceso a esa cuenta');
+  }
+
   const { data, error } = await db.supabase
     .from('transactions')
     .insert({
@@ -253,15 +480,27 @@ export async function updateTransaction(
   }
   if (Object.keys(campos).length === 0) return getTransactionById(db, id);
 
+  // getTransactionById ya valida el acceso, incluso con la service role.
+  const actual = await getTransactionById(db, id);
+  if (!actual) return null;
+
+  // Mover un movimiento a otra cuenta exige acceso también al destino.
+  if (datos.ledger_id !== undefined && datos.ledger_id !== null) {
+    if (!(await getLedgerRole(db, datos.ledger_id))) return null;
+  }
+
   const { data, error } = await db.supabase
-    .from('transactions').update(campos).eq('user_id', db.userId).eq('id', id).select().maybeSingle();
+    .from('transactions').update(campos).eq('id', id).select().maybeSingle();
   if (error) fallar('No se pudo actualizar el movimiento', error);
   return data ? rowToTransaction(data) : null;
 }
 
 export async function deleteTransaction(db: Db, id: string): Promise<boolean> {
+  // Valida el acceso antes de borrar: propio, o de una cuenta compartida.
+  if (!(await getTransactionById(db, id))) return false;
+
   const { data, error } = await db.supabase
-    .from('transactions').delete().eq('user_id', db.userId).eq('id', id).select('id');
+    .from('transactions').delete().eq('id', id).select('id');
   if (error) fallar('No se pudo eliminar el movimiento', error);
   return (data ?? []).length > 0;
 }

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Plus, Check, Pencil, Trash2, LayoutGrid } from 'lucide-react';
+import { X, Plus, Check, Pencil, Trash2, LayoutGrid, Users, Crown } from 'lucide-react';
 import { useLedger } from './LedgerContext';
 import { useFormatters } from './SettingsContext';
+import LedgerMembers from './LedgerMembers';
 import { Ledger, LedgerWithStats, LedgerColor, LEDGER_COLOR_MAP } from '@/lib/types';
 
 const COLOR_OPTIONS: LedgerColor[] = ['green', 'blue', 'purple', 'orange', 'red', 'teal', 'indigo', 'pink'];
@@ -14,12 +15,14 @@ interface LedgerCardProps {
   onSelect: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onManageMembers: () => void;
 }
 
-function LedgerCard({ ledger, isActive, onSelect, onEdit, onDelete }: LedgerCardProps) {
+function LedgerCard({ ledger, isActive, onSelect, onEdit, onDelete, onManageMembers }: LedgerCardProps) {
   const color = LEDGER_COLOR_MAP[ledger.color];
   const fmt = useFormatters();
-  const [showActions, setShowActions] = useState(false);
+  const esDueno = ledger.role === 'owner';
+  const compartida = ledger.memberCount > 1;
 
   return (
     <div className="flex flex-col gap-2">
@@ -27,8 +30,6 @@ function LedgerCard({ ledger, isActive, onSelect, onEdit, onDelete }: LedgerCard
         className="rounded-2xl overflow-hidden cursor-pointer relative select-none"
         style={{ aspectRatio: '3/4', background: `linear-gradient(to right, ${color.dark} 28%, ${color.main} 28%)` }}
         onClick={onSelect}
-        onMouseEnter={() => setShowActions(true)}
-        onMouseLeave={() => setShowActions(false)}
       >
         {/* Inner card highlight */}
         <div
@@ -43,27 +44,49 @@ function LedgerCard({ ledger, isActive, onSelect, onEdit, onDelete }: LedgerCard
           </div>
         )}
 
-        {/* Action buttons on hover */}
-        {showActions && (
-          <div className="absolute bottom-2 right-2 flex gap-1">
-            <button
-              onClick={e => { e.stopPropagation(); onEdit(); }}
-              className="w-7 h-7 bg-black/40 hover:bg-black/60 rounded-lg flex items-center justify-center transition-colors"
-            >
-              <Pencil className="w-3.5 h-3.5 text-white" />
-            </button>
-            <button
-              onClick={e => { e.stopPropagation(); onDelete(); }}
-              className="w-7 h-7 bg-black/40 hover:bg-rose-500/70 rounded-lg flex items-center justify-center transition-colors"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-white" />
-            </button>
+        {/* Cuántas personas tienen acceso */}
+        {compartida && (
+          <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/40 rounded-full px-1.5 py-0.5">
+            <Users className="w-2.5 h-2.5 text-white" />
+            <span className="text-[10px] text-white font-medium">{ledger.memberCount}</span>
           </div>
         )}
+
+        {/* Siempre visibles: en móvil no hay hover */}
+        <div className="absolute bottom-2 right-2 flex gap-1">
+          <button
+            onClick={e => { e.stopPropagation(); onManageMembers(); }}
+            title="Personas con acceso"
+            className="w-7 h-7 bg-black/40 hover:bg-black/60 rounded-lg flex items-center justify-center transition-colors"
+          >
+            <Users className="w-3.5 h-3.5 text-white" />
+          </button>
+          {esDueno && (
+            <>
+              <button
+                onClick={e => { e.stopPropagation(); onEdit(); }}
+                title="Editar"
+                className="w-7 h-7 bg-black/40 hover:bg-black/60 rounded-lg flex items-center justify-center transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5 text-white" />
+              </button>
+              <button
+                onClick={e => { e.stopPropagation(); onDelete(); }}
+                title="Eliminar"
+                className="w-7 h-7 bg-black/40 hover:bg-rose-500/70 rounded-lg flex items-center justify-center transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-white" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="px-0.5">
-        <p className="text-sm font-medium text-white truncate">{ledger.name}</p>
+        <div className="flex items-center gap-1">
+          <p className="text-sm font-medium text-white truncate">{ledger.name}</p>
+          {esDueno && <Crown className="w-3 h-3 text-amber-400 flex-shrink-0" />}
+        </div>
         <p className={`text-xs font-semibold ${ledger.balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
           {fmt.money(ledger.balance)}
         </p>
@@ -190,8 +213,9 @@ function LedgerForm({ initial, onSave, onCancel }: LedgerFormProps) {
 
 export default function LedgerSelector() {
   const { currentLedger, setCurrentLedger, ledgers, refreshLedgers, selectorOpen, setSelectorOpen } = useLedger();
-  const [view, setView] = useState<'list' | 'create' | 'edit'>('list');
+  const [view, setView] = useState<'list' | 'create' | 'edit' | 'members'>('list');
   const [editingLedger, setEditingLedger] = useState<LedgerWithStats | null>(null);
+  const [membersLedger, setMembersLedger] = useState<LedgerWithStats | null>(null);
   const [deleteError, setDeleteError] = useState('');
 
   if (!selectorOpen) return null;
@@ -200,6 +224,7 @@ export default function LedgerSelector() {
     setSelectorOpen(false);
     setView('list');
     setEditingLedger(null);
+    setMembersLedger(null);
     setDeleteError('');
   };
 
@@ -259,7 +284,10 @@ export default function LedgerSelector() {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
           <h2 className="font-semibold text-white">
-            {view === 'create' ? 'Nueva cuenta' : view === 'edit' ? 'Editar cuenta' : 'Seleccionar cuenta'}
+            {view === 'create' ? 'Nueva cuenta'
+              : view === 'edit' ? 'Editar cuenta'
+              : view === 'members' ? membersLedger?.name
+              : 'Seleccionar cuenta'}
           </h2>
           <button onClick={handleClose} className="text-slate-400 hover:text-white transition-colors">
             <X className="w-5 h-5" />
@@ -279,6 +307,14 @@ export default function LedgerSelector() {
               initial={editingLedger}
               onSave={handleEdit}
               onCancel={() => { setView('list'); setEditingLedger(null); }}
+            />
+          )}
+
+          {view === 'members' && membersLedger && (
+            <LedgerMembers
+              ledger={membersLedger}
+              onBack={() => { setView('list'); setMembersLedger(null); }}
+              onChanged={refreshLedgers}
             />
           )}
 
@@ -322,6 +358,7 @@ export default function LedgerSelector() {
                     onSelect={() => handleSelect(l)}
                     onEdit={() => { setEditingLedger(l); setView('edit'); }}
                     onDelete={() => handleDelete(l)}
+                    onManageMembers={() => { setMembersLedger(l); setView('members'); }}
                   />
                 ))}
 

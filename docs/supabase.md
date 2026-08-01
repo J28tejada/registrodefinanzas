@@ -112,3 +112,44 @@ columna `id`); y `date` pasó de texto a `date`.
 
 Hacelo antes de que la gente empiece a cargar datos nuevos: no hay
 deduplicación.
+
+## Cuentas compartidas
+
+`supabase/migrations/0003_cuentas_compartidas.sql` agrega la posibilidad de que
+una cuenta tenga más de una persona: una pareja llevando los gastos del hogar,
+por ejemplo. Correla en el SQL Editor después de `0002_canales.sql`.
+
+Qué cambia:
+
+- **`ledger_members`** dice quién entra a cada cuenta y con qué rol. Quien la
+  crea queda `owner`; a quien invita entra como `member`. La migración da de
+  alta como dueño a los dueños actuales, así que nada se pierde.
+- **`ledger_invites`** guarda un código de 6 caracteres que vence a los 7 días.
+  Hay uno vivo por cuenta: generar otro borra el anterior, para que un código
+  que circuló de más deje de servir.
+- **`profiles`** es un espejo público de `auth.users`. Hace falta porque
+  `auth.users` no es legible desde el cliente y la pantalla de miembros tiene
+  que mostrar nombre y correo. Se mantiene solo con un trigger.
+
+Lo importante es el cambio de RLS. Antes alcanzaba con `user_id = auth.uid()`:
+cada fila era de una sola persona. Ahora un gasto que carga tu pareja en la
+cuenta del hogar lleva **su** `user_id`, y vos igual tenés que verlo. Entonces
+las políticas de `ledgers` y `transactions` pasan a mirar la membresía de la
+cuenta, no el dueño de la fila.
+
+Eso trae un detalle: las políticas consultan `ledger_members`, que tiene su
+propia RLS. Sin cuidado, Postgres entra en recursión infinita al evaluarlas.
+Por eso los helpers (`es_miembro`, `es_dueno`, `cuentas_visibles`) son
+`SECURITY DEFINER`: saltan RLS para poder responder la pregunta.
+
+Los agregados (`summary_by_category`, `ledger_stats`) también cambian: filtraban
+por `t.user_id = p_user`, que dejaba fuera lo que carga la otra persona. Ahora
+miran la cuenta. Siguen siendo `SECURITY INVOKER`, así que pasar otro `p_user`
+sigue sin servir de nada para un usuario autenticado.
+
+Qué **no** se comparte: los presupuestos, la conexión de Gmail y la
+configuración regional siguen siendo de cada quien.
+
+Quien recibe un código todavía no es miembro, así que no puede leer
+`ledger_invites`. El canje va por `aceptar_invitacion(p_code)`, una función
+`SECURITY DEFINER` que valida el código y lo suma como miembro.

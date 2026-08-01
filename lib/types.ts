@@ -84,6 +84,9 @@ export const CURRENCIES: CurrencyOption[] = [
 
 // ─── Entidades ────────────────────────────────────────────────────────────────
 
+/** Quien crea la cuenta es `owner`; a quien invita entra como `member`. */
+export type LedgerRole = 'owner' | 'member';
+
 export interface Ledger {
   id: string;
   name: string;
@@ -96,6 +99,26 @@ export interface Ledger {
 export interface LedgerWithStats extends Ledger {
   transactionCount: number;
   balance: number;
+  /** Rol de quien consulta sobre esta cuenta. */
+  role: LedgerRole;
+  /** Cuántas personas tienen acceso. 1 = no está compartida. */
+  memberCount: number;
+}
+
+export interface LedgerMember {
+  user_id: string;
+  ledger_id: string;
+  role: LedgerRole;
+  email: string;
+  name: string;
+  joined_at: string;
+}
+
+export interface LedgerInvite {
+  code: string;
+  ledger_id: string;
+  ledger_name: string;
+  expires_at: string;
 }
 
 export interface Transaction {
