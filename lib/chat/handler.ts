@@ -3,10 +3,11 @@
  *
  *   1. ¿código de vinculación?      → vincular conversación ↔ usuario
  *   2. ¿conversación autorizada?    → si no, invitar a vincular
- *   3. ¿responde a algo pendiente?  → APLICAR (determinista, sin modelo)
- *   4. correr el agente
+ *   3. ¿dice cómo quiere que le llamen? → guardarlo
+ *   4. ¿responde a algo pendiente?  → APLICAR (determinista, sin modelo)
+ *   5. correr el agente
  *
- * El paso 3 va ANTES del modelo a propósito: un "sí" es el mensaje más
+ * El paso 4 va ANTES del modelo a propósito: un "sí" es el mensaje más
  * repetido del flujo y no debe gastar una llamada ni depender de que el modelo
  * recuerde qué propuso.
  */
@@ -15,13 +16,17 @@ import { getAllLedgersWithStats, getLedgerById, getSettings } from '@/lib/db';
 import { TransactionScope } from '@/lib/types';
 import { makeFormatters } from '@/lib/format';
 import { MODEL } from './config';
-import { actualizarPendiente, consumeLinkCode, getLink, pendienteVigente, setLinkLedger } from './db';
+import {
+  actualizarPendiente, consumeLinkCode, getLink, getPreferredName,
+  pendienteVigente, setLinkLedger, setPreferredName,
+} from './db';
 import { CuotaAgotadaError, ModeloNoDisponibleError, correrAgente } from './agent';
 import {
   aplicar,
   cancelar,
   claseAgrupacion,
   claseRespuesta,
+  extraerNombre,
   elegirCuenta,
   necesitaAgrupacion,
   preguntarCuenta,
@@ -58,10 +63,13 @@ export async function construirContexto(
   link: ChatLink,
 ): Promise<Contexto> {
   const db = { supabase, userId: link.user_id };
-  const settings = await getSettings(db);
+  const [settings, nombre] = await Promise.all([
+    getSettings(db),
+    getPreferredName(supabase, link.user_id),
+  ]);
   const ledger = link.ledger_id ? await getLedgerById(db, link.ledger_id) : null;
   const scope: TransactionScope = ledger?.type ?? 'personal';
-  return { db, link, settings, fmt: makeFormatters(settings), ledger, scope };
+  return { db, link, settings, fmt: makeFormatters(settings), ledger, scope, nombre };
 }
 
 export async function handleInboundMessage(entrada: Entrada): Promise<string> {
@@ -78,9 +86,17 @@ export async function handleInboundMessage(entrada: Entrada): Promise<string> {
         // "todas las cuentas" era mentira: sin cuenta no hay dónde anotar, así
         // que se avisa que se va a preguntar en el primer movimiento.
         const destino = ctx.ledger
-          ? `Voy a anotar en: ${ctx.ledger.name}, en ${ctx.settings.currency}.`
+          ? `Voy a anotar en tu cuenta *${ctx.ledger.name}*, en ${ctx.settings.currency}.`
           : `Todavía no elegiste cuenta: te la pregunto en el primer movimiento. Moneda: ${ctx.settings.currency}.`;
-        return `Listo, quedaste vinculado ✅\n${destino}\nMandame algo como "gasté 800 en el súper" y te lo confirmo antes de guardarlo.`;
+
+        // Se pregunta el nombre acá y no más tarde: es el único momento en que
+        // no hay nada más en curso que se pueda confundir con la respuesta.
+        const yaTieneNombre = await getPreferredName(supabase, vinculado.user_id);
+        const pedirNombre = yaTieneNombre
+          ? `Mandame algo como "gasté 800 en el súper" y te lo confirmo antes de guardarlo.`
+          : `Antes de empezar: ¿cómo querés que te llame?`;
+
+        return `Listo, quedaste vinculado ✅\n${destino}\n${pedirNombre}`;
       }
       return 'Ese código no sirve: o ya se usó o venció (duran 15 minutos). Generá uno nuevo en la app.';
     }
@@ -93,8 +109,27 @@ export async function handleInboundMessage(entrada: Entrada): Promise<string> {
 
   let ctx = await construirContexto(supabase, link);
 
-  // 3. ¿Responde a algo pendiente?
-  const pendiente = await pendienteVigente(supabase, channel, externalId);
+  // 3. ¿Está contestando cómo quiere que le llamen?
+  //
+  // Solo cuando no hay nada pendiente: si lo hay, ese mensaje contesta a la
+  // confirmación y no al nombre. `extraerNombre` además descarta lo que parezca
+  // un movimiento, así que un "gasté 800" acá sigue de largo hacia el agente.
+  const pendienteAntes = await pendienteVigente(supabase, channel, externalId);
+  if (!pendienteAntes && !(await getPreferredName(supabase, link.user_id))) {
+    const nombre = extraerNombre(texto);
+    if (nombre) {
+      await setPreferredName(supabase, link.user_id, nombre);
+      const cuenta = ctx.ledger
+        ? `Anoto en tu cuenta *${ctx.ledger.name}*.`
+        : 'En el primer movimiento te pregunto en qué cuenta anotarlo.';
+      return conEco(eco,
+        `Un gusto, ${nombre} 👋\n${cuenta}\n`
+        + 'Mandame algo como "gasté 800 en el súper" y te lo confirmo antes de guardarlo.');
+    }
+  }
+
+  // 4. ¿Responde a algo pendiente?
+  const pendiente = pendienteAntes;
   if (pendiente) {
     const movs = pendiente.payload.movimientos ?? [];
 
@@ -153,7 +188,7 @@ export async function handleInboundMessage(entrada: Entrada): Promise<string> {
     }
   }
 
-  // 4. El agente
+  // 5. El agente
   try {
     const respuesta = await correrAgente(ctx, texto, receiptUrl);
     return conEco(eco, respuesta.texto);

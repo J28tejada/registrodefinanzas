@@ -35,6 +35,34 @@ function rowToLink(row: Record<string, unknown>): ChatLink {
   };
 }
 
+// ─── Nombre preferido ─────────────────────────────────────────────────────────
+
+/**
+ * Cómo pidió el usuario que le llamen. null = todavía no se le preguntó.
+ *
+ * Distinto de `display_name`, que sale de Google o del correo: eso es heredado,
+ * esto es elegido.
+ */
+export async function getPreferredName(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('profiles').select('preferred_name').eq('id', userId).maybeSingle();
+  if (error) fallar('No se pudo leer el nombre', error);
+  return (data?.preferred_name as string) ?? null;
+}
+
+export async function setPreferredName(
+  supabase: SupabaseClient,
+  userId: string,
+  nombre: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('profiles').update({ preferred_name: nombre }).eq('id', userId);
+  if (error) fallar('No se pudo guardar el nombre', error);
+}
+
 /** De quién es esta conversación. null = no está autorizada. */
 export async function getLink(
   supabase: SupabaseClient,

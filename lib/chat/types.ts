@@ -81,6 +81,8 @@ export interface Contexto {
   fmt: Formatters;
   ledger: Ledger | null;
   scope: TransactionScope;
+  /** Cómo pidió que le llamen. null hasta que lo diga. */
+  nombre: string | null;
 }
 
 /** Un mensaje entrante, ya normalizado por el transporte del canal. */

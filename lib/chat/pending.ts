@@ -99,6 +99,46 @@ export function claseAgrupacion(body: string): 'juntos' | 'separados' | null {
   return null;
 }
 
+// ─── Nombre preferido ─────────────────────────────────────────────────────────
+
+/** "me llamo Josue", "decime Josue", "soy Josue" → "Josue". */
+const PREFIJOS_NOMBRE = [
+  'me llamo', 'llamame', 'llámame', 'decime', 'dime', 'decíme',
+  'mi nombre es', 'soy', 'puedes llamarme', 'podes llamarme', 'podés llamarme',
+];
+
+/**
+ * Extrae el nombre de la respuesta, o null si el mensaje no parece un nombre.
+ *
+ * Es deliberadamente estricto: si acá se cuela un "gasté 800 en el súper", esa
+ * frase queda guardada como el nombre de la persona. Ante la duda no se toma, y
+ * el mensaje sigue su camino normal hacia el agente.
+ */
+export function extraerNombre(body: string): string | null {
+  let texto = body.trim().replace(/[.!¡?¿]+$/g, '').trim();
+  if (!texto) return null;
+
+  const sinAcentos = normalizar(texto);
+  for (const p of PREFIJOS_NOMBRE) {
+    if (sinAcentos.startsWith(`${p} `)) {
+      texto = texto.slice(p.length).trim();
+      break;
+    }
+  }
+
+  if (texto.length < 2 || texto.length > 40) return null;
+  // Un número casi siempre significa que es un movimiento, no un nombre.
+  if (/\d/.test(texto)) return null;
+  // Un "sí" suelto contesta otra cosa, no dice cómo se llama.
+  if (claseRespuesta(texto) !== null) return null;
+
+  const palabras = texto.split(/\s+/);
+  if (palabras.length > 3) return null;
+  if (!/^[\p{L}\s'’-]+$/u.test(texto)) return null;
+
+  return texto;
+}
+
 // ─── Elección de cuenta ───────────────────────────────────────────────────────
 
 /** Lo mínimo que hace falta para preguntar y resolver: id y nombre. */
