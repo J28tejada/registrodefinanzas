@@ -76,8 +76,12 @@ Evolution tiene que ser alcanzable por HTTPS desde Vercel. Con Docker:
 ```bash
 docker run -d --name evolution -p 8080:8080 \
   -e AUTHENTICATION_API_KEY=poné-una-clave-larga \
-  atendai/evolution-api:latest
+  evoapicloud/evolution-api:latest
 ```
+
+> La imagen `atendai/evolution-api` que figuraba acá antes ya no existe: el
+> proyecto la publica ahora bajo `evoapicloud/`. Con la vieja, `docker pull`
+> responde *"repository does not exist"*.
 
 Y un túnel para exponerlo:
 
@@ -284,6 +288,34 @@ activada.
 
 Ojo: el listado de modelos de la API enumera modelos que *existen*, no los que
 tu llave puede usar. Si `GEMINI_MODEL` da 404, el bot te lo dice con ese nombre.
+
+### Detrás de un proxy que intercepta TLS, el contenedor no genera QR
+
+Si Evolution arranca bien, la instancia queda en `connecting`, pasa a `close` y
+`/instance/connect` devuelve `{"count":0}` sin error visible, el problema suele
+ser el certificado. En los logs del contenedor aparece:
+
+```
+self-signed certificate in certificate chain
+```
+
+Pasa en redes corporativas y en entornos que interceptan TLS: el host confía en
+el CA de la intercepción, pero el contenedor no lo hereda. Baileys no puede
+completar el handshake y nunca llega a emitir el QR.
+
+Se arregla montando el CA y apuntándole Node:
+
+```bash
+docker run -d --name evolution --network host \
+  -v /ruta/al/ca-bundle.crt:/ca/proxy-ca.crt:ro \
+  -e NODE_EXTRA_CA_CERTS=/ca/proxy-ca.crt \
+  ... resto de la config
+```
+
+Ojo con confundirlo con un bloqueo de red: WhatsApp usa WebSocket sobre 443, y
+si 443 sale, el canal está. La prueba rápida, desde adentro del contenedor, es
+abrir un socket a `web.whatsapp.com:443` y pedir el upgrade — tiene que
+responder `101 Switching Protocols`.
 
 ### Las sesiones de Baileys se caen solas
 
