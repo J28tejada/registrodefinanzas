@@ -4,10 +4,23 @@ import { NextRequest, NextResponse } from 'next/server';
 /** Rutas que se pueden ver sin sesión. */
 const PUBLICAS = ['/login', '/auth/callback', '/auth/error'];
 /**
+ * Rutas donde el middleware no toca nada.
+ *
  * Los webhooks y el cron no traen sesión de navegador: se autentican con su
  * propio token y resuelven al usuario por su cuenta.
+ *
+ * /auth/callback va acá por otro motivo: es el canje del código por sesión y
+ * todavía no hay sesión que refrescar. Correr getUser() ahí es al pepe, y como
+ * de paso reescribe las cookies de la respuesta, puede pisar el code verifier
+ * de PKCE que el navegador guardó al arrancar el flujo. Sin esa cookie el
+ * canje falla con "PKCE code verifier not found in storage".
  */
-const SIN_SESION = ['/api/whatsapp/webhook', '/api/telegram/webhook', '/api/chats/cron'];
+const SIN_SESION = [
+  '/api/whatsapp/webhook',
+  '/api/telegram/webhook',
+  '/api/chats/cron',
+  '/auth/callback',
+];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

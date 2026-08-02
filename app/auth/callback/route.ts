@@ -25,7 +25,22 @@ export async function GET(req: NextRequest) {
 
   const supabase = await createClient();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error) return alLogin(error.message);
+  if (error) return alLogin(traducirCanje(error.message, req.nextUrl.origin));
 
   return NextResponse.redirect(`${base}${next.startsWith('/') ? next : '/'}`);
+}
+
+/**
+ * El error de PKCE es críptico y casi siempre significa lo mismo: el flujo
+ * arrancó en un dominio y volvió a otro, así que la cookie con el verificador
+ * no viajó. Pasa cuando Supabase ignora el redirectTo (porque no está en su
+ * lista de Redirect URLs) y cae en el Site URL, que apunta a otro lado.
+ */
+function traducirCanje(mensaje: string, origenActual: string): string {
+  if (/code verifier|pkce/i.test(mensaje)) {
+    return `La vuelta del login aterrizó en ${origenActual}, un dominio distinto del que inició sesión, `
+      + 'así que se perdió la cookie de verificación. En Supabase → Authentication → URL Configuration, '
+      + 'agregá este dominio a Redirect URLs y revisá que el Site URL sea el mismo.';
+  }
+  return mensaje;
 }
