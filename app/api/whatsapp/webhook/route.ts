@@ -39,12 +39,24 @@ function interpretarWebhook(data: Json): MensajeEntrante | null {
   if (remoteJid.endsWith('@g.us') || remoteJid.startsWith('status@')) return null;
   if (key?.fromMe === true) return null;
 
-  const externalId = remoteJid.split('@')[0].split(':')[0];
+  // Con direccionamiento LID el teléfono real, si viaja, viene en estos campos.
+  // Se prefiere para que el vínculo siga atado al número y no al LID, que puede
+  // cambiar. Si no está, el LID sirve igual como identificador de conversación.
+  const jidTelefono = (key?.remoteJidAlt as string | undefined)
+    ?? (key?.senderPn as string | undefined)
+    ?? null;
+  const jidParaId = jidTelefono ?? remoteJid;
+
+  const externalId = jidParaId.split('@')[0].split(':')[0];
+  // Se contesta al JID tal cual llegó: rearmarlo como <numero>@s.whatsapp.net
+  // da una dirección inexistente cuando el chat usa LID.
+  const replyTo = jidTelefono ?? remoteJid;
+
   const providerMessageId = (key?.id as string) ?? null;
   const message = desenvolver(data.message as Json | undefined);
   if (!message) return null;
 
-  const base = { channel: 'whatsapp' as const, externalId, providerMessageId };
+  const base = { channel: 'whatsapp' as const, externalId, replyTo, providerMessageId };
   const extendido = message.extendedTextMessage as Json | undefined;
   const imagen = message.imageMessage as Json | undefined;
   const audio = message.audioMessage as Json | undefined;
@@ -149,7 +161,7 @@ async function procesar(supabase: SupabaseClient, data: Json): Promise<string> {
   if (!mensajeId) return 'duplicado';
 
   if (tipo === 'no-soportado') {
-    await responder(supabase, userId, externalId, `Solo puedo leer texto, notas de voz y fotos. Eso que mandaste es "${entrante.descripcionTipo}" y no lo puedo interpretar.`);
+    await responder(supabase, userId, externalId, `Solo puedo leer texto, notas de voz y fotos. Eso que mandaste es "${entrante.descripcionTipo}" y no lo puedo interpretar.`, entrante.replyTo);
     return 'no-soportado';
   }
 
@@ -161,7 +173,7 @@ async function procesar(supabase: SupabaseClient, data: Json): Promise<string> {
   if (tipo === 'audio' || tipo === 'imagen') {
     // Una foto de alguien sin vincular no se guarda: no hay a quién atribuirla.
     if (tipo === 'imagen' && !userId) {
-      await responder(supabase, null, externalId, 'Este número no está vinculado a ninguna cuenta, así que no puedo guardar recibos. Entrá a la app → WhatsApp y mandame el código de 6 letras.');
+      await responder(supabase, null, externalId, 'Este número no está vinculado a ninguna cuenta, así que no puedo guardar recibos. Entrá a la app → WhatsApp y mandame el código de 6 letras.', entrante.replyTo);
       return 'sin-vincular';
     }
     try {
@@ -197,19 +209,24 @@ async function procesar(supabase: SupabaseClient, data: Json): Promise<string> {
     eco,
     receiptUrl,
   });
-  await responder(supabase, userId, externalId, respuesta);
+  await responder(supabase, userId, externalId, respuesta, entrante.replyTo);
   return 'ok';
 }
 
+/**
+ * `phone` identifica la conversación y es lo que se registra; `destino` es a
+ * dónde se envía. Se separan porque con LID no son lo mismo.
+ */
 async function responder(
   supabase: SupabaseClient,
   userId: string | null,
   phone: string,
   texto: string,
+  destino?: string,
 ) {
   await logOutbound(supabase, userId, 'whatsapp', phone, texto);
   try {
-    await sendText(phone, texto);
+    await sendText(destino ?? phone, texto);
   } catch (err) {
     console.error('[whatsapp] no se pudo enviar la respuesta:', err);
   }

@@ -317,6 +317,31 @@ si 443 sale, el canal está. La prueba rápida, desde adentro del contenedor, es
 abrir un socket a `web.whatsapp.com:443` y pedir el upgrade — tiene que
 responder `101 Switching Protocols`.
 
+### El mensaje entra pero la respuesta nunca sale (LID)
+
+Si el webhook devuelve 200, el movimiento se procesa, y aun así el usuario no
+recibe nada, mirá el log de la app. El síntoma es este:
+
+```
+Evolution POST /message/sendText/finanzas → 400:
+{"jid":"147570949111810@s.whatsapp.net","exists":false}
+```
+
+Desde 2025 WhatsApp usa **direccionamiento LID**: en vez del teléfono, el chat
+se identifica con `147570949111810@lid`. El payload lo avisa con
+`addressingMode: 'lid'`.
+
+Rearmar el destino como `<lo-que-venga>@s.whatsapp.net` produce entonces un JID
+que no existe. Por eso se contesta al JID **tal cual llegó**, sin reconstruirlo.
+
+Cuando el teléfono real viaja —en `key.remoteJidAlt` o `key.senderPn`— se
+prefiere ese para el `external_id` del vínculo: así queda atado al número y no
+al LID, que puede cambiar. El LID sirve igual como identificador de
+conversación cuando el teléfono no viene.
+
+El error es fácil de pasar por alto porque el envío falla en silencio: el
+webhook ya respondió 200 y el fallo queda solo en la consola del servidor.
+
 ### Las sesiones de Baileys se caen solas
 
 Se desconectan sin aviso. `/api/whatsapp/status` reporta el estado; cuando dice

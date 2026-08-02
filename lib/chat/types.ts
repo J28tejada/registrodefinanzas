@@ -88,6 +88,16 @@ export interface MensajeEntrante {
   channel: Channel;
   /** Teléfono o chat_id: identifica la conversación dentro del canal. */
   externalId: string;
+  /**
+   * A dónde contestar, tal cual lo mandó el proveedor.
+   *
+   * En WhatsApp no siempre coincide con `externalId`: desde 2025 las cuentas
+   * usan direccionamiento LID (`147...@lid`), un identificador que reemplaza al
+   * teléfono. Rearmar el destino como `<externalId>@s.whatsapp.net` da un JID
+   * que no existe y el envío devuelve 400. Sin esto, el mensaje entra pero la
+   * respuesta nunca sale.
+   */
+  replyTo?: string;
   /** Id del mensaje en el proveedor, para no procesarlo dos veces. */
   providerMessageId: string | null;
   tipo: 'texto' | 'audio' | 'imagen' | 'no-soportado';
