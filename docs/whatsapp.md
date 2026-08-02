@@ -155,6 +155,24 @@ El símbolo sale de la moneda que elegiste en Configuración.
 
 Las tres primeras son las que cambian el diseño; el resto es plomería.
 
+### Sin cuenta no se guarda: se pregunta
+
+`chat_links.ledger_id` puede venir en null, y antes eso significaba anotar el
+movimiento con `ledger_id` null. Esos movimientos quedan huérfanos: no aparecen
+en ninguna vista de cuenta ni suman a ningún saldo.
+
+Ahora, si hay una pendiente y el vínculo no tiene cuenta, el handler pregunta
+cuál antes de aplicar y la deja fija en el vínculo. Preguntarlo en cada gasto
+sería insoportable; preguntarlo una vez, no.
+
+La respuesta se resuelve en código, no en el modelo: por número de la lista o
+por nombre, exacto o parcial. Si el parcial encaja con dos cuentas se
+repregunta, porque anotar en la equivocada es peor que insistir. Un "sí" nunca
+elige cuenta, aunque se parezca a un nombre —`si` está dentro de `Simón`—.
+
+Elegir la cuenta vale como confirmación, igual que responder la pregunta de
+agrupación: el usuario ya vio el resumen cuando se le pidió confirmar.
+
 ### Las herramientas no escriben
 
 `registrar_movimiento` guarda `{kind, payload, summary}` en `pending_actions` y

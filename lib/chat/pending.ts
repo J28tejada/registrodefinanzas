@@ -99,6 +99,47 @@ export function claseAgrupacion(body: string): 'juntos' | 'separados' | null {
   return null;
 }
 
+// ─── Elección de cuenta ───────────────────────────────────────────────────────
+
+/** Lo mínimo que hace falta para preguntar y resolver: id y nombre. */
+export interface OpcionCuenta {
+  id: string;
+  name: string;
+}
+
+/**
+ * Resuelve la respuesta a "¿en qué cuenta lo anoto?": por número de la lista o
+ * por nombre. Devuelve null si no se entiende o si el nombre es ambiguo, para
+ * repreguntar en vez de anotar en la cuenta equivocada.
+ */
+export function elegirCuenta(body: string, cuentas: OpcionCuenta[]): string | null {
+  const texto = normalizar(body);
+  if (!texto || cuentas.length === 0) return null;
+
+  // Un "sí" o un "no" no eligen nada, y por parecido podrían pegarle a una
+  // cuenta ("si" está dentro de "Simón"). Mejor repreguntar.
+  if (claseRespuesta(body) !== null) return null;
+
+  const porNumero = texto.match(/^(\d{1,2})$/);
+  if (porNumero) return cuentas[Number(porNumero[1]) - 1]?.id ?? null;
+
+  const exacta = cuentas.filter(c => normalizar(c.name) === texto);
+  if (exacta.length === 1) return exacta[0].id;
+
+  // "hogar" tiene que encontrar "Gastos del hogar", pero si el texto encaja con
+  // dos cuentas no se adivina.
+  const parciales = cuentas.filter(c => {
+    const nombre = normalizar(c.name);
+    return nombre.includes(texto) || texto.includes(nombre);
+  });
+  return parciales.length === 1 ? parciales[0].id : null;
+}
+
+export function preguntarCuenta(cuentas: OpcionCuenta[], resumen: string): string {
+  const lista = cuentas.map((c, i) => `${i + 1}. ${c.name}`).join('\n');
+  return `${resumen}\n\n¿En qué cuenta lo anoto?\n${lista}\n\nRespondeme con el número o el nombre. Queda fija para las próximas.`;
+}
+
 // ─── Resúmenes ────────────────────────────────────────────────────────────────
 
 export function necesitaAgrupacion(movs: MovimientoPropuesto[]): boolean {
@@ -179,7 +220,8 @@ export async function aplicar(pendiente: PendingAction, ctx: Contexto): Promise<
 
   await cerrarPendiente(ctx.db.supabase, pendiente.id, 'confirmed');
 
-  const destino = ctx.ledger ? ctx.ledger.name : 'sin cuenta asignada';
+  // El handler no deja llegar acá sin cuenta: pregunta cuál antes de aplicar.
+  const destino = ctx.ledger?.name ?? 'tu cuenta';
   const aviso = await avisoDePresupuesto(ctx, [...categoriasTocadas]);
 
   return `Listo ✅\n${lineas.map(l => `• ${l}`).join('\n')}\nGuardado en: ${destino}${aviso}`;

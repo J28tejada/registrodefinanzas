@@ -11,18 +11,20 @@
  * recuerde qué propuso.
  */
 import { SupabaseClient } from '@supabase/supabase-js';
-import { getLedgerById, getSettings } from '@/lib/db';
+import { getAllLedgersWithStats, getLedgerById, getSettings } from '@/lib/db';
 import { TransactionScope } from '@/lib/types';
 import { makeFormatters } from '@/lib/format';
 import { MODEL } from './config';
-import { actualizarPendiente, consumeLinkCode, getLink, pendienteVigente } from './db';
+import { actualizarPendiente, consumeLinkCode, getLink, pendienteVigente, setLinkLedger } from './db';
 import { CuotaAgotadaError, ModeloNoDisponibleError, correrAgente } from './agent';
 import {
   aplicar,
   cancelar,
   claseAgrupacion,
   claseRespuesta,
+  elegirCuenta,
   necesitaAgrupacion,
+  preguntarCuenta,
   resumirMovimientos,
 } from './pending';
 import { CHANNEL_LABEL, Channel, ChatLink, Contexto } from './types';
@@ -73,7 +75,12 @@ export async function handleInboundMessage(entrada: Entrada): Promise<string> {
       const vinculado = await consumeLinkCode(supabase, codigo, channel, externalId);
       if (vinculado) {
         const ctx = await construirContexto(supabase, vinculado);
-        return `Listo, quedaste vinculado ✅\nVoy a anotar en: ${ctx.ledger?.name ?? 'todas las cuentas'}, en ${ctx.settings.currency}.\nMandame algo como "gasté 800 en el súper" y te lo confirmo antes de guardarlo.`;
+        // "todas las cuentas" era mentira: sin cuenta no hay dónde anotar, así
+        // que se avisa que se va a preguntar en el primer movimiento.
+        const destino = ctx.ledger
+          ? `Voy a anotar en: ${ctx.ledger.name}, en ${ctx.settings.currency}.`
+          : `Todavía no elegiste cuenta: te la pregunto en el primer movimiento. Moneda: ${ctx.settings.currency}.`;
+        return `Listo, quedaste vinculado ✅\n${destino}\nMandame algo como "gasté 800 en el súper" y te lo confirmo antes de guardarlo.`;
       }
       return 'Ese código no sirve: o ya se usó o venció (duran 15 minutos). Generá uno nuevo en la app.';
     }
@@ -84,12 +91,37 @@ export async function handleInboundMessage(entrada: Entrada): Promise<string> {
     return `Esta conversación no está vinculada a ninguna cuenta, así que no puedo anotar nada.\nEntrá a la app → ${CHANNEL_LABEL[channel]}, generá el código de 6 letras y mandámelo por acá.`;
   }
 
-  const ctx = await construirContexto(supabase, link);
+  let ctx = await construirContexto(supabase, link);
 
   // 3. ¿Responde a algo pendiente?
   const pendiente = await pendienteVigente(supabase, channel, externalId);
   if (pendiente) {
     const movs = pendiente.payload.movimientos ?? [];
+
+    // Sin cuenta el movimiento quedaría huérfano: no aparece en ninguna vista
+    // ni suma a ningún saldo. Se pregunta antes de guardar, no después.
+    if (!ctx.ledger) {
+      if (claseRespuesta(texto) === 'no') return conEco(eco, await cancelar(pendiente, ctx));
+
+      const cuentas = await getAllLedgersWithStats(ctx.db);
+      if (cuentas.length === 0) {
+        return conEco(eco,
+          'Todavía no tenés ninguna cuenta, así que no hay dónde anotarlo.\n'
+          + 'Creá una en la app y volvé a mandarme el movimiento.');
+      }
+
+      const elegida = elegirCuenta(texto, cuentas);
+      if (!elegida) return conEco(eco, preguntarCuenta(cuentas, pendiente.summary));
+
+      // Queda fija: preguntarlo en cada gasto sería insoportable.
+      await setLinkLedger(supabase, link.user_id, link.id, elegida);
+      ctx = await construirContexto(supabase, { ...link, ledger_id: elegida });
+
+      // Elegir la cuenta vale como confirmación, igual que responder la
+      // pregunta de agrupación.
+      if (necesitaAgrupacion(movs)) return conEco(eco, resumirMovimientos(movs, ctx));
+      return conEco(eco, await aplicar(pendiente, ctx));
+    }
 
     if (necesitaAgrupacion(movs)) {
       // La pregunta de agrupación hace de confirmación.
