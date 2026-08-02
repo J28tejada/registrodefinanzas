@@ -111,6 +111,8 @@ export interface LedgerMember {
   role: LedgerRole;
   email: string;
   name: string;
+  /** Viene de Google; con login por correo queda en null. */
+  avatar_url: string | null;
   joined_at: string;
 }
 

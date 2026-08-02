@@ -153,3 +153,47 @@ configuración regional siguen siendo de cada quien.
 Quien recibe un código todavía no es miembro, así que no puede leer
 `ledger_invites`. El canje va por `aceptar_invitacion(p_code)`, una función
 `SECURITY DEFINER` que valida el código y lo suma como miembro.
+
+## Login con Google
+
+Además de correo y contraseña, se puede entrar con Google. Sirve sobre todo
+para las cuentas compartidas: a quien invitás no le hace falta inventar otra
+contraseña.
+
+El proveedor lo maneja Supabase, no la app. Configuralo así:
+
+1. **Google Cloud Console** → APIs & Services → Credentials → tu OAuth 2.0
+   Client ID (podés reusar el de Gmail). En *Authorized redirect URIs* agregá
+   el callback de **Supabase**, no el de la app:
+
+   ```
+   https://TU_PROYECTO.supabase.co/auth/v1/callback
+   ```
+
+   Ojo con esto: el redirect que Google valida es el de Supabase. El de la app
+   (`/auth/callback`) es a donde Supabase te manda después, y ese se declara en
+   el paso siguiente.
+
+2. **Supabase** → Authentication → Providers → Google → habilitar y pegar
+   Client ID y Client Secret.
+
+3. **Supabase** → Authentication → URL Configuration → agregá a *Redirect URLs*:
+
+   ```
+   https://registrodefinanzas.vercel.app/auth/callback
+   http://localhost:3000/auth/callback
+   ```
+
+   Sin esto Supabase rechaza la vuelta con "redirect_to is not allowed".
+
+4. Correr `supabase/migrations/0004_login_google.sql`, que agrega `avatar_url`
+   a `profiles` y hace que el trigger levante el nombre y la foto que manda
+   Google.
+
+No hacen falta variables de entorno nuevas: `GOOGLE_CLIENT_ID` y
+`GOOGLE_CLIENT_SECRET` siguen siendo solo para leer Gmail. Las credenciales del
+login viven en el panel de Supabase.
+
+Los dos métodos conviven. Si alguien se registró con correo y después entra con
+Google usando **el mismo correo**, Supabase une las identidades en un solo
+usuario, así que no pierde sus cuentas ni sus movimientos.

@@ -239,13 +239,14 @@ export async function deleteLedger(db: Db, id: string): Promise<{ ok: boolean; e
 export async function getLedgerMembers(db: Db, ledgerId: string): Promise<LedgerMember[]> {
   const { data, error } = await db.supabase
     .from('ledger_members')
-    .select('user_id, ledger_id, role, joined_at, profiles(email, display_name)')
+    .select('user_id, ledger_id, role, joined_at, profiles(email, display_name, avatar_url)')
     .eq('ledger_id', ledgerId)
     .order('joined_at');
   if (error) fallar('No se pudieron leer los miembros', error);
 
   return (data ?? []).map(fila => {
-    const perfil = fila.profiles as unknown as { email?: string; display_name?: string } | null;
+    const perfil = fila.profiles as unknown as
+      { email?: string; display_name?: string; avatar_url?: string } | null;
     const email = perfil?.email ?? '';
     return {
       user_id: fila.user_id as string,
@@ -253,6 +254,7 @@ export async function getLedgerMembers(db: Db, ledgerId: string): Promise<Ledger
       role: (fila.role as LedgerRole) ?? 'member',
       email,
       name: perfil?.display_name || email.split('@')[0] || 'Sin nombre',
+      avatar_url: perfil?.avatar_url ?? null,
       joined_at: fila.joined_at as string,
     };
   }).sort((a, b) => (a.role === 'owner' ? -1 : b.role === 'owner' ? 1 : 0));
