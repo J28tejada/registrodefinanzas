@@ -330,7 +330,7 @@ export default function LedgerSelector() {
                   ofrecer es crear la primera. */}
               {ledgers.length === 0 && (
                 <div className="text-center space-y-3 py-2">
-                  <p className="text-sm text-white font-medium">Todavía no tenés cuentas</p>
+                  <p className="text-sm text-white font-medium">Te quedaste sin cuentas</p>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Una cuenta agrupa tus movimientos: por ejemplo Hogar, Personal o Negocio.
                     Podés compartir cualquiera de ellas con otra persona.

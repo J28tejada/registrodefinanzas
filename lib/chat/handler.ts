@@ -105,8 +105,10 @@ export async function handleInboundMessage(entrada: Entrada): Promise<string> {
 
       const cuentas = await getAllLedgersWithStats(ctx.db);
       if (cuentas.length === 0) {
+        // Cada usuario arranca con una cuenta personal, así que llegar acá
+        // significa que las borró todas.
         return conEco(eco,
-          'Todavía no tenés ninguna cuenta, así que no hay dónde anotarlo.\n'
+          'Te quedaste sin cuentas, así que no hay dónde anotarlo.\n'
           + 'Creá una en la app y volvé a mandarme el movimiento.');
       }
 

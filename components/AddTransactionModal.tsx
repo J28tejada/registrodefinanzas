@@ -186,12 +186,12 @@ export default function AddTransactionModal({
             </div>
           )}
 
-          {/* Sin cuentas no hay dónde anotar: se corta acá en vez de dejar
-              guardar un movimiento que después no aparece en ningún lado. */}
+          {/* Cada usuario arranca con una cuenta personal, así que esto casi
+              nunca aparece: queda por si la borró y se quedó sin ninguna. */}
           {ledgers.length === 0 && (
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 space-y-3">
               <p className="text-sm text-amber-200">
-                Todavía no tenés ninguna cuenta. Creá una para poder anotar movimientos.
+                Te quedaste sin cuentas. Creá una para poder anotar movimientos.
               </p>
               <button
                 type="button"
