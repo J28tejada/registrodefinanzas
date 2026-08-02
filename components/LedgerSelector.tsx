@@ -326,8 +326,21 @@ export default function LedgerSelector() {
                 </p>
               )}
 
+              {/* Sin cuentas, "Todas" no resume nada: lo único que corresponde
+                  ofrecer es crear la primera. */}
+              {ledgers.length === 0 && (
+                <div className="text-center space-y-3 py-2">
+                  <p className="text-sm text-white font-medium">Todavía no tenés cuentas</p>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Una cuenta agrupa tus movimientos: por ejemplo Hogar, Personal o Negocio.
+                    Podés compartir cualquiera de ellas con otra persona.
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-3 gap-3">
-                {/* All ledgers option */}
+                {/* Vista global — solo tiene sentido si hay algo que agrupar */}
+                {ledgers.length > 0 && (
                 <div className="flex flex-col gap-2">
                   <div
                     className="rounded-2xl overflow-hidden cursor-pointer relative"
@@ -348,6 +361,7 @@ export default function LedgerSelector() {
                     <p className="text-xs text-slate-500">Vista global</p>
                   </div>
                 </div>
+                )}
 
                 {/* Ledger cards */}
                 {ledgers.map(l => (

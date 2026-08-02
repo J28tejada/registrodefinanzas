@@ -54,6 +54,11 @@ export async function POST(req: NextRequest) {
       if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
         return NextResponse.json({ error: 'El monto tiene que ser mayor que cero' }, { status: 400 });
       }
+      // Sin cuenta el movimiento no aparece en ninguna vista ni suma a ningún
+      // saldo: queda huérfano. Se corta acá y no solo en el formulario.
+      if (!ledger_id) {
+        return NextResponse.json({ error: 'Elegí una cuenta para el movimiento' }, { status: 400 });
+      }
 
       const tx = await createTransaction(db, {
         ledger_id: ledger_id ?? null,

@@ -26,7 +26,7 @@ interface FormData {
 export default function AddTransactionModal({
   isOpen, onClose, onSave, editingTransaction,
 }: AddTransactionModalProps) {
-  const { currentLedger, ledgers } = useLedger();
+  const { currentLedger, ledgers, setSelectorOpen } = useLedger();
   const fmt = useFormatters();
 
   const defaultLedgerId = currentLedger?.id ?? (ledgers[0]?.id ?? '');
@@ -105,8 +105,13 @@ export default function AddTransactionModal({
       setError('Completa todos los campos requeridos');
       return;
     }
-    if (!form.ledger_id && ledgers.length > 0) {
-      setError('Selecciona una cuenta');
+    // Sin cuenta el movimiento queda huérfano: no aparece en ninguna vista de
+    // cuenta ni suma a ningún saldo. Antes solo se validaba cuando ya existía
+    // alguna cuenta, así que quien recién empezaba guardaba movimientos sueltos.
+    if (!form.ledger_id) {
+      setError(ledgers.length === 0
+        ? 'Primero creá una cuenta para poder anotar movimientos.'
+        : 'Elegí una cuenta');
       return;
     }
     setSaving(true);
@@ -120,7 +125,7 @@ export default function AddTransactionModal({
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ledger_id: form.ledger_id || null,
+          ledger_id: form.ledger_id,
           type: form.type,
           scope,
           amount: parseFloat(form.amount),
@@ -181,7 +186,24 @@ export default function AddTransactionModal({
             </div>
           )}
 
-          {/* Ledger picker — shown when no specific ledger is active or editing */}
+          {/* Sin cuentas no hay dónde anotar: se corta acá en vez de dejar
+              guardar un movimiento que después no aparece en ningún lado. */}
+          {ledgers.length === 0 && (
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 space-y-3">
+              <p className="text-sm text-amber-200">
+                Todavía no tenés ninguna cuenta. Creá una para poder anotar movimientos.
+              </p>
+              <button
+                type="button"
+                onClick={() => { onClose(); setSelectorOpen(true); }}
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Crear mi primera cuenta
+              </button>
+            </div>
+          )}
+
+          {/* Ledger picker */}
           {ledgers.length > 0 && (
             <div className="space-y-1.5">
               <label className="text-xs text-slate-400 font-medium">CUENTA</label>
@@ -191,7 +213,6 @@ export default function AddTransactionModal({
                   onChange={e => setForm(p => ({ ...p, ledger_id: e.target.value, category: '' }))}
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-8 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm appearance-none"
                 >
-                  <option value="">Sin cuenta asignada</option>
                   {ledgers.map(l => (
                     <option key={l.id} value={l.id}>{l.name}</option>
                   ))}
@@ -324,7 +345,7 @@ export default function AddTransactionModal({
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || ledgers.length === 0}
               className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
             >
               {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Guardando...</> : 'Guardar'}
