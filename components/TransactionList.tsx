@@ -3,7 +3,9 @@
 import { Transaction, LEDGER_COLOR_MAP } from '@/lib/types';
 import { useLedger } from './LedgerContext';
 import { useFormatters } from './SettingsContext';
-import { Pencil, Trash2, Mic, Bot, Pencil as PencilIcon, MessageCircle, Send, Receipt } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Pencil, Trash2, Mic, Bot, Pencil as PencilIcon, MessageCircle, Send, Receipt, User } from 'lucide-react';
+import { createClient } from '@/lib/supabase/browser';
 
 // Una trazabilidad que solo sirve consultando la base no le sirve al usuario.
 const sourceBadge = {
@@ -24,6 +26,14 @@ interface TransactionListProps {
 export default function TransactionList({ transactions, onEdit, onDelete, loading }: TransactionListProps) {
   const { currentLedger, ledgers } = useLedger();
   const fmt = useFormatters();
+  // Para no repetir tu propio nombre en cada fila: solo se muestra el del otro.
+  const [miId, setMiId] = useState('');
+
+  useEffect(() => {
+    createClient().auth.getUser().then(({ data }) => {
+      if (data.user) setMiId(data.user.id);
+    });
+  }, []);
 
   if (loading) {
     return (
@@ -81,6 +91,16 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
                 <span>{tx.category}</span>
                 <span>·</span>
                 <span>{fmt.date(tx.date)}</span>
+                {/* Solo cuando lo cargó otro: en lo propio sería ruido en cada fila. */}
+                {tx.author_name && tx.author_id !== miId && (
+                  <>
+                    <span>·</span>
+                    <span className="flex items-center gap-1 text-slate-400">
+                      <User className="w-3 h-3" />
+                      {tx.author_name}
+                    </span>
+                  </>
+                )}
                 {tx.payment_method && (
                   <>
                     <span>·</span>

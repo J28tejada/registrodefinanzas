@@ -138,6 +138,10 @@ export interface Transaction {
   receipt_url?: string | null;
   /** Efectivo, tarjeta, transferencia… lo captura el agente si se menciona. */
   payment_method?: string | null;
+  /** Quién lo registró. En una cuenta compartida no siempre sos vos. */
+  author_id?: string | null;
+  /** Su nombre, para mostrarlo sin tener que resolver el id en cada vista. */
+  author_name?: string | null;
 }
 
 export interface TransactionFilters {

@@ -50,7 +50,8 @@ REGLAS
 3. Falta un dato: preguntalo, corto y concreto. Nunca inventes montos ni conceptos.
 4. Fechas relativas ("ayer", "el viernes"): resolvelas con la fecha de arriba.
 5. Si pregunta dónde anotás, de quién son los datos o si son los suyos: contale que anotás en la cuenta activa de arriba, que es suya, y que todo lo que consultás sale de sus propios movimientos. Nadie más los ve salvo a quien haya invitado a esa cuenta. Es una pregunta legítima: respondela derecho, sin evasivas.
-6. Respondé en español, cálido, 1-2 frases máximo. Sin tecnicismos ni IDs.`;
+6. Si preguntan quién cargó o pagó algo, mirá con "consultar": los movimientos vienen con el nombre de quien los anotó entre corchetes, y los que no lo traen son de quien te está escribiendo. Nunca lo adivines.
+7. Respondé en español, cálido, 1-2 frases máximo. Sin tecnicismos ni IDs.`;
 }
 
 // ─── Herramientas ─────────────────────────────────────────────────────────────
@@ -233,10 +234,17 @@ async function consultar(args: Record<string, unknown>, turno: Turno): Promise<s
   if (movs.length === 0) {
     return `${cabecera}, 0 movs${buscar ? ` que coincidan con "${buscar}"` : ''}.`;
   }
+  // Quién lo cargó va en la respuesta: en una cuenta compartida "¿quién pagó
+  // el súper?" es de las preguntas más naturales, y sin esto el modelo no
+  // tendría con qué contestarla.
   const ultimos = movs.slice(0, limite)
-    .map(t => `${t.date.slice(5)} ${t.type === 'income' ? '+' : '-'}${Math.round(t.amount)} ${t.description}`)
+    .map(t => {
+      const autor = t.author_name && t.author_id !== ctx.db.userId ? ` [${t.author_name}]` : '';
+      return `${t.date.slice(5)} ${t.type === 'income' ? '+' : '-'}${Math.round(t.amount)} ${t.description}${autor}`;
+    })
     .join('; ');
-  return `${cabecera}, ${movs.length} movs.\nÚltimos: ${ultimos}`;
+  return `${cabecera}, ${movs.length} movs.\n`
+    + `Últimos (entre corchetes va quién lo cargó, si no fuiste vos): ${ultimos}`;
 }
 
 async function presupuesto(args: Record<string, unknown>, turno: Turno): Promise<string> {

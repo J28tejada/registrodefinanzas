@@ -377,7 +377,25 @@ function rowToTransaction(row: Record<string, unknown>): Transaction {
     source: ((row.source as string) || 'manual') as Transaction['source'],
     receipt_url: (row.receipt_url as string) ?? null,
     payment_method: (row.payment_method as string) ?? null,
+    author_id: (row.user_id as string) ?? null,
+    author_name: nombreDePerfil(row.profiles),
   };
+}
+
+/**
+ * El nombre de quien registró, cuando la consulta trajo su perfil.
+ *
+ * PostgREST devuelve la relación como objeto o como lista de uno según cómo
+ * infiera la cardinalidad, así que se contemplan las dos.
+ */
+function nombreDePerfil(rel: unknown): string | null {
+  const perfil = (Array.isArray(rel) ? rel[0] : rel) as
+    { preferred_name?: string; display_name?: string; email?: string } | null | undefined;
+  if (!perfil) return null;
+  return perfil.preferred_name
+    || perfil.display_name
+    || perfil.email?.split('@')[0]
+    || null;
 }
 
 /** Ids de las cuentas donde el usuario es dueño o miembro. */
@@ -419,7 +437,34 @@ export async function getAllTransactions(
 
   const { data, error } = await q.order('date', { ascending: false }).order('created_at', { ascending: false });
   if (error) fallar('No se pudieron leer los movimientos', error);
-  return (data ?? []).map(rowToTransaction);
+
+  const movimientos = (data ?? []).map(rowToTransaction);
+  await ponerleNombreAlAutor(db, movimientos);
+  return movimientos;
+}
+
+/**
+ * Completa `author_name` en una tanda de movimientos.
+ *
+ * Va en una consulta aparte y no como join porque `transactions.user_id`
+ * referencia `auth.users`, no `profiles`: sin una FK entre esas dos tablas,
+ * PostgREST no sabe relacionarlas. Una consulta por tanda, no por fila.
+ */
+async function ponerleNombreAlAutor(db: Db, movimientos: Transaction[]): Promise<void> {
+  const ids = [...new Set(movimientos.map(m => m.author_id).filter(Boolean))] as string[];
+  if (ids.length === 0) return;
+
+  const { data, error } = await db.supabase
+    .from('profiles').select('id, preferred_name, display_name, email').in('id', ids);
+  // Quedarse sin el nombre no puede tumbar la lista de movimientos.
+  if (error) return;
+
+  const nombres = new Map<string, string | null>(
+    (data ?? []).map(p => [p.id as string, nombreDePerfil(p)]),
+  );
+  for (const m of movimientos) {
+    if (m.author_id) m.author_name = nombres.get(m.author_id) ?? null;
+  }
 }
 
 /**
