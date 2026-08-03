@@ -69,27 +69,49 @@ finanzas a partir de ahí. Por eso entra con la service role y filtra por
 
 ## Puesta en marcha
 
-### 1. Evolution API + túnel
+### 1. Evolution API
 
-Evolution tiene que ser alcanzable por HTTPS desde Vercel. Con Docker:
+Corre donde vos quieras mientras esté prendido: tu compu, un VPS chico, una
+Raspberry. **No sirve una máquina que se apague o se recicle**: cada vez que
+Evolution pierde su volumen hay que re-emparejar el teléfono a mano.
 
 ```bash
-docker run -d --name evolution -p 8080:8080 \
-  -e AUTHENTICATION_API_KEY=poné-una-clave-larga \
-  evoapicloud/evolution-api:latest
+cd evolution
+cp .env.example .env        # poné EVOLUTION_API_KEY (openssl rand -hex 32)
+docker compose up -d
 ```
+
+Comprobalo con `curl localhost:8080` — tiene que contestar *"Welcome to the
+Evolution API"*.
+
+El compose deja la base y la sesión de WhatsApp en volúmenes, así que el
+emparejamiento sobrevive a reinicios y a `docker compose pull`. Con
+`restart: unless-stopped`, Docker lo vuelve a levantar solo cuando prendés la
+máquina.
 
 > La imagen `atendai/evolution-api` que figuraba acá antes ya no existe: el
 > proyecto la publica ahora bajo `evoapicloud/`. Con la vieja, `docker pull`
 > responde *"repository does not exist"*.
 
-Y un túnel para exponerlo:
+### 1b. Túnel
+
+Vercel tiene que poder entrar hasta Evolution, y `localhost:8080` no se ve desde
+internet. El túnel resuelve eso sin abrir puertos en el router:
 
 ```bash
+brew install cloudflared          # macOS; en Linux, ver docs de Cloudflare
 cloudflared tunnel --url http://localhost:8080
 ```
 
-La URL que imprime el túnel es `EVOLUTION_API_URL`.
+La URL que imprime es `EVOLUTION_API_URL`.
+
+**Ojo con el túnel rápido**: la URL cambia cada vez que lo reiniciás, y hay que
+actualizarla en Vercel y volver a configurar el webhook. Si esto va a quedar
+funcionando, conviene un túnel con nombre (`cloudflared tunnel create`), que da
+una URL fija y se puede dejar como servicio.
+
+Si Evolution corre en un VPS con dominio y HTTPS propio, no hace falta túnel:
+esa URL ya es `EVOLUTION_API_URL`.
 
 ### 2. Variables de entorno
 
@@ -460,3 +482,22 @@ mencionan. Es cómodo, pero cada mensaje gasta una llamada al modelo: en el tier
 gratuito de Gemini la cuota diaria se agota rápido si el grupo es conversador.
 Si eso molesta, el cambio es acotado —filtrar en `interpretarWebhook` por
 mención o por prefijo— y está aislado en un solo lugar.
+
+### Dónde NO conviene correr Evolution
+
+En un entorno efímero: un contenedor de CI, un sandbox de agente, cualquier cosa
+que se recicle. Evolution guarda la sesión de WhatsApp en disco y, cuando ese
+disco se va, el emparejamiento se pierde y hay que rehacerlo con el teléfono en
+la mano. Además tiene que estar prendido para recibir los mensajes: si se apaga,
+los que lleguen mientras tanto no se procesan.
+
+Dos cosas que se descubrieron probándolo en un sandbox, por si aparecen:
+
+- **Salida solo por 443.** El túnel de Cloudflare necesita el 7844, así que ahí
+  no levanta. Baileys sí funciona: WhatsApp usa WebSocket sobre 443.
+- **Proxy que intercepta TLS.** El contenedor no hereda el CA del host y Baileys
+  no completa el handshake: la instancia queda en `connecting`, pasa a `close` y
+  `/instance/connect` devuelve `{"count":0}` sin error visible. Se arregla
+  montando el CA y apuntándole Node con `NODE_EXTRA_CA_CERTS`.
+
+En una máquina normal ninguna de las dos aparece.

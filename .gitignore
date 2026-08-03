@@ -37,3 +37,6 @@ next-env.d.ts
 finances.db
 finances.db-wal
 finances.db-shm
+
+# Claves de Evolution (docker compose)
+evolution/.env
