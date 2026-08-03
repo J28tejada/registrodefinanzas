@@ -130,6 +130,17 @@ export default function ChatLinkPanel({ channel, chats, formatearId, instruccion
               </button>
             </div>
             <p className="text-xs text-slate-500">Vence en 15 minutos y sirve una sola vez.</p>
+            <div className="pt-2 border-t border-slate-700/60 text-left space-y-1">
+              <p className="text-xs text-slate-400">
+                <span className="text-slate-300 font-medium">Chat privado:</span> mandáselo al bot y tus
+                gastos se anotan en la cuenta elegida.
+              </p>
+              <p className="text-xs text-slate-400">
+                <span className="text-slate-300 font-medium">Grupo:</span> mandalo dentro del grupo y todos
+                sus gastos van a esa cuenta. Cada integrante tiene que vincular además su chat privado,
+                para que lo que anote quede a su nombre.
+              </p>
+            </div>
           </div>
         )}
       </div>

@@ -12,7 +12,7 @@
  * recuerde qué propuso.
  */
 import { SupabaseClient } from '@supabase/supabase-js';
-import { getAllLedgersWithStats, getLedgerById, getSettings } from '@/lib/db';
+import { getAllLedgersWithStats, getLedgerById, getLedgerRole, getSettings } from '@/lib/db';
 import { TransactionScope } from '@/lib/types';
 import { makeFormatters } from '@/lib/format';
 import {
@@ -43,6 +43,9 @@ export interface Entrada {
   /** "🎤 Escuché: ..." o "🧾 Leí: ...", para que revise antes de confirmar. */
   eco: string | null;
   receiptUrl: string | null;
+  /** Quién escribió, si `externalId` es un grupo. */
+  participant?: string | null;
+  esGrupo?: boolean;
 }
 
 const RE_CODIGO = /^[A-HJ-NP-Z2-9]{6}$/;
@@ -58,10 +61,17 @@ function conEco(eco: string | null, cuerpo: string): string {
   return eco ? `${eco}\n\n${cuerpo}` : cuerpo;
 }
 
-/** Arma todo lo que hace falta para atender esta conversación. */
+/**
+ * Arma todo lo que hace falta para atender esta conversación.
+ *
+ * En un grupo, `link` trae la cuenta (del vínculo del grupo) pero el `user_id`
+ * ya viene reemplazado por el de quien escribió: así el gasto queda a nombre
+ * de esa persona, y su moneda y zona horaria son las suyas.
+ */
 export async function construirContexto(
   supabase: SupabaseClient,
   link: ChatLink,
+  participant: string | null = null,
 ): Promise<Contexto> {
   const db = { supabase, userId: link.user_id };
   const [settings, nombre] = await Promise.all([
@@ -70,19 +80,29 @@ export async function construirContexto(
   ]);
   const ledger = link.ledger_id ? await getLedgerById(db, link.ledger_id) : null;
   const scope: TransactionScope = ledger?.type ?? 'personal';
-  return { db, link, settings, fmt: makeFormatters(settings), ledger, scope, nombre };
+  return { db, link, settings, fmt: makeFormatters(settings), ledger, scope, nombre, participant };
 }
 
 export async function handleInboundMessage(entrada: Entrada): Promise<string> {
   const { supabase, channel, externalId, texto, eco, receiptUrl } = entrada;
+  const esGrupo = entrada.esGrupo === true;
+  const participant = entrada.participant ?? null;
 
   // 1. Código de vinculación
   const link = await getLink(supabase, channel, externalId);
   if (!link) {
     const codigo = posibleCodigo(texto);
     if (codigo) {
-      const vinculado = await consumeLinkCode(supabase, codigo, channel, externalId);
+      const vinculado = await consumeLinkCode(supabase, codigo, channel, externalId, esGrupo);
       if (vinculado) {
+        if (esGrupo) {
+          const ctxG = await construirContexto(supabase, vinculado);
+          return ctxG.ledger
+            ? `Listo, este grupo quedó vinculado a *${ctxG.ledger.name}* ✅\n`
+              + 'Cada quien tiene que vincular su chat privado conmigo para que sus gastos queden a su nombre.\n'
+              + 'Mandá algo como "gasté 800 en el súper" y te lo confirmo antes de guardarlo.'
+            : 'El grupo quedó vinculado, pero el código no traía cuenta. Generá uno nuevo eligiendo a qué cuenta van los gastos del grupo.';
+        }
         const ctx = await construirContexto(supabase, vinculado);
         // "todas las cuentas" era mentira: sin cuenta no hay dónde anotar, así
         // que se avisa que se va a preguntar en el primer movimiento.
@@ -108,18 +128,48 @@ export async function handleInboundMessage(entrada: Entrada): Promise<string> {
     return `Esta conversación no está vinculada a ninguna cuenta, así que no puedo anotar nada.\nEntrá a la app → ${CHANNEL_LABEL[channel]}, generá el código de 6 letras y mandámelo por acá.`;
   }
 
-  let ctx = await construirContexto(supabase, link);
+  // 2b. En un grupo, quién habla no es la conversación.
+  //
+  // El vínculo del grupo dice a qué cuenta van los gastos; a quién se le
+  // atribuye cada uno sale del vínculo individual de quien escribió. Sin eso
+  // todo quedaría a nombre de quien vinculó el grupo, y se pierde el dato que
+  // justamente se quiere ver: quién gastó qué.
+  let linkEfectivo = link;
+  if (esGrupo) {
+    if (!link.ledger_id) {
+      return 'Este grupo no tiene cuenta asignada, así que no sé dónde anotar. '
+        + 'Volvé a vincularlo desde la app eligiendo a qué cuenta van los gastos.';
+    }
+
+    const linkPersona = participant ? await getLink(supabase, channel, participant) : null;
+    if (!linkPersona) {
+      return 'No te tengo vinculado todavía, así que no puedo anotar tus gastos a tu nombre.\n'
+        + `Escribime por privado y mandame el código de 6 letras que sacás de la app → ${CHANNEL_LABEL[channel]}.`;
+    }
+
+    // Estar en el grupo no alcanza: hay que tener acceso a esa cuenta.
+    const rol = await getLedgerRole({ supabase, userId: linkPersona.user_id }, link.ledger_id);
+    if (!rol) {
+      return 'Estás en el grupo pero no tenés acceso a la cuenta donde anota. '
+        + 'Pedile al dueño que te invite desde la app.';
+    }
+
+    // La cuenta la manda el grupo; la identidad, la persona.
+    linkEfectivo = { ...link, user_id: linkPersona.user_id };
+  }
+
+  let ctx = await construirContexto(supabase, linkEfectivo, participant);
 
   // 3. ¿Está contestando cómo quiere que le llamen?
   //
   // Solo cuando no hay nada pendiente: si lo hay, ese mensaje contesta a la
   // confirmación y no al nombre. `extraerNombre` además descarta lo que parezca
   // un movimiento, así que un "gasté 800" acá sigue de largo hacia el agente.
-  const pendienteAntes = await pendienteVigente(supabase, channel, externalId);
-  if (!pendienteAntes && !(await getPreferredName(supabase, link.user_id))) {
+  const pendienteAntes = await pendienteVigente(supabase, channel, externalId, participant);
+  if (!pendienteAntes && !(await getPreferredName(supabase, linkEfectivo.user_id))) {
     const nombre = extraerNombre(texto);
     if (nombre) {
-      await setPreferredName(supabase, link.user_id, nombre);
+      await setPreferredName(supabase, linkEfectivo.user_id, nombre);
       const cuenta = ctx.ledger
         ? `Anoto en tu cuenta *${ctx.ledger.name}*.`
         : 'En el primer movimiento te pregunto en qué cuenta anotarlo.';
@@ -152,8 +202,8 @@ export async function handleInboundMessage(entrada: Entrada): Promise<string> {
       if (!elegida) return conEco(eco, preguntarCuenta(cuentas, pendiente.summary));
 
       // Queda fija: preguntarlo en cada gasto sería insoportable.
-      await setLinkLedger(supabase, link.user_id, link.id, elegida);
-      ctx = await construirContexto(supabase, { ...link, ledger_id: elegida });
+      await setLinkLedger(supabase, linkEfectivo.user_id, linkEfectivo.id, elegida);
+      ctx = await construirContexto(supabase, { ...linkEfectivo, ledger_id: elegida }, participant);
 
       // Elegir la cuenta vale como confirmación, igual que responder la
       // pregunta de agrupación.

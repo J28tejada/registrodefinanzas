@@ -35,9 +35,10 @@ function interpretarWebhook(data: Json): MensajeEntrante | null {
   const remoteJid = key?.remoteJid as string | undefined;
   if (!remoteJid) return null;
 
-  // Solo el dueño de la plata: nada de grupos ni estados.
-  if (remoteJid.endsWith('@g.us') || remoteJid.startsWith('status@')) return null;
+  if (remoteJid.startsWith('status@')) return null;
   if (key?.fromMe === true) return null;
+
+  const esGrupo = remoteJid.endsWith('@g.us');
 
   // Con direccionamiento LID el teléfono real, si viaja, viene en estos campos.
   // Se prefiere para que el vínculo siga atado al número y no al LID, que puede
@@ -52,11 +53,30 @@ function interpretarWebhook(data: Json): MensajeEntrante | null {
   // da una dirección inexistente cuando el chat usa LID.
   const replyTo = jidTelefono ?? remoteJid;
 
+  // En un grupo, remoteJid es el grupo y quien escribió viene acá. Igual que
+  // arriba, el LID puede reemplazar al teléfono, así que se prefiere el que
+  // traiga el número real para que coincida con su vínculo individual.
+  const jidQuienEscribe = esGrupo
+    ? ((key?.participantAlt as string | undefined)
+        ?? (key?.participantPn as string | undefined)
+        ?? (key?.participant as string | undefined)
+        ?? null)
+    : null;
+  const participant = jidQuienEscribe
+    ? jidQuienEscribe.split('@')[0].split(':')[0]
+    : null;
+
+  // Sin saber quién escribió no se le puede atribuir el gasto a nadie.
+  if (esGrupo && !participant) return null;
+
   const providerMessageId = (key?.id as string) ?? null;
   const message = desenvolver(data.message as Json | undefined);
   if (!message) return null;
 
-  const base = { channel: 'whatsapp' as const, externalId, replyTo, providerMessageId };
+  const base = {
+    channel: 'whatsapp' as const,
+    externalId, replyTo, participant, esGrupo, providerMessageId,
+  };
   const extendido = message.extendedTextMessage as Json | undefined;
   const imagen = message.imageMessage as Json | undefined;
   const audio = message.audioMessage as Json | undefined;
@@ -166,18 +186,21 @@ async function procesar(supabase: SupabaseClient, data: Json): Promise<string> {
   if (!entrante) return 'ignorado';
 
   const { externalId, providerMessageId, tipo } = entrante;
+  const participant = entrante.participant ?? null;
 
   const link = await getLink(supabase, 'whatsapp', externalId);
-  const userId = link?.user_id ?? null;
+  // En un grupo el mensaje es de quien escribió, no de quien vinculó el grupo.
+  const linkAutor = participant ? await getLink(supabase, 'whatsapp', participant) : null;
+  const userId = (participant ? linkAutor?.user_id : link?.user_id) ?? null;
 
   // Marcar el mensaje antes de trabajar: si Evolution reintenta mientras
   // transcribimos, el segundo intento no duplica nada.
   const provisional = tipo === 'texto' ? entrante.texto : `[${entrante.descripcionTipo}]`;
-  const mensajeId = await logInbound(supabase, userId, 'whatsapp', externalId, provisional, providerMessageId);
+  const mensajeId = await logInbound(supabase, userId, 'whatsapp', externalId, provisional, providerMessageId, participant);
   if (!mensajeId) return 'duplicado';
 
   if (tipo === 'no-soportado') {
-    await responder(supabase, userId, externalId, `Solo puedo leer texto, notas de voz y fotos. Eso que mandaste es "${entrante.descripcionTipo}" y no lo puedo interpretar.`, entrante.replyTo);
+    await responder(supabase, userId, externalId, `Solo puedo leer texto, notas de voz y fotos. Eso que mandaste es "${entrante.descripcionTipo}" y no lo puedo interpretar.`, entrante.replyTo, participant);
     return 'no-soportado';
   }
 
@@ -189,7 +212,7 @@ async function procesar(supabase: SupabaseClient, data: Json): Promise<string> {
   if (tipo === 'audio' || tipo === 'imagen') {
     // Una foto de alguien sin vincular no se guarda: no hay a quién atribuirla.
     if (tipo === 'imagen' && !userId) {
-      await responder(supabase, null, externalId, 'Este número no está vinculado a ninguna cuenta, así que no puedo guardar recibos. Entrá a la app → WhatsApp y mandame el código de 6 letras.', entrante.replyTo);
+      await responder(supabase, null, externalId, 'Este número no está vinculado a ninguna cuenta, así que no puedo guardar recibos. Entrá a la app → WhatsApp y mandame el código de 6 letras.', entrante.replyTo, participant);
       return 'sin-vincular';
     }
     try {
@@ -224,8 +247,10 @@ async function procesar(supabase: SupabaseClient, data: Json): Promise<string> {
     texto,
     eco,
     receiptUrl,
+    participant,
+    esGrupo: entrante.esGrupo === true,
   });
-  await responder(supabase, userId, externalId, respuesta, entrante.replyTo);
+  await responder(supabase, userId, externalId, respuesta, entrante.replyTo, participant);
   return 'ok';
 }
 
@@ -239,8 +264,9 @@ async function responder(
   phone: string,
   texto: string,
   destino?: string,
+  participant?: string | null,
 ) {
-  await logOutbound(supabase, userId, 'whatsapp', phone, texto);
+  await logOutbound(supabase, userId, 'whatsapp', phone, texto, participant);
   try {
     await sendText(destino ?? phone, texto);
   } catch (err) {

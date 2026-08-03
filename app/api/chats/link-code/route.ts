@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createLinkCode } from '@/lib/chat/db';
+import { getLedgerRole } from '@/lib/db';
 import { LINK_CODE_TTL_MIN } from '@/lib/chat/config';
 import { Channel } from '@/lib/chat/types';
 import { conSesion } from '@/lib/supabase/session';
@@ -16,6 +17,13 @@ export async function POST(req: NextRequest) {
     try {
       const body = await req.json().catch(() => ({}));
       const ledgerId = typeof body?.ledger_id === 'string' && body.ledger_id ? body.ledger_id : null;
+
+      // Sin esto se podía generar un código apuntando a una cuenta ajena. No
+      // llegaría a escribir en ella —eso se valida al guardar el movimiento—
+      // pero dejaría un vínculo que falla recién al primer gasto.
+      if (ledgerId && !(await getLedgerRole(db, ledgerId))) {
+        return NextResponse.json({ error: 'No tenés acceso a esa cuenta' }, { status: 403 });
+      }
       // Si no se pide un canal, el código sirve para cualquiera.
       const channel: Channel | null =
         body?.channel === 'whatsapp' || body?.channel === 'telegram' ? body.channel : null;

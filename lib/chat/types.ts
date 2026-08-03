@@ -58,6 +58,12 @@ export interface ChatLink {
   external_id: string;
   ledger_id: string | null;
   active: boolean;
+  /**
+   * Conversación grupal. Cambia de quién es el gasto: en un grupo el vínculo
+   * dice a qué cuenta va, pero a quién se le atribuye sale del vínculo
+   * individual de quien escribió.
+   */
+  is_group: boolean;
   created_at: string;
 }
 
@@ -83,6 +89,11 @@ export interface Contexto {
   scope: TransactionScope;
   /** Cómo pidió que le llamen. null hasta que lo diga. */
   nombre: string | null;
+  /**
+   * Quién escribió, en un grupo. Las pendientes se guardan por persona: sin
+   * esto, en un grupo el "sí" de uno aplicaría el gasto que propuso otro.
+   */
+  participant: string | null;
 }
 
 /** Un mensaje entrante, ya normalizado por el transporte del canal. */
@@ -100,6 +111,13 @@ export interface MensajeEntrante {
    * respuesta nunca sale.
    */
   replyTo?: string;
+  /**
+   * Quién escribió, cuando `externalId` es un grupo. En el chat 1 a 1 va null:
+   * ahí la conversación ya identifica a la persona.
+   */
+  participant?: string | null;
+  /** La conversación es un grupo. */
+  esGrupo?: boolean;
   /** Id del mensaje en el proveedor, para no procesarlo dos veces. */
   providerMessageId: string | null;
   tipo: 'texto' | 'audio' | 'imagen' | 'no-soportado';

@@ -421,3 +421,42 @@ Tres casos se distinguen porque cada uno se resuelve distinto:
 Si algo revienta fuera del agente, el webhook igual manda un aviso corto. Sin
 eso el usuario no recibe nada y queda esperando una respuesta que no va a
 llegar.
+
+## Grupos
+
+El agente también funciona dentro de un grupo de WhatsApp, que es donde mucha
+gente ya comparte los gastos. Se vincula igual que un chat privado: se genera el
+código en la app eligiendo la cuenta y se manda **dentro del grupo**.
+
+Lo que cambia es de quién es cada gasto. Hasta acá una conversación era una
+persona, así que el `external_id` alcanzaba para saberlo. En un grupo son dos
+datos distintos:
+
+- El **vínculo del grupo** dice a qué cuenta van los gastos.
+- El **vínculo individual** de quien escribió dice a nombre de quién se anota.
+
+Por eso cada integrante tiene que vincular además su chat privado. Sin eso el
+bot le contesta cómo hacerlo y no anota nada suyo: si atribuyera todo a quien
+vinculó el grupo se perdería el dato que justamente se quiere ver, que es quién
+gastó qué. Y estar en el grupo no alcanza — hay que ser miembro de esa cuenta,
+lo mismo que exige RLS.
+
+Tres detalles que se resolvieron para que esto funcione:
+
+- **Las pendientes son por persona**, no por conversación. El índice único pasó
+  de `(external_id)` a `(external_id, participant)`: si fuera por conversación,
+  el "sí" de uno aplicaría el gasto que propuso otro, y dos personas cargando a
+  la vez se pisarían.
+- **El historial que ve el modelo se acota a esa persona.** Mezclar las charlas
+  de todos haría que tome el gasto de uno como si lo contara otro, y gastaría
+  contexto en conversación ajena.
+- **Quien escribió viene en `key.participant`**, no en `remoteJid`. Igual que
+  con el chat 1 a 1, el LID puede reemplazar al teléfono, así que se prefieren
+  `participantAlt` o `participantPn` cuando traen el número real: es lo que
+  permite encontrar su vínculo individual.
+
+El bot interpreta **todos** los mensajes del grupo, no solo los que lo
+mencionan. Es cómodo, pero cada mensaje gasta una llamada al modelo: en el tier
+gratuito de Gemini la cuota diaria se agota rápido si el grupo es conversador.
+Si eso molesta, el cambio es acotado —filtrar en `interpretarWebhook` por
+mención o por prefijo— y está aislado en un solo lugar.

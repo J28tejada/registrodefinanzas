@@ -190,6 +190,7 @@ async function registrarMovimiento(args: Record<string, unknown>, turno: Turno):
       'registrar_movimientos',
       { movimientos: turno.borradores },
       turno.resumen,
+      ctx.participant,
     );
     turno.pendienteId = p.id;
   }
@@ -338,7 +339,7 @@ export async function correrAgente(
   });
 
   // El mensaje actual ya está en la bitácora: entra aparte, no en el historial.
-  const previos = (await recentMessages(ctx.db.supabase, ctx.link.channel, ctx.link.external_id, 11)).slice(0, -1);
+  const previos = (await recentMessages(ctx.db.supabase, ctx.link.channel, ctx.link.external_id, 11, ctx.participant)).slice(0, -1);
   const chat = model.startChat({ history: historial(previos) });
 
   try {

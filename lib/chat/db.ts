@@ -31,6 +31,7 @@ function rowToLink(row: Record<string, unknown>): ChatLink {
     external_id: row.external_id as string,
     ledger_id: (row.ledger_id as string) ?? null,
     active: Boolean(row.active),
+    is_group: Boolean(row.is_group),
     created_at: row.created_at as string,
   };
 }
@@ -164,6 +165,7 @@ export async function consumeLinkCode(
   code: string,
   channel: Channel,
   externalId: string,
+  esGrupo = false,
 ): Promise<ChatLink | null> {
   const { data: fila, error } = await supabase
     .from('chat_link_codes')
@@ -186,6 +188,7 @@ export async function consumeLinkCode(
         external_id: externalId,
         ledger_id: (fila.ledger_id as string) ?? null,
         active: true,
+        is_group: esGrupo,
       },
       { onConflict: 'channel,external_id' },
     )
@@ -209,6 +212,7 @@ export async function logInbound(
   externalId: string,
   body: string,
   providerMessageId: string | null,
+  participant?: string | null,
 ): Promise<string | null> {
   const { data, error } = await supabase
     .from('chat_messages')
@@ -217,6 +221,7 @@ export async function logInbound(
         user_id: userId,
         channel,
         external_id: externalId,
+        participant: participant ?? null,
         provider_message_id: providerMessageId,
         direction: 'in',
         body,
@@ -243,25 +248,42 @@ export async function logOutbound(
   channel: Channel,
   externalId: string,
   body: string,
+  // A quién le estamos contestando. En un grupo, sin esto la respuesta no
+  // quedaría en el hilo de esa persona y el modelo perdería lo que ya dijo.
+  participant?: string | null,
 ): Promise<void> {
   const { error } = await supabase
     .from('chat_messages')
-    .insert({ user_id: userId, channel, external_id: externalId, direction: 'out', body });
+    .insert({
+      user_id: userId, channel, external_id: externalId,
+      participant: participant ?? null, direction: 'out', body,
+    });
   if (error) console.error('[chat] no se pudo registrar la salida:', error.message);
 }
 
 /** Últimos mensajes en orden cronológico, para armar el contexto del agente. */
+/**
+ * El historial que ve el modelo.
+ *
+ * En un grupo se acota a lo que escribió esa persona: mezclar las charlas de
+ * todos haría que el modelo tome el gasto de uno como si lo estuviera contando
+ * otro, y encima gastaría contexto en conversación ajena.
+ */
 export async function recentMessages(
   supabase: SupabaseClient,
   channel: Channel,
   externalId: string,
   limit = 10,
+  participant?: string | null,
 ): Promise<ChatMessage[]> {
-  const { data, error } = await supabase
+  let q = supabase
     .from('chat_messages')
     .select('id, channel, external_id, direction, body, created_at')
     .eq('channel', channel)
-    .eq('external_id', externalId)
+    .eq('external_id', externalId);
+  if (participant) q = q.eq('participant', participant);
+
+  const { data, error } = await q
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) fallar('No se pudo leer la conversación', error);
@@ -295,10 +317,17 @@ function rowToPending(row: Record<string, unknown>): PendingAction {
 }
 
 /** La pendiente viva de la conversación, si no venció. Marca las vencidas de paso. */
+/**
+ * La pendiente de esta conversación y, en un grupo, de esta persona.
+ *
+ * Sin el filtro por `participant`, en un grupo el "sí" de alguien aplicaría el
+ * gasto que propuso otro.
+ */
 export async function pendienteVigente(
   supabase: SupabaseClient,
   channel: Channel,
   externalId: string,
+  participant?: string | null,
 ): Promise<PendingAction | null> {
   await supabase
     .from('pending_actions')
@@ -308,10 +337,12 @@ export async function pendienteVigente(
     .eq('status', 'pending')
     .lte('expires_at', new Date().toISOString());
 
-  const { data, error } = await supabase
+  let q = supabase
     .from('pending_actions').select('*')
-    .eq('channel', channel).eq('external_id', externalId).eq('status', 'pending')
-    .maybeSingle();
+    .eq('channel', channel).eq('external_id', externalId).eq('status', 'pending');
+  q = participant ? q.eq('participant', participant) : q.is('participant', null);
+
+  const { data, error } = await q.maybeSingle();
   if (error) fallar('No se pudo leer la acción pendiente', error);
   return data ? rowToPending(data) : null;
 }
@@ -325,13 +356,18 @@ export async function crearPendiente(
   kind: PendingKind,
   payload: PendingPayload,
   summary: string,
+  participant?: string | null,
 ): Promise<PendingAction> {
-  await supabase
+  // Solo se cancela lo que estaba proponiendo esta misma persona: en un grupo,
+  // que uno cargue un gasto no puede tirar abajo el que otro dejó a medias.
+  let cancelar = supabase
     .from('pending_actions')
     .update({ status: 'cancelled' })
     .eq('channel', channel)
     .eq('external_id', externalId)
     .eq('status', 'pending');
+  cancelar = participant ? cancelar.eq('participant', participant) : cancelar.is('participant', null);
+  await cancelar;
 
   const { data, error } = await supabase
     .from('pending_actions')
@@ -339,6 +375,7 @@ export async function crearPendiente(
       user_id: userId,
       channel,
       external_id: externalId,
+      participant: participant ?? null,
       kind,
       payload,
       summary,
