@@ -16,6 +16,8 @@ interface Estado {
   stateError: string | null;
   webhookUrl: string | null;
   webhookConfigurado: boolean | null;
+  /** El número emparejado. Null mientras la instancia no esté conectada. */
+  numeroBot: string | null;
   modelo: string;
   moneda: string;
   zonaHoraria: string;
@@ -275,6 +277,11 @@ export default function WhatsappPage() {
         formatearId={id => `+${id}`}
         onCambio={cargarEstado}
         instrucciones={<>Generá un código y mandáselo por WhatsApp al bot. Así ese número queda atado a tu cuenta y nadie más puede anotar movimientos en tus finanzas.</>}
+        enlaceBot={
+          estado?.numeroBot
+            ? codigo => `https://wa.me/${estado.numeroBot}?text=${encodeURIComponent(codigo)}`
+            : undefined
+        }
       />
 
       {/* Cómo se usa */}

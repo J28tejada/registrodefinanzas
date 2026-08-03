@@ -97,6 +97,31 @@ export async function connectionState(): Promise<string> {
   return (inst?.state as string) ?? (data.state as string) ?? 'unknown';
 }
 
+/**
+ * El número del bot, tal como quedó al emparejar. Sale de `ownerJid`, así que
+ * no hay que configurarlo aparte ni mantenerlo sincronizado a mano: si algún
+ * día se empareja otro teléfono, esto lo sigue solo.
+ *
+ * Devuelve null mientras la instancia no esté conectada — ahí el dato todavía
+ * no existe, y un enlace al bot no llevaría a ninguna parte.
+ */
+export async function instanceOwnerNumber(): Promise<string | null> {
+  const cfg = requireEvolution();
+  const data = await call<unknown>(
+    'GET',
+    `/instance/fetchInstances?instanceName=${encodeURIComponent(cfg.instance)}`,
+  );
+  // Según la versión, Evolution devuelve la instancia sola o una lista.
+  const lista = Array.isArray(data) ? data : [data];
+  const inst = lista.find(
+    (i): i is Record<string, unknown> =>
+      typeof i === 'object' && i !== null && (i as Record<string, unknown>).name === cfg.instance,
+  );
+  const ownerJid = inst?.ownerJid;
+  if (typeof ownerJid !== 'string') return null;
+  return ownerJid.split('@')[0].split(':')[0] || null;
+}
+
 export async function logoutInstance() {
   const cfg = requireEvolution();
   return call('DELETE', `/instance/logout/${cfg.instance}`);

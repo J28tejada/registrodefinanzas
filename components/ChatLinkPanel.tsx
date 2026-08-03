@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { KeyRound, Copy, Loader2, Unlink, ChevronDown, Check } from 'lucide-react';
+import { KeyRound, Copy, Loader2, Unlink, ChevronDown, Check, ExternalLink } from 'lucide-react';
 import { useLedger } from './LedgerContext';
 import { LEDGER_COLOR_MAP } from '@/lib/types';
 
@@ -20,6 +20,13 @@ interface Props {
   formatearId: (externalId: string) => string;
   instrucciones: React.ReactNode;
   onCambio: () => void | Promise<void>;
+  /**
+   * Enlace que abre el chat del bot con el código ya escrito, para no tener que
+   * buscar el número a mano. Se recibe como función y no como número para que
+   * el panel siga sirviendo a los dos canales: cada uno arma su propia URL.
+   * Opcional — sin él la pantalla funciona igual, copiando el código.
+   */
+  enlaceBot?: (codigo: string) => string;
 }
 
 /**
@@ -27,7 +34,9 @@ interface Props {
  * los dos canales: lo único que cambia es cómo se lee el identificador y las
  * instrucciones de a dónde mandarlo.
  */
-export default function ChatLinkPanel({ channel, chats, formatearId, instrucciones, onCambio }: Props) {
+export default function ChatLinkPanel({
+  channel, chats, formatearId, instrucciones, onCambio, enlaceBot,
+}: Props) {
   const { ledgers } = useLedger();
 
   const [ledgerDestino, setLedgerDestino] = useState('');
@@ -129,6 +138,18 @@ export default function ChatLinkPanel({ channel, chats, formatearId, instruccion
                 {copiado ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
+            {enlaceBot && (
+              <a
+                href={enlaceBot(codigo)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Abrir el chat del bot con el código
+              </a>
+            )}
+
             <p className="text-xs text-slate-500">Vence en 15 minutos y sirve una sola vez.</p>
             <div className="pt-2 border-t border-slate-700/60 text-left space-y-1">
               <p className="text-xs text-slate-400">

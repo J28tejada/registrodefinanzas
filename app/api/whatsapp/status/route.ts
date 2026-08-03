@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getLinksForUser } from '@/lib/chat/db';
-import { connectionState, evolutionConfig, getWebhook, webhookUrl } from '@/lib/chat/transports/evolution';
+import {
+  connectionState, evolutionConfig, getWebhook, instanceOwnerNumber, webhookUrl,
+} from '@/lib/chat/transports/evolution';
 import { MODEL, geminiApiKey } from '@/lib/chat/config';
 import { conSesion } from '@/lib/supabase/session';
 import { getSettings } from '@/lib/db';
@@ -29,6 +31,7 @@ export async function GET() {
     let state = 'sin-configurar';
     let stateError: string | null = null;
     let webhookConfigurado: boolean | null = null;
+    let numeroBot: string | null = null;
 
     if (cfg) {
       try {
@@ -49,6 +52,16 @@ export async function GET() {
       } catch {
         webhookConfigurado = null;
       }
+      // Solo con la sesión abierta: antes de emparejar no hay número que ofrecer.
+      if (state === 'open') {
+        try {
+          numeroBot = await instanceOwnerNumber();
+        } catch {
+          // El número solo sirve para ofrecer un atajo; sin él la pantalla
+          // sigue mostrando el código para mandarlo a mano.
+          numeroBot = null;
+        }
+      }
     }
 
     return NextResponse.json({
@@ -60,6 +73,7 @@ export async function GET() {
       // Con el token enmascarado: sirve para verificar la URL, no para copiarla.
       webhookUrl: process.env.NEXT_PUBLIC_APP_URL ? webhookUrl().replace(/token=.*$/, 'token=***') : null,
       webhookConfigurado,
+      numeroBot,
       modelo: MODEL,
       moneda: settings.currency,
       zonaHoraria: settings.timezone,
