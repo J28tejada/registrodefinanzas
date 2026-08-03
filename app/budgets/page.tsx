@@ -80,7 +80,7 @@ export default function BudgetsPage() {
     <div className="max-w-2xl mx-auto space-y-6 pt-14 md:pt-0">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white">Presupuestos</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Presupuestos</h1>
           <p className="text-slate-400 text-sm">Un tope mensual por categoría de gasto</p>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 pt-1">
@@ -105,7 +105,7 @@ export default function BudgetsPage() {
 
       {/* Totales */}
       {budgets.length > 0 && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-slate-300">Total presupuestado</p>
@@ -124,7 +124,7 @@ export default function BudgetsPage() {
       )}
 
       {/* Alta */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
         <p className="text-sm font-medium text-slate-300 flex items-center gap-2">
           <Target className="w-4 h-4 text-emerald-400" /> Nuevo presupuesto
         </p>

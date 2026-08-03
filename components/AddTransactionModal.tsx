@@ -161,7 +161,7 @@ export default function AddTransactionModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-5">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 sm:space-y-5">
           {/* Voice input */}
           {!editingTransaction && (
             <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 space-y-2">

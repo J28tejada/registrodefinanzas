@@ -108,7 +108,7 @@ export default function DashboardPage() {
             />
           )}
           <div>
-            <h1 className="text-2xl font-bold text-white">
+            <h1 className="text-xl sm:text-2xl font-bold text-white">
               {currentLedger?.name ?? 'Dashboard'}
             </h1>
             {/* Month navigator */}
@@ -188,7 +188,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Balance total */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex items-center justify-between">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
                 <Wallet className="w-5 h-5 text-emerald-400" />
@@ -198,14 +198,14 @@ export default function DashboardPage() {
                 <p className="text-xs text-slate-500">Ingresos − Gastos</p>
               </div>
             </div>
-            <p className={`text-2xl font-bold ${summary.totalBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+            <p className={`text-xl sm:text-2xl font-bold ${summary.totalBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
               {fmt.money(summary.totalBalance)}
             </p>
           </div>
 
           {/* Presupuestos del mes */}
           {budgets.length > 0 && (
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-medium text-slate-300 flex items-center gap-2">
                   <Target className="w-4 h-4 text-emerald-400" /> Presupuestos del mes
@@ -225,7 +225,7 @@ export default function DashboardPage() {
 
           {/* Category breakdown */}
           {summary.byCategory.length > 0 && (
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5">
               <h3 className="text-sm font-medium text-slate-300 mb-4">Top categorías del mes</h3>
               <div className="space-y-2.5">
                 {summary.byCategory.slice(0, 6).map(cat => {

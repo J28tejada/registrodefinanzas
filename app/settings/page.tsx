@@ -81,7 +81,7 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 pt-14 md:pt-0">
       <div>
-        <h1 className="text-2xl font-bold text-white">Configuración</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-white">Configuración</h1>
         <p className="text-slate-400 text-sm">Moneda, formato y zona horaria de tu cuenta</p>
       </div>
 
@@ -98,7 +98,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-5">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-5">
         {/* Moneda */}
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm text-slate-300">
@@ -188,7 +188,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Cuenta */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center gap-3">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <p className="text-sm text-white font-medium truncate">{email || 'Sesión iniciada'}</p>
           <p className="text-xs text-slate-500">Tus datos son solo tuyos: nadie más los ve.</p>

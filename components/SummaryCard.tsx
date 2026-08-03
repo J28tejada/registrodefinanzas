@@ -43,14 +43,14 @@ function CardContent({ title, subtitle, amount, variant, icon: Icon }: Omit<Summ
     <>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">{title}</p>
+          <p className="text-[11px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">{title}</p>
           {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
         </div>
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${iconStyles[variant]}`}>
+        <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center ${iconStyles[variant]}`}>
           <Icon className="w-4 h-4" />
         </div>
       </div>
-      <p className={`text-2xl font-bold mt-3 ${amountStyles[variant]}`}>
+      <p className={`text-lg sm:text-2xl font-bold mt-2 sm:mt-3 ${amountStyles[variant]}`}>
         {fmt.money(Math.abs(amount))}
       </p>
       {amount < 0 && variant === 'balance' && (
@@ -61,7 +61,7 @@ function CardContent({ title, subtitle, amount, variant, icon: Icon }: Omit<Summ
 }
 
 export default function SummaryCard({ href, ...props }: SummaryCardProps) {
-  const baseClass = `rounded-xl border p-5 ${variantStyles[props.variant]}`;
+  const baseClass = `rounded-xl border p-4 sm:p-5 ${variantStyles[props.variant]}`;
 
   if (href) {
     return (

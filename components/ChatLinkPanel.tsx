@@ -84,7 +84,7 @@ export default function ChatLinkPanel({ channel, chats, formatearId, instruccion
 
   return (
     <>
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
         <div>
           <p className="font-semibold text-white text-sm">Autorizá tu chat</p>
           <div className="text-xs text-slate-400 mt-0.5">{instrucciones}</div>
@@ -120,7 +120,7 @@ export default function ChatLinkPanel({ channel, chats, formatearId, instruccion
           <div className="bg-slate-800 rounded-xl p-4 text-center space-y-2">
             <p className="text-xs text-slate-400">Mandá este código al bot</p>
             <div className="flex items-center justify-center gap-2">
-              <p className="text-3xl font-mono font-bold tracking-[0.2em] text-emerald-400">{codigo}</p>
+              <p className="text-2xl sm:text-3xl font-mono font-bold tracking-[0.15em] sm:tracking-[0.2em] text-emerald-400">{codigo}</p>
               <button
                 onClick={copiar}
                 className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"

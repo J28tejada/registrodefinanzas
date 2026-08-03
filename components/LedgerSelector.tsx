@@ -294,7 +294,7 @@ export default function LedgerSelector() {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5">
           {view === 'create' && (
             <LedgerForm
               onSave={handleCreate}

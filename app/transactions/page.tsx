@@ -112,7 +112,7 @@ function TransactionsInner() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-xl sm:text-2xl font-bold text-white">
             {currentLedger ? currentLedger.name : 'Todas las transacciones'}
           </h1>
           <p className="text-slate-400 text-sm">{transactions.length} registros</p>

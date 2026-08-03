@@ -170,7 +170,7 @@ export default function LedgerMembers({ ledger, onBack, onChanged }: Props) {
             <div className="space-y-3 bg-slate-800 border border-slate-700 rounded-xl p-4">
               <div className="text-center">
                 <p className="text-xs text-slate-400">Código de invitación</p>
-                <p className="text-2xl font-mono tracking-[0.25em] text-emerald-300 mt-1">{codigo}</p>
+                <p className="text-xl sm:text-2xl font-mono tracking-[0.18em] sm:tracking-[0.25em] text-emerald-300 mt-1">{codigo}</p>
                 <p className="text-xs text-slate-500 mt-1.5">Vence en 7 días</p>
               </div>
 

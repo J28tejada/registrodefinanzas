@@ -121,7 +121,7 @@ function LoginInner() {
         )}
 
         {confirmar ? (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center space-y-3">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 text-center space-y-3">
             <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
             <p className="text-sm text-white font-medium">Revisá tu correo</p>
             <p className="text-xs text-slate-400">
@@ -130,7 +130,7 @@ function LoginInner() {
             </p>
           </div>
         ) : (
-          <form onSubmit={enviar} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <form onSubmit={enviar} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4">
             <button
               type="button"
               onClick={entrarConGoogle}

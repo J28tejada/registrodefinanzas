@@ -167,7 +167,7 @@ function EmailPageInner() {
     <div className="max-w-2xl mx-auto space-y-6 pt-14 md:pt-0">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Correo electrónico</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-white">Correo electrónico</h1>
         <p className="text-slate-400 text-sm">Importa transacciones desde correos bancarios</p>
       </div>
 
@@ -181,7 +181,7 @@ function EmailPageInner() {
 
       {/* Not connected */}
       {!connected && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 space-y-5">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
               <Mail className="w-6 h-6 text-blue-400" />

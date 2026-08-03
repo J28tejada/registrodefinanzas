@@ -106,7 +106,7 @@ export default function WhatsappPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 pt-14 md:pt-0">
       <div>
-        <h1 className="text-2xl font-bold text-white">WhatsApp</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-white">WhatsApp</h1>
         <p className="text-slate-400 text-sm">Anotá gastos e ingresos escribiendo, dictando o fotografiando el recibo</p>
       </div>
 
@@ -216,7 +216,7 @@ export default function WhatsappPage() {
 
       {/* Paso 1: conectar el teléfono a Evolution */}
       {estado?.configurado && estado.state !== 'open' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
           <div>
             <p className="font-semibold text-white text-sm">1. Conectá tu WhatsApp</p>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -278,7 +278,7 @@ export default function WhatsappPage() {
       />
 
       {/* Cómo se usa */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
         <p className="font-semibold text-white text-sm">Cómo se usa</p>
         <ul className="space-y-2 text-sm text-slate-400">
           {[
