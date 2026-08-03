@@ -350,6 +350,10 @@ export async function acceptInvite(
     if (error.message.includes('CODIGO_INVALIDO')) return { ok: false, error: 'Código de invitación inválido.' };
     if (error.message.includes('CODIGO_EXPIRADO')) return { ok: false, error: 'Esta invitación ya expiró. Pedí una nueva.' };
     if (error.message.includes('NO_AUTENTICADO')) return { ok: false, error: 'Tenés que iniciar sesión.' };
+    // Cualquier otra cosa es un error nuestro, no del código que ingresó. Sin
+    // este log el motivo real queda invisible detrás del mensaje genérico:
+    // así se escondió un 42702 por ambigüedad de columna en la función.
+    console.error('[invites] fallo inesperado al aceptar:', error);
     return { ok: false, error: 'No se pudo aceptar la invitación.' };
   }
   const fila = (data ?? [])[0] as { ledger_id: string; ledger_name: string } | undefined;

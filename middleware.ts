@@ -58,7 +58,10 @@ export async function middleware(request: NextRequest) {
     }
     const login = request.nextUrl.clone();
     login.pathname = '/login';
-    login.searchParams.set('next', pathname);
+    // Con la query, no solo el path: quien abre una invitación
+    // (/unirse?codigo=ABC123) sin sesión volvía a /unirse sin el código y tenía
+    // que tipearlo a mano.
+    login.searchParams.set('next', pathname + request.nextUrl.search);
     return NextResponse.redirect(login);
   }
 
