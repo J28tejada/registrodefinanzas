@@ -135,8 +135,24 @@ export async function POST(req: NextRequest) {
     try {
       resultados.push(await procesar(supabase, evento));
     } catch (err) {
-      console.error('[whatsapp] error procesando evento:', err);
+      const ref = Math.random().toString(36).slice(2, 8).toUpperCase();
+      console.error(`[whatsapp] error ${ref} procesando evento:`, err);
       resultados.push('error');
+
+      // Sin esto el usuario no recibe nada y queda esperando una respuesta que
+      // no va a llegar. Un aviso corto vale más que el silencio; el detalle
+      // queda en el log, referenciado por `ref`.
+      try {
+        const destino = (evento.key as Json | undefined)?.remoteJid as string | undefined;
+        if (destino) {
+          await sendText(
+            destino,
+            `Se me complicó procesando ese mensaje. Ya quedó registrado para revisarlo (ref ${ref}). Probá de nuevo, y si sigue igual anotalo desde la app.`,
+          );
+        }
+      } catch (errAviso) {
+        console.error(`[whatsapp] tampoco se pudo avisar del error ${ref}:`, errAviso);
+      }
     }
   }
 

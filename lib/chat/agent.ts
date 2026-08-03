@@ -27,6 +27,8 @@ const MAX_CANTIDAD = 100;
 
 export class CuotaAgotadaError extends Error {}
 export class ModeloNoDisponibleError extends Error {}
+/** 503/500 del proveedor: no es culpa del mensaje, se puede reintentar. */
+export class ServicioSaturadoError extends Error {}
 
 // ─── Prompt del sistema ───────────────────────────────────────────────────────
 
@@ -279,7 +281,37 @@ function traducirError(err: unknown): Error {
   const msg = err instanceof Error ? err.message : String(err);
   if (/429|RESOURCE_EXHAUSTED|quota/i.test(msg)) return new CuotaAgotadaError(msg);
   if (/404|not found|is not supported/i.test(msg)) return new ModeloNoDisponibleError(msg);
+  if (/503|502|500|overloaded|unavailable|internal error/i.test(msg)) {
+    return new ServicioSaturadoError(msg);
+  }
   return err instanceof Error ? err : new Error(msg);
+}
+
+/** Distinto de la cuota: acá el modelo está saturado y en segundos se recupera. */
+function esTransitorio(err: unknown): boolean {
+  return traducirError(err) instanceof ServicioSaturadoError;
+}
+
+const REINTENTOS = 2;
+const ESPERA_BASE_MS = 700;
+
+/**
+ * Reintenta solo los fallos transitorios. Un 503 de Gemini es lo bastante
+ * frecuente como para que rendirse en el primer intento se note: el usuario
+ * manda un gasto y recibe un error por algo que se arreglaba solo.
+ */
+async function conReintentos<T>(fn: () => Promise<T>): Promise<T> {
+  let ultimo: unknown;
+  for (let intento = 0; intento <= REINTENTOS; intento++) {
+    try {
+      return await fn();
+    } catch (err) {
+      ultimo = err;
+      if (!esTransitorio(err) || intento === REINTENTOS) break;
+      await new Promise(r => setTimeout(r, ESPERA_BASE_MS * 2 ** intento));
+    }
+  }
+  throw ultimo;
 }
 
 export interface RespuestaAgente {
@@ -310,7 +342,7 @@ export async function correrAgente(
   const chat = model.startChat({ history: historial(previos) });
 
   try {
-    let result = await chat.sendMessage(texto);
+    let result = await conReintentos(() => chat.sendMessage(texto));
 
     for (let vuelta = 0; vuelta < MAX_VUELTAS; vuelta++) {
       const llamadas = result.response.functionCalls() ?? [];
@@ -326,7 +358,7 @@ export async function correrAgente(
           : `ERROR: no existe la herramienta "${llamada.name}".`;
         respuestas.push({ functionResponse: { name: llamada.name, response: { result: salida } } });
       }
-      result = await chat.sendMessage(respuestas);
+      result = await conReintentos(() => chat.sendMessage(respuestas));
     }
 
     let salida = '';

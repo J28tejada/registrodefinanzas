@@ -15,12 +15,13 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { getAllLedgersWithStats, getLedgerById, getSettings } from '@/lib/db';
 import { TransactionScope } from '@/lib/types';
 import { makeFormatters } from '@/lib/format';
-import { MODEL } from './config';
 import {
   actualizarPendiente, consumeLinkCode, getLink, getPreferredName,
   pendienteVigente, setLinkLedger, setPreferredName,
 } from './db';
-import { CuotaAgotadaError, ModeloNoDisponibleError, correrAgente } from './agent';
+import {
+  CuotaAgotadaError, ModeloNoDisponibleError, ServicioSaturadoError, correrAgente,
+} from './agent';
 import {
   aplicar,
   cancelar,
@@ -198,20 +199,43 @@ export async function handleInboundMessage(entrada: Entrada): Promise<string> {
 }
 
 /**
- * Todo mensaje dice lo que el sistema sabe. "Uy, tuve un problema" es carísimo
- * de diagnosticar para alguien que no puede abrir los logs.
+ * El usuario recibe qué pasó y qué hacer; el detalle técnico va al log.
+ *
+ * Antes se le mandaba el error crudo, con el argumento de que "Uy, tuve un
+ * problema" es imposible de diagnosticar para quien no puede abrir los logs.
+ * El argumento era bueno pero la solución estaba mal: terminaba mandando cosas
+ * como `[GoogleGenerativeAI Error]: ... 503 Service Unavailable` a alguien que
+ * solo quería anotar un gasto, y encima filtraba URLs internas y nombres de
+ * modelo.
+ *
+ * La `ref` resuelve las dos cosas: el usuario la puede dictar y con eso se
+ * encuentra el error exacto en el log, sin que el chat cargue con el detalle.
  */
 function mensajeDeError(err: unknown, habiaPendiente: boolean): string {
   const colaPendiente = habiaPendiente
     ? '\nLo que estaba esperando confirmación sigue guardado: mandame "sí" y lo anoto igual.'
     : '';
 
+  // El detalle técnico va al log, nunca al chat. La `ref` es lo que une las dos
+  // puntas: el usuario la puede pasar y con eso se encuentra el error exacto.
+  const ref = refDeError();
+  console.error(`[chat] error ${ref}:`, err);
+
+  if (err instanceof ServicioSaturadoError) {
+    return `El servicio está sobrecargado en este momento y no pude interpretar el mensaje. Probá de nuevo en un minuto.${colaPendiente}`;
+  }
   if (err instanceof CuotaAgotadaError) {
-    return `Se agotó la cuota del modelo (${MODEL}) por hoy, así que no pude interpretar el mensaje. La cuota es por día: mañana vuelve. Mientras tanto podés anotarlo desde la app.${colaPendiente}`;
+    return `Llegué al límite de mensajes por hoy, así que no puedo interpretar más. Vuelve mañana; mientras tanto podés anotarlo desde la app.${colaPendiente}`;
   }
   if (err instanceof ModeloNoDisponibleError) {
-    return `El modelo configurado (${MODEL}) no está disponible para esta llave de API, así que no pude interpretar el mensaje. Hay que cambiar GEMINI_MODEL.${colaPendiente}`;
+    // No es algo que el usuario pueda resolver: se avisa sin nombrar variables
+    // de entorno ni modelos.
+    return `Tengo un problema de configuración y no puedo interpretar mensajes. Ya quedó registrado para revisarlo (ref ${ref}). Mientras tanto podés anotarlo desde la app.${colaPendiente}`;
   }
-  const detalle = err instanceof Error ? err.message : String(err);
-  return `No pude procesar el mensaje. Motivo: ${detalle.slice(0, 200)}${colaPendiente}`;
+  return `No pude procesar el mensaje. Ya quedó registrado para revisarlo (ref ${ref}). Probá de nuevo, y si sigue igual anotalo desde la app.${colaPendiente}`;
+}
+
+/** Corta y fácil de dictar por chat: sirve para encontrar el error en el log. */
+function refDeError(): string {
+  return Math.random().toString(36).slice(2, 8).toUpperCase();
 }

@@ -390,3 +390,34 @@ chicos no llega al mínimo cacheable, así que cada token de más se paga siempr
   todos**. Por eso `/api/whatsapp/instance` está detrás de `ADMIN_EMAILS`. Sin
   esa variable queda abierto a cualquier usuario autenticado — cómodo mientras
   seas el único, peligroso apenas haya una segunda cuenta. Definila.
+
+### Los errores no viajan crudos al chat
+
+El usuario recibe qué pasó y qué hacer; el detalle técnico queda en el log,
+unido por una `ref` corta que puede dictar por chat.
+
+Antes se le mandaba el mensaje de error tal cual, con el argumento de que "uy,
+tuve un problema" es imposible de diagnosticar para quien no puede abrir los
+logs. El argumento era bueno pero la solución estaba mal: alguien que solo
+quería anotar un gasto recibía
+
+```
+No pude procesar el mensaje. Motivo: [GoogleGenerativeAI Error]: Error fetching
+from https://generativelanguage.googleapis.com/v1beta/models/...: [503 ...]
+```
+
+que además filtra URLs internas y el nombre del modelo.
+
+Tres casos se distinguen porque cada uno se resuelve distinto:
+
+- **Saturado** (503/502/500): se reintenta solo, hasta dos veces con espera
+  creciente. Si igual falla, se le dice que pruebe en un minuto. Un 503 de
+  Gemini es lo bastante frecuente como para que rendirse en el primer intento
+  se note.
+- **Cuota agotada**: vuelve mañana, y mientras tanto está la app.
+- **Configuración** (modelo inexistente, falta la llave): no es algo que el
+  usuario pueda resolver, así que se avisa sin nombrarle variables de entorno.
+
+Si algo revienta fuera del agente, el webhook igual manda un aviso corto. Sin
+eso el usuario no recibe nada y queda esperando una respuesta que no va a
+llegar.
