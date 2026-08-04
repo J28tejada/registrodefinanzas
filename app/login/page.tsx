@@ -96,7 +96,7 @@ function LoginInner() {
             <Wallet className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">Registro de Finanzas</h1>
+            <h1 className="text-xl font-bold text-white">Jobidai Wallet</h1>
             <p className="text-sm text-slate-400">
               {modo === 'entrar' ? 'Entrá a tu cuenta' : 'Creá tu cuenta'}
             </p>

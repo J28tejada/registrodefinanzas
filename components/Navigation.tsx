@@ -44,7 +44,7 @@ export default function Navigation() {
               <Wallet className="w-4 h-4 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-sm text-white">FinanzasIA</p>
+              <p className="font-semibold text-sm text-white">Jobidai Wallet</p>
               <p className="text-xs text-slate-400">Control financiero</p>
             </div>
           </div>
@@ -99,7 +99,7 @@ export default function Navigation() {
         </nav>
 
         <div className="p-4 border-t border-slate-800">
-          <p className="text-xs text-slate-500 text-center">Registro de Finanzas v2.0</p>
+          <p className="text-xs text-slate-500 text-center">Jobidai Wallet</p>
         </div>
       </aside>
 

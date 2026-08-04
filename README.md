@@ -1,4 +1,4 @@
-# registrodefinanzas
+# Jobidai Wallet
 
 App de finanzas personales: varias cuentas, presupuestos mensuales, chat con IA,
 importación desde Gmail y un agente de WhatsApp.
