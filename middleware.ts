@@ -76,5 +76,11 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  // `apple-icon` y `manifest.webmanifest` van excluidos igual que `icon`: los
+  // pide el sistema operativo al agregar la app a la pantalla de inicio, sin
+  // sesión y sin seguir redirecciones. Si el middleware los manda al login, el
+  // teléfono se queda sin ícono y sin nombre, y no da ningún error visible.
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|icon|icons|apple-icon|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 };
