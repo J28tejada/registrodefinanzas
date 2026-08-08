@@ -2,6 +2,8 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import {
   Budget,
   BudgetProgress,
+  Category,
+  CategoryWithUsage,
   EmailConnection,
   Ledger,
   LedgerInvite,
@@ -586,6 +588,156 @@ export async function getSummary(
     totalBalance: totalIncome - totalExpenses,
     byCategory,
   };
+}
+
+// ─── Categorías ───────────────────────────────────────────────────────────────
+
+function rowToCategory(row: Record<string, unknown>): Category {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    type: row.type as Category['type'],
+    scope: row.scope as Category['scope'],
+    created_at: row.created_at as string,
+  };
+}
+
+/** Las categorías del usuario, opcionalmente filtradas por tipo y ámbito. */
+export async function getCategories(
+  db: Db,
+  filtros?: { type?: Category['type']; scope?: Category['scope'] },
+): Promise<Category[]> {
+  let q = db.supabase.from('categories').select('*').eq('user_id', db.userId);
+  if (filtros?.type) q = q.eq('type', filtros.type);
+  if (filtros?.scope) q = q.eq('scope', filtros.scope);
+
+  const { data, error } = await q.order('name');
+  if (error) fallar('No se pudieron leer las categorías', error);
+  return (data ?? []).map(rowToCategory);
+}
+
+/** Igual, pero contando en cuántos movimientos se usa cada una. */
+export async function getCategoriesWithUsage(db: Db): Promise<CategoryWithUsage[]> {
+  const [cats, movs] = await Promise.all([
+    getCategories(db),
+    db.supabase.from('transactions').select('category, type, scope').eq('user_id', db.userId),
+  ]);
+  if (movs.error) fallar('No se pudieron contar los usos', movs.error);
+
+  const clave = (c: { category?: string; name?: string; type: string; scope: string }) =>
+    `${c.type}|${c.scope}|${(c.category ?? c.name ?? '').toLowerCase()}`;
+
+  const conteo = new Map<string, number>();
+  for (const m of movs.data ?? []) {
+    const k = clave(m as { category: string; type: string; scope: string });
+    conteo.set(k, (conteo.get(k) ?? 0) + 1);
+  }
+
+  return cats.map(c => ({ ...c, usos: conteo.get(clave(c)) ?? 0 }));
+}
+
+export async function createCategory(
+  db: Db,
+  datos: { name: string; type: Category['type']; scope: Category['scope'] },
+): Promise<Category | { error: string }> {
+  const name = datos.name.trim();
+  if (!name) return { error: 'El nombre no puede estar vacío.' };
+  if (name.length > 40) return { error: 'El nombre es demasiado largo.' };
+
+  const { data, error } = await db.supabase
+    .from('categories')
+    .insert({ user_id: db.userId, name, type: datos.type, scope: datos.scope })
+    .select()
+    .single();
+
+  // 23505: ya existe una igual. Es lo esperable, no un fallo del sistema.
+  if (error?.code === '23505') return { error: 'Ya tenés una categoría con ese nombre.' };
+  if (error) fallar('No se pudo crear la categoría', error);
+  return rowToCategory(data);
+}
+
+/**
+ * Renombra y arrastra lo que ya estaba anotado con el nombre viejo.
+ *
+ * `transactions.category` guarda el texto, no una referencia. Si solo se
+ * cambiara la fila de `categories`, los movimientos anteriores quedarían con un
+ * nombre que ya no existe: desaparecerían de los totales por categoría y de su
+ * presupuesto, sin que nada avise.
+ */
+export async function renameCategory(
+  db: Db,
+  id: string,
+  nuevoNombre: string,
+): Promise<Category | { error: string }> {
+  const name = nuevoNombre.trim();
+  if (!name) return { error: 'El nombre no puede estar vacío.' };
+  if (name.length > 40) return { error: 'El nombre es demasiado largo.' };
+
+  const { data: actual, error: errLeer } = await db.supabase
+    .from('categories').select('*').eq('user_id', db.userId).eq('id', id).maybeSingle();
+  if (errLeer) fallar('No se pudo leer la categoría', errLeer);
+  if (!actual) return { error: 'Esa categoría no existe.' };
+
+  const anterior = actual.name as string;
+  if (anterior === name) return rowToCategory(actual);
+
+  const { data, error } = await db.supabase
+    .from('categories').update({ name }).eq('user_id', db.userId).eq('id', id).select().single();
+  if (error?.code === '23505') return { error: 'Ya tenés una categoría con ese nombre.' };
+  if (error) fallar('No se pudo renombrar la categoría', error);
+
+  // El arrastre va después de que el renombre salió bien: si fallara antes,
+  // quedarían movimientos apuntando a un nombre que no llegó a existir.
+  const { error: errMovs } = await db.supabase
+    .from('transactions')
+    .update({ category: name })
+    .eq('user_id', db.userId)
+    .eq('category', anterior)
+    .eq('type', actual.type)
+    .eq('scope', actual.scope);
+  if (errMovs) fallar('Se renombró la categoría pero no sus movimientos', errMovs);
+
+  // Los presupuestos también la referencian por nombre.
+  const { error: errPres } = await db.supabase
+    .from('budgets').update({ category: name }).eq('user_id', db.userId).eq('category', anterior);
+  if (errPres) fallar('Se renombró la categoría pero no su presupuesto', errPres);
+
+  return rowToCategory(data);
+}
+
+/**
+ * Borra una categoría que no esté en uso.
+ *
+ * Con movimientos anotados no se borra: quedarían con un nombre huérfano y sin
+ * forma de volver a elegirlo. Renombrarla sí se puede siempre.
+ */
+export async function deleteCategory(db: Db, id: string): Promise<{ ok: boolean; error?: string }> {
+  const { data: actual, error: errLeer } = await db.supabase
+    .from('categories').select('*').eq('user_id', db.userId).eq('id', id).maybeSingle();
+  if (errLeer) fallar('No se pudo leer la categoría', errLeer);
+  if (!actual) return { ok: false, error: 'Esa categoría no existe.' };
+
+  const { count, error: errUso } = await db.supabase
+    .from('transactions')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', db.userId)
+    .eq('category', actual.name as string)
+    .eq('type', actual.type as string)
+    .eq('scope', actual.scope as string);
+  if (errUso) fallar('No se pudo verificar el uso de la categoría', errUso);
+
+  if ((count ?? 0) > 0) {
+    return {
+      ok: false,
+      error: `La usan ${count} movimiento${count === 1 ? '' : 's'}. Podés renombrarla, pero no borrarla.`,
+    };
+  }
+
+  await db.supabase.from('budgets').delete().eq('user_id', db.userId).eq('category', actual.name as string);
+  const { error } = await db.supabase
+    .from('categories').delete().eq('user_id', db.userId).eq('id', id);
+  if (error) fallar('No se pudo eliminar la categoría', error);
+  return { ok: true };
 }
 
 // ─── Presupuestos ─────────────────────────────────────────────────────────────

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { X, Loader2, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
-import { Transaction, TransactionType, TransactionScope, getCategories, AIInterpretation, LEDGER_COLOR_MAP } from '@/lib/types';
+import { Transaction, TransactionType, TransactionScope, AIInterpretation, LEDGER_COLOR_MAP } from '@/lib/types';
+import { useCategories } from './CategoriesContext';
 import { useLedger } from './LedgerContext';
 import { useFormatters } from './SettingsContext';
 import VoiceInput from './VoiceInput';
@@ -27,6 +28,7 @@ export default function AddTransactionModal({
   isOpen, onClose, onSave, editingTransaction,
 }: AddTransactionModalProps) {
   const { currentLedger, ledgers, setSelectorOpen } = useLedger();
+  const { para } = useCategories();
   const fmt = useFormatters();
 
   const defaultLedgerId = currentLedger?.id ?? (ledgers[0]?.id ?? '');
@@ -50,7 +52,8 @@ export default function AddTransactionModal({
   // Derive scope from selected ledger
   const selectedLedger = ledgers.find(l => l.id === form.ledger_id) ?? currentLedger;
   const scope: TransactionScope = selectedLedger?.type ?? 'personal';
-  const categories = getCategories(form.type, scope);
+  // Salen de la base: el usuario puede agregarlas y renombrarlas.
+  const categories = para(form.type, scope).map(c => c.name);
 
   useEffect(() => {
     if (editingTransaction) {

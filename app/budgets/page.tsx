@@ -5,11 +5,13 @@ import { Target, Plus, Trash2, Loader2, AlertCircle, ChevronDown, ChevronLeft, C
 import BudgetBar, { budgetTone } from '@/components/BudgetBar';
 import { useFormatters } from '@/components/SettingsContext';
 import { useLedger } from '@/components/LedgerContext';
-import { BudgetProgress, expenseCategories } from '@/lib/types';
+import { useCategories } from '@/components/CategoriesContext';
+import { BudgetProgress } from '@/lib/types';
 
 export default function BudgetsPage() {
   const fmt = useFormatters();
   const { transactionVersion } = useLedger();
+  const { categorias, refrescar: refrescarCategorias } = useCategories();
 
   const [mes, setMes] = useState<string>(() => fmt.today().slice(0, 7));
   const [budgets, setBudgets] = useState<BudgetProgress[]>([]);
@@ -19,6 +21,12 @@ export default function BudgetsPage() {
   const [categoria, setCategoria] = useState('');
   const [monto, setMonto] = useState('');
   const [guardando, setGuardando] = useState(false);
+
+  // Crear la categoría sin salir de acá: si hay que ir a otra pantalla y
+  // volver, se pierde el monto que ya se estaba escribiendo.
+  const [creandoCat, setCreandoCat] = useState(false);
+  const [nuevaCat, setNuevaCat] = useState('');
+  const [errorCat, setErrorCat] = useState('');
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -71,7 +79,37 @@ export default function BudgetsPage() {
     await cargar();
   };
 
-  const disponibles = expenseCategories().filter(c => !budgets.some(b => b.category === c));
+  // Solo gastos: un presupuesto es un tope de gasto, no de ingreso.
+  const disponibles = categorias
+    .filter(c => c.type === 'expense')
+    .map(c => c.name)
+    .filter((c, i, arr) => arr.indexOf(c) === i)
+    .filter(c => !budgets.some(b => b.category === c))
+    .sort((a, b) => a.localeCompare(b, 'es'));
+
+  const crearCategoria = async () => {
+    const nombre = nuevaCat.trim();
+    if (!nombre) return;
+    setErrorCat('');
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // Personal por defecto: es el ámbito de la enorme mayoría de los topes.
+        body: JSON.stringify({ name: nombre, type: 'expense', scope: 'personal' }),
+      });
+      const datos = await res.json();
+      if (!res.ok) { setErrorCat(datos.error ?? 'No se pudo crear'); return; }
+
+      await refrescarCategorias();
+      // Queda elegida, que es lo que venías a hacer.
+      setCategoria(datos.name);
+      setNuevaCat('');
+      setCreandoCat(false);
+    } catch {
+      setErrorCat('No se pudo crear la categoría');
+    }
+  };
   const totalTope = budgets.reduce((s, b) => s + b.amount, 0);
   const totalGastado = budgets.reduce((s, b) => s + b.spent, 0);
   const excedidos = budgets.filter(b => b.percent >= 100);
@@ -140,6 +178,15 @@ export default function BudgetsPage() {
             </select>
             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
+          <button
+            type="button"
+            onClick={() => { setCreandoCat(v => !v); setErrorCat(''); }}
+            title="Crear una categoría nueva"
+            className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-lg text-sm transition-colors flex items-center justify-center gap-1.5 flex-shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="sm:hidden">Nueva categoría</span>
+          </button>
           <input
             type="number"
             min="0"
@@ -159,6 +206,36 @@ export default function BudgetsPage() {
             Agregar
           </button>
         </div>
+
+        {creandoCat && (
+          <div className="bg-slate-800/60 border border-slate-700 rounded-lg p-3 space-y-2">
+            <label className="text-xs text-slate-400">Nombre de la categoría nueva</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={nuevaCat}
+                onChange={e => { setNuevaCat(e.target.value); setErrorCat(''); }}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); crearCategoria(); } }}
+                placeholder="Ej: Mascota, Gimnasio…"
+                autoFocus
+                maxLength={40}
+                className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+              />
+              <button
+                type="button"
+                onClick={crearCategoria}
+                disabled={!nuevaCat.trim()}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Crear
+              </button>
+            </div>
+            {errorCat && <p className="text-xs text-rose-400">{errorCat}</p>}
+            <p className="text-xs text-slate-500">
+              Se crea como gasto personal. Podés renombrarla o borrarla desde Configuración.
+            </p>
+          </div>
+        )}
         {disponibles.length === 0 && (
           <p className="text-xs text-slate-500">Ya tenés un presupuesto para cada categoría de gasto.</p>
         )}

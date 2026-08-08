@@ -169,6 +169,20 @@ export interface CategorySummary {
   count: number;
 }
 
+/** Una categoría del usuario. Las de arranque salen de 0009_categorias.sql. */
+export interface Category {
+  id: string;
+  name: string;
+  type: TransactionType;
+  scope: TransactionScope;
+  created_at: string;
+}
+
+export interface CategoryWithUsage extends Category {
+  /** Cuántos movimientos la usan. Decide si borrarla se puede o hay que avisar. */
+  usos: number;
+}
+
 /** Tope mensual de gasto para una categoría. */
 export interface Budget {
   id: string;
@@ -217,55 +231,10 @@ export interface EmailTransaction {
 }
 
 // ─── Categorías ───────────────────────────────────────────────────────────────
-
-export const CATEGORIES = {
-  personalExpense: [
-    'Alimentación',
-    'Transporte',
-    'Salud',
-    'Entretenimiento',
-    'Ropa',
-    'Educación',
-    'Servicios básicos',
-    'Hogar',
-    'Suscripciones',
-    'Otros personal',
-  ],
-  personalIncome: [
-    'Salario',
-    'Freelance',
-    'Inversiones',
-    'Regalo',
-    'Otros ingreso personal',
-  ],
-  businessExpense: [
-    'Materiales',
-    'Marketing',
-    'Equipo/Tecnología',
-    'Transporte negocio',
-    'Personal/Empleados',
-    'Oficina',
-    'Impuestos',
-    'Servicios negocio',
-    'Otros negocio',
-  ],
-  businessIncome: [
-    'Ventas',
-    'Servicios prestados',
-    'Comisiones',
-    'Proyectos',
-    'Otros ingreso negocio',
-  ],
-} as const;
-
-export function getCategories(type: TransactionType, scope: TransactionScope): string[] {
-  if (type === 'expense' && scope === 'personal') return [...CATEGORIES.personalExpense];
-  if (type === 'income' && scope === 'personal') return [...CATEGORIES.personalIncome];
-  if (type === 'expense' && scope === 'business') return [...CATEGORIES.businessExpense];
-  return [...CATEGORIES.businessIncome];
-}
-
-/** Todas las categorías de gasto: las que pueden tener presupuesto. */
-export function expenseCategories(): string[] {
-  return [...CATEGORIES.personalExpense, ...CATEGORIES.businessExpense];
-}
+//
+// Ya no viven acá: son de cada usuario y salen de la tabla `categories`. La
+// lista de siempre quedó como semilla en 0009_categorias.sql, que es lo que
+// recibe quien se registra.
+//
+// En el servidor se leen con `getCategories(db, ...)` de lib/db.ts; en el
+// navegador, con el hook `useCategories()`.

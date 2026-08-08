@@ -14,8 +14,8 @@ import {
   Part,
   SchemaType,
 } from '@google/generative-ai';
-import { getAllTransactions, getBudgetProgress, getSummary } from '@/lib/db';
-import { TransactionScope, getCategories } from '@/lib/types';
+import { getAllTransactions, getBudgetProgress, getCategories, getSummary } from '@/lib/db';
+import { TransactionScope } from '@/lib/types';
 import { fechaValida, limitesDelMes } from '@/lib/format';
 import { MODEL, geminiApiKey } from './config';
 import { actualizarPendiente, crearPendiente, recentMessages } from './db';
@@ -61,11 +61,7 @@ REGLAS
  * cafés de 150 son 450 o tres de 150, lo inventa. Esa pregunta va dentro de la
  * confirmación y la resuelve el código.
  */
-function declaraciones(scope: TransactionScope): FunctionDeclaration[] {
-  const categorias = [
-    ...getCategories('expense', scope),
-    ...getCategories('income', scope),
-  ];
+function declaraciones(categorias: string[]): FunctionDeclaration[] {
 
   return [
     {
@@ -127,10 +123,17 @@ interface Turno {
   /** Id de la pendiente creada en este turno, para ir agregándole movimientos. */
   pendienteId: string | null;
   resumen: string;
+  /**
+   * Las del usuario, del ámbito de su cuenta, leídas una sola vez por turno.
+   *
+   * Antes salían de una constante del código. Ahora que se pueden crear y
+   * renombrar, tienen que venir de la base: si no, el modelo no conocería
+   * "Mascota" y seguiría ofreciendo un nombre que el usuario ya borró.
+   */
+  categorias: { expense: string[]; income: string[] };
 }
 
-function categoriaValida(valor: unknown, tipo: 'ingreso' | 'gasto', scope: TransactionScope): string | null {
-  const validas = getCategories(tipo === 'gasto' ? 'expense' : 'income', scope);
+function categoriaValida(valor: unknown, validas: string[]): string | null {
   if (typeof valor !== 'string' || !valor.trim()) return null;
   const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
   return validas.find(c => norm(c) === norm(valor)) ?? null;
@@ -151,9 +154,9 @@ async function registrarMovimiento(args: Record<string, unknown>, turno: Turno):
     return 'ERROR: falta el concepto. Preguntale al usuario en qué fue exactamente. No lo inventes.';
   }
 
-  const categoria = categoriaValida(args.categoria, tipo, ctx.scope);
+  const validas = turno.categorias[tipo === 'gasto' ? 'expense' : 'income'];
+  const categoria = categoriaValida(args.categoria, validas);
   if (!categoria) {
-    const validas = getCategories(tipo === 'gasto' ? 'expense' : 'income', ctx.scope);
     return `ERROR: "categoria" tiene que ser una de: ${validas.join(', ')}.`;
   }
 
@@ -337,13 +340,30 @@ export async function correrAgente(
   const apiKey = geminiApiKey();
   if (!apiKey) throw new Error('Falta GOOGLE_AI_API_KEY: el agente no puede interpretar mensajes.');
 
-  const turno: Turno = { ctx, receiptUrl, borradores: [], pendienteId: null, resumen: '' };
+  // Del ámbito de la cuenta activa: las de negocio no tienen sentido en una
+  // cuenta personal, y mandarlas todas al modelo es enum de más en cada llamada.
+  const [gastos, ingresos] = await Promise.all([
+    getCategories(ctx.db, { type: 'expense', scope: ctx.scope }),
+    getCategories(ctx.db, { type: 'income', scope: ctx.scope }),
+  ]);
+
+  const turno: Turno = {
+    ctx,
+    receiptUrl,
+    borradores: [],
+    pendienteId: null,
+    resumen: '',
+    categorias: {
+      expense: gastos.map(c => c.name),
+      income: ingresos.map(c => c.name),
+    },
+  };
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
     model: MODEL,
     systemInstruction: systemPrompt(ctx),
-    tools: [{ functionDeclarations: declaraciones(ctx.scope) }],
+    tools: [{ functionDeclarations: declaraciones([...turno.categorias.expense, ...turno.categorias.income]) }],
   });
 
   // El mensaje actual ya está en la bitácora: entra aparte, no en el historial.

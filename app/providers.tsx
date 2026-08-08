@@ -2,6 +2,7 @@
 
 import { LedgerProvider, useLedger } from '@/components/LedgerContext';
 import { SettingsProvider } from '@/components/SettingsContext';
+import { CategoriesProvider } from '@/components/CategoriesContext';
 import AddTransactionModal from '@/components/AddTransactionModal';
 
 function GlobalAddModal() {
@@ -20,10 +21,12 @@ function GlobalAddModal() {
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SettingsProvider>
+      <CategoriesProvider>
       <LedgerProvider>
         {children}
         <GlobalAddModal />
       </LedgerProvider>
+      </CategoriesProvider>
     </SettingsProvider>
   );
 }

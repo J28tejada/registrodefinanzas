@@ -7,6 +7,7 @@ import { useSettings } from '@/components/SettingsContext';
 import { CURRENCIES } from '@/lib/types';
 import { makeFormatters, zonasHorarias } from '@/lib/format';
 import { createClient } from '@/lib/supabase/browser';
+import CategoriesPanel from '@/components/CategoriesPanel';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -186,6 +187,8 @@ export default function SettingsPage() {
           {hayCambios ? 'Guardar cambios' : 'Sin cambios'}
         </button>
       </div>
+
+      <CategoriesPanel />
 
       {/* Cuenta */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 flex items-center gap-3">
