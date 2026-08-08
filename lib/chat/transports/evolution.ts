@@ -172,6 +172,29 @@ export async function sendText(phone: string, text: string) {
 }
 
 /**
+ * Le muestra "escribiendo…" mientras el modelo piensa.
+ *
+ * `delay` es cuánto lo sostiene WhatsApp, no cuánto tarda la respuesta: el
+ * indicador se corta solo cuando llega el mensaje. Un valor corto alcanza y
+ * evita que quede colgado si el proceso falla antes de contestar.
+ *
+ * Va al mismo JID al que se responde, no al identificador de la conversación:
+ * con direccionamiento LID no son el mismo, y mandarlo al otro no hace nada.
+ */
+export async function sendTyping(phone: string) {
+  const cfg = requireEvolution();
+  try {
+    await call('POST', `/chat/sendPresence/${cfg.instance}`, {
+      number: phone,
+      delay: 1200,
+      presence: 'composing',
+    });
+  } catch {
+    // Es cosmético: si falla, el mensaje igual sale.
+  }
+}
+
+/**
  * Audio e imágenes viajan cifrados extremo a extremo: la URL del webhook apunta
  * a un `.enc` que solo Evolution puede descifrar. Hay que pedirle el archivo
  * mandándole el mensaje completo tal como llegó.

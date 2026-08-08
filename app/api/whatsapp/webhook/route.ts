@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { actualizarCuerpoMensaje, getLink, logInbound, logOutbound } from '@/lib/chat/db';
 import { handleInboundMessage } from '@/lib/chat/handler';
 import { leerImagen, transcribirAudio } from '@/lib/chat/media';
-import { getBase64FromMediaMessage, sendText } from '@/lib/chat/transports/evolution';
+import { getBase64FromMediaMessage, sendText, sendTyping } from '@/lib/chat/transports/evolution';
 import { MensajeEntrante } from '@/lib/chat/types';
 
 export const dynamic = 'force-dynamic';
@@ -203,6 +203,8 @@ async function procesar(supabase: SupabaseClient, data: Json): Promise<string> {
     await responder(supabase, userId, externalId, `Solo puedo leer texto, notas de voz y fotos. Eso que mandaste es "${entrante.descripcionTipo}" y no lo puedo interpretar.`, entrante.replyTo, participant);
     return 'no-soportado';
   }
+
+  await sendTyping(entrante.replyTo ?? externalId);
 
   // Audio e imagen se convierten a texto y siguen el camino normal.
   let texto = entrante.texto;
