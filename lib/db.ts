@@ -1079,16 +1079,30 @@ export async function upsertBudget(
   return rowToBudget(data);
 }
 
-/** Mueve un tope a otra cuenta, o lo deja global con `null`. */
-export async function moverBudget(
-  db: Db, id: string, ledgerId: string | null,
+/**
+ * Cambia el monto de un tope, la cuenta a la que pertenece, o las dos cosas.
+ *
+ * La categoría no se toca: cambiarla es en realidad otro tope, y sale más
+ * claro borrando este y creando el que corresponde.
+ */
+export async function updateBudget(
+  db: Db,
+  id: string,
+  cambios: { amount?: number; ledger_id?: string | null },
 ): Promise<{ ok: true; budget: Budget } | { ok: false; error: string }> {
-  if (ledgerId && !(await getLedgerRole(db, ledgerId))) {
-    return { ok: false, error: 'No tenés acceso a esa cuenta.' };
+  const campos: Record<string, unknown> = { updated_at: new Date().toISOString() };
+
+  if (cambios.amount !== undefined) campos.amount = cambios.amount;
+  if (cambios.ledger_id !== undefined) {
+    if (cambios.ledger_id && !(await getLedgerRole(db, cambios.ledger_id))) {
+      return { ok: false, error: 'No tenés acceso a esa cuenta.' };
+    }
+    campos.ledger_id = cambios.ledger_id;
   }
+
   const { data, error } = await db.supabase
     .from('budgets')
-    .update({ ledger_id: ledgerId, updated_at: new Date().toISOString() })
+    .update(campos)
     .eq('id', id)
     .select()
     .maybeSingle();
@@ -1098,12 +1112,12 @@ export async function moverBudget(
   if (error?.code === '23505') {
     return {
       ok: false,
-      error: ledgerId
+      error: cambios.ledger_id
         ? 'Esa cuenta ya tiene un presupuesto para esta categoría. Borrá uno de los dos.'
-        : 'Ya tenés un presupuesto global para esta categoría. Borrá uno de los dos.',
+        : 'Ya tenés un presupuesto sin cuenta para esta categoría. Borrá uno de los dos.',
     };
   }
-  if (error) fallar('No se pudo mover el presupuesto', error);
+  if (error) fallar('No se pudo actualizar el presupuesto', error);
   if (!data) return { ok: false, error: 'Ese presupuesto no existe.' };
   return { ok: true, budget: rowToBudget(data) };
 }

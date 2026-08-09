@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Target, Plus, Trash2, Loader2, AlertCircle, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Target, Plus, Trash2, Loader2, AlertCircle, ChevronDown, ChevronLeft, ChevronRight, Pencil, Check, X } from 'lucide-react';
 import BudgetBar, { budgetTone } from '@/components/BudgetBar';
 import { useFormatters } from '@/components/SettingsContext';
 import { useLedger } from '@/components/LedgerContext';
@@ -54,18 +54,20 @@ export default function BudgetsPage() {
 
   useEffect(() => { cargar(); }, [cargar, transactionVersion]);
 
-  const mover = async (id: string, ledgerId: string) => {
+  /** Editar y mover son el mismo PATCH: lo ausente se queda como está. */
+  const editar = async (id: string, cambios: { amount?: number; ledger_id?: string | null }) => {
     setError('');
     const res = await fetch(`/api/budgets/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ledger_id: ledgerId || null }),
+      body: JSON.stringify(cambios),
     });
     if (!res.ok) {
-      setError((await res.json()).error ?? 'No se pudo mover el presupuesto');
-      return;
+      setError((await res.json()).error ?? 'No se pudo guardar el cambio');
+      return false;
     }
     await cargar();
+    return true;
   };
 
   const moverMes = (delta: number) => {
@@ -196,7 +198,7 @@ export default function BudgetsPage() {
                 <div className="relative flex-shrink-0">
                   <select
                     defaultValue=""
-                    onChange={e => { if (e.target.value) mover(b.id, e.target.value); }}
+                    onChange={e => { if (e.target.value) editar(b.id, { ledger_id: e.target.value }); }}
                     className="bg-slate-800 border border-slate-700 rounded-lg pl-3 pr-7 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 appearance-none"
                   >
                     <option value="">Asignar a…</option>
@@ -326,28 +328,14 @@ export default function BudgetsPage() {
       ) : (
         <div className="space-y-2">
           {budgets.map(b => (
-            <div
+            <FilaPresupuesto
               key={b.id}
-              className={`bg-slate-900 border rounded-xl px-4 py-3.5 flex items-center gap-3 group ${budgetTone(b.percent).ring}`}
-            >
-              <div className="flex-1 min-w-0">
-                <BudgetBar budget={b} />
-                {/* Solo en "todas las cuentas": mirando una, decirlo en cada
-                    fila es repetir lo que ya dice el encabezado. */}
-                {!currentLedger && (
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    {b.ledger_name ?? 'Todas las cuentas'}
-                  </p>
-                )}
-              </div>
-              <button
-                onClick={() => eliminar(b.id, b.category)}
-                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors flex-shrink-0 sm:opacity-0 sm:group-hover:opacity-100"
-                title="Eliminar presupuesto"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
+              budget={b}
+              ledgers={ledgers.map(l => ({ id: l.id, name: l.name }))}
+              mostrarCuenta={!currentLedger}
+              onEditar={cambios => editar(b.id, cambios)}
+              onEliminar={() => eliminar(b.id, b.category)}
+            />
           ))}
         </div>
       )}
@@ -358,6 +346,137 @@ export default function BudgetsPage() {
           : 'Cada tope se compara contra los gastos del mes de su cuenta. Los que no tienen cuenta miden todas juntas.'}
         {' '}Si vinculaste WhatsApp, te aviso ahí mismo al anotar un gasto que te pase del tope.
       </p>
+    </div>
+  );
+}
+
+/**
+ * Una fila de la lista, con su edición adentro.
+ *
+ * El tope se edita en el lugar y no en un modal: es un número y una cuenta, y
+ * mandar a otra pantalla para cambiar un monto es más viaje que trabajo.
+ */
+function FilaPresupuesto({
+  budget, ledgers, mostrarCuenta, onEditar, onEliminar,
+}: {
+  budget: BudgetProgress;
+  ledgers: { id: string; name: string }[];
+  mostrarCuenta: boolean;
+  onEditar: (cambios: { amount?: number; ledger_id?: string | null }) => Promise<boolean>;
+  onEliminar: () => void;
+}) {
+  const [editando, setEditando] = useState(false);
+  const [monto, setMonto] = useState(String(budget.amount));
+  const [cuenta, setCuenta] = useState(budget.ledger_id ?? '');
+  const [guardando, setGuardando] = useState(false);
+
+  const abrir = () => {
+    // Se relee del presupuesto al abrir: si se editó en otro lado, el
+    // formulario tiene que arrancar con lo que hay, no con lo que había.
+    setMonto(String(budget.amount));
+    setCuenta(budget.ledger_id ?? '');
+    setEditando(true);
+  };
+
+  const guardar = async () => {
+    const n = Number(monto);
+    if (!Number.isFinite(n) || n <= 0) return;
+    setGuardando(true);
+    const cambios: { amount?: number; ledger_id?: string | null } = {};
+    if (n !== budget.amount) cambios.amount = n;
+    if ((cuenta || null) !== budget.ledger_id) cambios.ledger_id = cuenta || null;
+
+    // Sin cambios no se molesta al servidor: cerrar y listo.
+    const ok = Object.keys(cambios).length === 0 ? true : await onEditar(cambios);
+    setGuardando(false);
+    if (ok) setEditando(false);
+  };
+
+  if (editando) {
+    return (
+      <div className="bg-slate-900 border border-emerald-500/30 rounded-xl px-4 py-3.5 space-y-3">
+        <p className="text-sm text-slate-300">{budget.category}</p>
+
+        <div className="space-y-1">
+          <label className="text-xs text-slate-500">Tope mensual</label>
+          <input
+            type="number" min="0" step="0.01" inputMode="decimal"
+            value={monto}
+            onChange={e => setMonto(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') guardar(); if (e.key === 'Escape') setEditando(false); }}
+            autoFocus
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs text-slate-500">Cuenta</label>
+          <div className="relative">
+            <select
+              value={cuenta}
+              onChange={e => setCuenta(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 pr-8 text-sm text-white focus:outline-none focus:border-emerald-500 appearance-none"
+            >
+              <option value="">Sin cuenta — mide todas juntas</option>
+              {ledgers.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => setEditando(false)}
+            className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-colors flex items-center justify-center gap-1.5"
+          >
+            <X className="w-4 h-4" /> Cancelar
+          </button>
+          <button
+            onClick={guardar}
+            disabled={guardando || !monto}
+            className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
+          >
+            {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            Guardar
+          </button>
+        </div>
+
+        {/* Borrar vive acá y no en la fila: en el teléfono los botones no se
+            esconden con el puntero, y un tacho al lado del lápiz es un borrado
+            a un toque de distancia. Además le devuelve ancho a la categoría. */}
+        <button
+          onClick={onEliminar}
+          className="w-full py-2 text-rose-400 hover:bg-rose-500/10 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5"
+        >
+          <Trash2 className="w-3.5 h-3.5" /> Eliminar este presupuesto
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`bg-slate-900 border rounded-xl px-4 py-3.5 flex items-center gap-2 ${budgetTone(budget.percent).ring}`}>
+      <div className="flex-1 min-w-0">
+        <BudgetBar budget={budget} />
+        {/* Solo en "todas las cuentas": mirando una, decirlo en cada fila es
+            repetir lo que ya dice el encabezado. */}
+        {mostrarCuenta && (
+          <p className="text-[11px] text-slate-500 mt-1">
+            {budget.ledger_name ?? 'Todas las cuentas'}
+          </p>
+        )}
+      </div>
+      {/* Un solo botón: en el teléfono no hay hover para esconderlos, así que
+          cada uno le come ancho al nombre de la categoría de forma permanente.
+          Borrar está adentro de la edición. */}
+      <button
+        onClick={abrir}
+        className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors flex-shrink-0"
+        title="Editar presupuesto"
+        aria-label={`Editar el presupuesto de ${budget.category}`}
+      >
+        <Pencil className="w-3.5 h-3.5" />
+      </button>
     </div>
   );
 }
