@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail, MessageCircle, Send, Target, Settings } from 'lucide-react';
+import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail, MessageCircle, Send, Target, Settings, HandCoins } from 'lucide-react';
 import { useLedger } from './LedgerContext';
 import LedgerSelector from './LedgerSelector';
 import { LEDGER_COLOR_MAP } from '@/lib/types';
@@ -11,6 +11,7 @@ const desktopNavItems = [
   { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/transactions', icon: Receipt, label: 'Transacciones' },
   { href: '/budgets', icon: Target, label: 'Presupuestos' },
+  { href: '/debts', icon: HandCoins, label: 'Deudas' },
   { href: '/email', icon: Mail, label: 'Correo' },
   { href: '/telegram', icon: Send, label: 'Telegram' },
   { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
@@ -20,6 +21,7 @@ const desktopNavItems = [
 
 /** En móvil no entran todos abajo: estos van como iconos en la barra de arriba. */
 const mobileTopItems = [
+  { href: '/debts', icon: HandCoins, label: 'Deudas' },
   { href: '/telegram', icon: Send, label: 'Telegram' },
   { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
   { href: '/email', icon: Mail, label: 'Correo' },

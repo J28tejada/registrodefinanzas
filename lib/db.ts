@@ -4,6 +4,9 @@ import {
   BudgetProgress,
   Category,
   CategoryWithUsage,
+  Debt,
+  DebtPayment,
+  DebtProgress,
   EmailConnection,
   Ledger,
   LedgerInvite,
@@ -738,6 +741,234 @@ export async function deleteCategory(db: Db, id: string): Promise<{ ok: boolean;
     .from('categories').delete().eq('user_id', db.userId).eq('id', id);
   if (error) fallar('No se pudo eliminar la categoría', error);
   return { ok: true };
+}
+
+// ─── Deudas ───────────────────────────────────────────────────────────────────
+
+function rowToDebt(row: Record<string, unknown>): Debt {
+  return {
+    id: row.id as string,
+    ledger_id: (row.ledger_id as string) ?? null,
+    name: row.name as string,
+    creditor: (row.creditor as string) ?? '',
+    total_amount: Number(row.total_amount),
+    installment_amount: Number(row.installment_amount),
+    installments: Number(row.installments),
+    start_date: row.start_date as string,
+    category: row.category as string,
+    archived: Boolean(row.archived),
+    notes: (row.notes as string) ?? '',
+    created_at: row.created_at as string,
+  };
+}
+
+/**
+ * Las deudas con sus números al día, para el mes que se pida.
+ *
+ * Todo se deriva de lo pagado y nada de cuotas tildadas: si un mes se pagó de
+ * más, ese excedente adelanta la cuota siguiente sin que haya que tocar nada.
+ */
+export async function getDebtsProgress(
+  db: Db,
+  startDate: string,
+  endDate: string,
+  opciones?: { incluirArchivadas?: boolean },
+): Promise<DebtProgress[]> {
+  const [deudasRes, progresoRes] = await Promise.all([
+    db.supabase.from('debts').select('*').eq('user_id', db.userId).order('created_at'),
+    db.supabase.rpc('debt_progress', { p_user: db.userId, p_start: startDate, p_end: endDate }),
+  ]);
+  if (deudasRes.error) fallar('No se pudieron leer las deudas', deudasRes.error);
+  if (progresoRes.error) fallar('No se pudo calcular el avance de las deudas', progresoRes.error);
+
+  const pagos = new Map<string, { total: number; periodo: number }>(
+    ((progresoRes.data ?? []) as Record<string, unknown>[]).map(r => [
+      r.debt_id as string,
+      { total: Number(r.paid_total ?? 0), periodo: Number(r.paid_period ?? 0) },
+    ]),
+  );
+
+  return (deudasRes.data ?? [])
+    .map(rowToDebt)
+    .filter(d => opciones?.incluirArchivadas || !d.archived)
+    .map(d => {
+      const p = pagos.get(d.id) ?? { total: 0, periodo: 0 };
+      // Pagar de más no debe mostrar 120% ni un restante negativo.
+      const paid = Math.min(p.total, d.total_amount);
+      const remaining = Math.max(d.total_amount - p.total, 0);
+      const dueThisMonth = Math.max(d.installment_amount - p.periodo, 0);
+
+      return {
+        ...d,
+        paid: p.total,
+        remaining,
+        percent: d.total_amount > 0 ? Math.round((paid / d.total_amount) * 100) : 0,
+        installmentsPaid: d.installment_amount > 0
+          ? Math.min(p.total / d.installment_amount, d.installments)
+          : 0,
+        paidThisMonth: p.periodo,
+        dueThisMonth,
+        monthPercent: d.installment_amount > 0
+          ? Math.min(Math.round((p.periodo / d.installment_amount) * 100), 100)
+          : 0,
+        monthCovered: p.periodo >= d.installment_amount,
+        settled: remaining <= 0,
+      };
+    });
+}
+
+export async function getDebtById(db: Db, id: string): Promise<Debt | null> {
+  const { data, error } = await db.supabase
+    .from('debts').select('*').eq('user_id', db.userId).eq('id', id).maybeSingle();
+  if (error) fallar('No se pudo leer la deuda', error);
+  return data ? rowToDebt(data) : null;
+}
+
+export async function createDebt(
+  db: Db,
+  datos: Omit<Debt, 'id' | 'created_at' | 'archived'>,
+): Promise<Debt> {
+  const { data, error } = await db.supabase
+    .from('debts')
+    .insert({
+      user_id: db.userId,
+      ledger_id: datos.ledger_id ?? null,
+      name: datos.name,
+      creditor: datos.creditor ?? '',
+      total_amount: datos.total_amount,
+      installment_amount: datos.installment_amount,
+      installments: datos.installments,
+      start_date: datos.start_date,
+      category: datos.category,
+      notes: datos.notes ?? '',
+    })
+    .select()
+    .single();
+  if (error) fallar('No se pudo crear la deuda', error);
+  return rowToDebt(data);
+}
+
+export async function updateDebt(
+  db: Db,
+  id: string,
+  datos: Partial<Omit<Debt, 'id' | 'created_at'>>,
+): Promise<Debt | null> {
+  const campos: Record<string, unknown> = {};
+  for (const c of ['ledger_id', 'name', 'creditor', 'total_amount', 'installment_amount',
+                   'installments', 'start_date', 'category', 'archived', 'notes'] as const) {
+    if (datos[c] !== undefined) campos[c] = datos[c];
+  }
+  if (Object.keys(campos).length === 0) return getDebtById(db, id);
+
+  const { data, error } = await db.supabase
+    .from('debts').update(campos).eq('user_id', db.userId).eq('id', id).select().maybeSingle();
+  if (error) fallar('No se pudo actualizar la deuda', error);
+  return data ? rowToDebt(data) : null;
+}
+
+export async function deleteDebt(db: Db, id: string): Promise<boolean> {
+  // Los pagos se van con ella por la FK, pero los movimientos que generaron
+  // quedan: son gastos que de verdad ocurrieron.
+  const { data, error } = await db.supabase
+    .from('debts').delete().eq('user_id', db.userId).eq('id', id).select('id');
+  if (error) fallar('No se pudo eliminar la deuda', error);
+  return (data ?? []).length > 0;
+}
+
+export async function getDebtPayments(db: Db, debtId: string): Promise<DebtPayment[]> {
+  const { data, error } = await db.supabase
+    .from('debt_payments').select('*')
+    .eq('user_id', db.userId).eq('debt_id', debtId)
+    .order('date', { ascending: false });
+  if (error) fallar('No se pudieron leer los pagos', error);
+  return (data ?? []).map(r => ({
+    id: r.id as string,
+    debt_id: r.debt_id as string,
+    amount: Number(r.amount),
+    date: r.date as string,
+    transaction_id: (r.transaction_id as string) ?? null,
+    created_at: r.created_at as string,
+  }));
+}
+
+/**
+ * Registra un pago y, con él, el gasto correspondiente.
+ *
+ * Las dos cosas juntas y no por separado: si el pago viviera solo en la deuda,
+ * el dinero saldría del bolsillo sin aparecer en los movimientos ni en el
+ * presupuesto. Y si hubiera que anotarlo dos veces, tarde o temprano una de las
+ * dos falta.
+ */
+export async function registrarPagoDeuda(
+  db: Db,
+  debtId: string,
+  datos: { amount: number; date: string; ledger_id?: string | null },
+): Promise<{ ok: true; pago: DebtPayment } | { ok: false; error: string }> {
+  const deuda = await getDebtById(db, debtId);
+  if (!deuda) return { ok: false, error: 'Esa deuda no existe.' };
+  if (!(datos.amount > 0)) return { ok: false, error: 'El monto tiene que ser mayor que cero.' };
+
+  const ledgerId = datos.ledger_id ?? deuda.ledger_id;
+  if (!ledgerId) return { ok: false, error: 'Elegí en qué cuenta registrar el pago.' };
+
+  const rol = await getLedgerRole(db, ledgerId);
+  if (!rol) return { ok: false, error: 'No tenés acceso a esa cuenta.' };
+
+  const cuenta = await getLedgerById(db, ledgerId);
+
+  const movimiento = await createTransaction(db, {
+    ledger_id: ledgerId,
+    type: 'expense',
+    scope: cuenta?.type ?? 'personal',
+    amount: datos.amount,
+    category: deuda.category,
+    description: `Cuota de ${deuda.name}`,
+    date: datos.date,
+    source: 'manual',
+    receipt_url: null,
+    payment_method: null,
+  });
+
+  const { data, error } = await db.supabase
+    .from('debt_payments')
+    .insert({
+      debt_id: debtId,
+      user_id: db.userId,
+      amount: datos.amount,
+      date: datos.date,
+      transaction_id: movimiento.id,
+    })
+    .select()
+    .single();
+  if (error) fallar('Se registró el gasto pero no el pago de la deuda', error);
+
+  return {
+    ok: true,
+    pago: {
+      id: data.id as string,
+      debt_id: debtId,
+      amount: Number(data.amount),
+      date: data.date as string,
+      transaction_id: movimiento.id,
+      created_at: data.created_at as string,
+    },
+  };
+}
+
+/** Borra el pago y el gasto que había generado: si no, quedaría duplicado. */
+export async function borrarPagoDeuda(db: Db, pagoId: string): Promise<boolean> {
+  const { data, error } = await db.supabase
+    .from('debt_payments').select('*').eq('user_id', db.userId).eq('id', pagoId).maybeSingle();
+  if (error) fallar('No se pudo leer el pago', error);
+  if (!data) return false;
+
+  if (data.transaction_id) {
+    await deleteTransaction(db, data.transaction_id as string);
+  }
+  const { error: errBorrar } = await db.supabase
+    .from('debt_payments').delete().eq('user_id', db.userId).eq('id', pagoId);
+  if (errBorrar) fallar('No se pudo eliminar el pago', errBorrar);
+  return true;
 }
 
 // ─── Presupuestos ─────────────────────────────────────────────────────────────

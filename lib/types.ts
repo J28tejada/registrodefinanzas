@@ -197,6 +197,62 @@ export interface BudgetProgress extends Budget {
   percent: number;
 }
 
+// ─── Deudas ───────────────────────────────────────────────────────────────────
+
+export interface Debt {
+  id: string;
+  ledger_id: string | null;
+  name: string;
+  creditor: string;
+  /** Cuánto se debe en total. */
+  total_amount: number;
+  /** La cuota "de papel". Lo que se paga de verdad puede ser otro monto. */
+  installment_amount: number;
+  installments: number;
+  /** Mes de la primera cuota: con eso se sabe cuál toca ahora. */
+  start_date: string;
+  category: string;
+  archived: boolean;
+  notes: string;
+  created_at: string;
+}
+
+export interface DebtPayment {
+  id: string;
+  debt_id: string;
+  amount: number;
+  date: string;
+  transaction_id: string | null;
+  created_at: string;
+}
+
+/**
+ * Una deuda con sus números al día.
+ *
+ * Todo se deriva de lo efectivamente pagado, no de cuotas tildadas: si un mes
+ * pagaste de más, esa plata adelanta la cuota siguiente sola.
+ */
+export interface DebtProgress extends Debt {
+  /** Suma de todos los pagos. */
+  paid: number;
+  /** Lo que falta para saldarla. Nunca negativo. */
+  remaining: number;
+  /** 0–100 sobre el total. */
+  percent: number;
+  /** Cuántas cuotas cubre lo pagado, incluyendo fracciones adelantadas. */
+  installmentsPaid: number;
+  /** Pagado dentro del mes que se está mirando. */
+  paidThisMonth: number;
+  /** Cuánto falta este mes para cubrir la cuota. Nunca negativo. */
+  dueThisMonth: number;
+  /** 0–100 de la cuota del mes. */
+  monthPercent: number;
+  /** La cuota del mes quedó cubierta. */
+  monthCovered: boolean;
+  /** Ya no se debe nada. */
+  settled: boolean;
+}
+
 export interface AIInterpretation {
   type: TransactionType | null;
   scope: TransactionScope | null;
