@@ -2,32 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail, MessageCircle, Send, Target, Settings, HandCoins, MoreHorizontal } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail, MessageCircle, Send, Target, Settings, HandCoins, Menu, X, LogOut } from 'lucide-react';
 import { useLedger } from './LedgerContext';
 import LedgerSelector from './LedgerSelector';
+import { createClient } from '@/lib/supabase/browser';
 import { LEDGER_COLOR_MAP } from '@/lib/types';
 
-const desktopNavItems = [
+/** Las mismas pantallas en los dos lados: el menú de móvil no es un resumen. */
+const navItems = [
   { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/transactions', icon: Receipt, label: 'Transacciones' },
   { href: '/budgets', icon: Target, label: 'Presupuestos' },
   { href: '/debts', icon: HandCoins, label: 'Deudas' },
-  { href: '/email', icon: Mail, label: 'Correo' },
-  { href: '/telegram', icon: Send, label: 'Telegram' },
-  { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
   { href: '/chat', icon: Bot, label: 'Chat IA' },
-  { href: '/settings', icon: Settings, label: 'Configuración' },
-];
-
-/**
- * En móvil la barra de abajo tiene cinco lugares y el resto vive en este menú.
- * Como iconos sueltos en la barra de arriba no escalaban: cada pantalla nueva
- * le robaba ancho al nombre de la cuenta hasta empujar la última fuera del
- * borde. Un solo botón deja el ancho fijo por más pantallas que se agreguen.
- */
-const mobileMenuItems = [
-  { href: '/debts', icon: HandCoins, label: 'Deudas' },
   { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
   { href: '/telegram', icon: Send, label: 'Telegram' },
   { href: '/email', icon: Mail, label: 'Correo' },
@@ -36,15 +24,37 @@ const mobileMenuItems = [
 
 export default function Navigation() {
   const pathname = usePathname();
+  const router = useRouter();
   const { currentLedger, setSelectorOpen, setGlobalAddOpen } = useLedger();
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [email, setEmail] = useState('');
 
   // Al navegar el menú tiene que irse solo: si no, tapa la pantalla recién
   // abierta y hay que cerrarlo a mano.
   useEffect(() => { setMenuAbierto(false); }, [pathname]);
 
+  // El correo solo se muestra en el panel, así que se pide una vez y no
+  // vuelve a pedirse al abrirlo.
+  useEffect(() => {
+    createClient().auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ''));
+  }, []);
+
+  // Con el panel abierto el fondo no se scrollea: si no, se mueve lo de atrás
+  // mientras arrastrás el menú.
+  useEffect(() => {
+    if (!menuAbierto) return;
+    const previo = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previo; };
+  }, [menuAbierto]);
+
+  const salir = async () => {
+    await fetch('/api/auth/signout', { method: 'POST' });
+    router.push('/login');
+    router.refresh();
+  };
+
   const ledgerColor = currentLedger ? LEDGER_COLOR_MAP[currentLedger.color] : null;
-  const enMenu = mobileMenuItems.some(i => i.href === pathname);
 
   return (
     <>
@@ -93,7 +103,7 @@ export default function Navigation() {
         </div>
 
         <nav className="flex-1 p-3 space-y-1">
-          {desktopNavItems.map(({ href, icon: Icon, label }) => {
+          {navItems.map(({ href, icon: Icon, label }) => {
             const active = pathname === href;
             return (
               <Link
@@ -119,12 +129,16 @@ export default function Navigation() {
 
       {/* Mobile: top bar with ledger switcher */}
       <header className="md:hidden fixed top-0 left-0 right-0 bg-slate-900 border-b border-slate-800 z-20 px-4 py-3 flex items-center gap-2">
-        <div className="w-7 h-7 bg-emerald-500 rounded-lg flex items-center justify-center flex-shrink-0">
-          <Wallet className="w-4 h-4 text-white" />
-        </div>
+        <button
+          onClick={() => setMenuAbierto(true)}
+          aria-label="Abrir el menú"
+          className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center flex-shrink-0 active:bg-emerald-600 transition-colors"
+        >
+          <Menu className="w-4 h-4 text-white" />
+        </button>
         <button
           onClick={() => setSelectorOpen(true)}
-          className="flex-1 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 rounded-lg px-3 py-1.5 transition-colors"
+          className="flex-1 min-w-0 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 rounded-lg px-3 py-1.5 transition-colors"
         >
           {ledgerColor ? (
             <div
@@ -137,48 +151,74 @@ export default function Navigation() {
           <span className="text-sm text-slate-200 flex-1 text-left truncate">
             {currentLedger?.name ?? 'Todas las cuentas'}
           </span>
-          <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
-        </button>
-        <button
-          onClick={() => setMenuAbierto(v => !v)}
-          aria-label="Más opciones"
-          aria-expanded={menuAbierto}
-          className={`p-2 rounded-lg transition-colors flex-shrink-0 ${
-            menuAbierto || enMenu
-              ? 'bg-emerald-500/10 text-emerald-400'
-              : 'bg-slate-800 text-slate-400'
-          }`}
-        >
-          <MoreHorizontal className="w-4 h-4" />
+          <ChevronDown className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
         </button>
       </header>
 
-      {/* Menú desplegable de móvil */}
-      {menuAbierto && (
-        <>
-          <div
-            className="md:hidden fixed inset-0 z-20"
-            onClick={() => setMenuAbierto(false)}
-            aria-hidden
-          />
-          <div className="md:hidden fixed top-14 right-3 z-30 w-56 bg-slate-900 border border-slate-800 rounded-xl shadow-xl shadow-black/40 overflow-hidden">
-            {mobileMenuItems.map(({ href, icon: Icon, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
-                  pathname === href
-                    ? 'bg-emerald-500/10 text-emerald-400 font-medium'
-                    : 'text-slate-300 active:bg-slate-800'
-                }`}
-              >
-                <Icon className="w-4 h-4 flex-shrink-0" />
-                {label}
-              </Link>
-            ))}
+      {/* Panel lateral de móvil */}
+      <div
+        className={`md:hidden fixed inset-0 z-30 bg-black/60 transition-opacity ${
+          menuAbierto ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={() => setMenuAbierto(false)}
+        aria-hidden
+      />
+      {/* `invisible` y no solo el desplazamiento: corrido fuera de pantalla el
+          panel sigue existiendo, y sus enlaces se pueden tabular a ciegas.
+          La transición lo incluye para que al cerrar termine de salir antes de
+          desaparecer, en vez de cortarse de golpe. */}
+      <aside
+        className={`md:hidden fixed top-0 left-0 bottom-0 z-40 w-[min(17rem,82vw)] bg-slate-900 border-r border-slate-800 flex flex-col transition-[transform,visibility] duration-200 ${
+          menuAbierto ? 'translate-x-0 visible' : '-translate-x-full invisible'
+        }`}
+      >
+        <div className="bg-emerald-500 px-5 pt-safe">
+          <div className="flex items-center gap-2 py-5">
+            <Wallet className="w-5 h-5 text-white flex-shrink-0" />
+            <p className="text-lg text-white flex-1">
+              <span className="font-bold">Jobidai</span> Wallet
+            </p>
+            <button
+              onClick={() => setMenuAbierto(false)}
+              aria-label="Cerrar el menú"
+              className="p-1 -mr-1 text-white/80 active:text-white flex-shrink-0"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-        </>
-      )}
+        </div>
+
+        {/* Con nueve pantallas ya no entran todas en un teléfono chico */}
+        <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+          {navItems.map(({ href, icon: Icon, label }) => (
+            <Link
+              key={href}
+              href={href}
+              // El efecto sobre `pathname` no alcanza: tocar la pantalla en la
+              // que ya estás no navega, y el panel se quedaría abierto.
+              onClick={() => setMenuAbierto(false)}
+              className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-colors ${
+                pathname === href
+                  ? 'bg-emerald-500/10 text-emerald-400 font-medium'
+                  : 'text-slate-300 active:bg-slate-800'
+              }`}
+            >
+              <Icon className="w-5 h-5 flex-shrink-0" />
+              {label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="p-3 pb-safe border-t border-slate-800 space-y-2">
+          <button
+            onClick={salir}
+            className="w-full py-3 bg-emerald-500 active:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            <LogOut className="w-4 h-4" /> Cerrar sesión
+          </button>
+          {email && <p className="text-xs text-slate-500 text-center truncate">{email}</p>}
+        </div>
+      </aside>
 
       {/* Mobile bottom nav — 5 slots with center FAB */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 z-20 flex items-end pb-safe">

@@ -7,6 +7,18 @@ body {
   overflow-x: hidden;
 }
 
+/**
+ * Márgenes de seguridad del teléfono. La barra de abajo ya usaba `pb-safe`,
+ * pero la clase no estaba definida en ninguna parte.
+ *
+ * Sin `viewport-fit=cover` el navegador ya recorta el viewport por su cuenta y
+ * estos insets valen 0, que es justo lo que corresponde. Quedan definidos para
+ * que la clase haga algo el día que se active, y para que no vuelva a haber
+ * una clase inventada que parece resolver un problema y no resuelve ninguno.
+ */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { @apply bg-slate-950; }
 ::-webkit-scrollbar-thumb { @apply bg-slate-700 rounded-full; }
