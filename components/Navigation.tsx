@@ -1,8 +1,9 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail, MessageCircle, Send, Target, Settings, HandCoins } from 'lucide-react';
+import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail, MessageCircle, Send, Target, Settings, HandCoins, MoreHorizontal } from 'lucide-react';
 import { useLedger } from './LedgerContext';
 import LedgerSelector from './LedgerSelector';
 import { LEDGER_COLOR_MAP } from '@/lib/types';
@@ -19,11 +20,16 @@ const desktopNavItems = [
   { href: '/settings', icon: Settings, label: 'Configuración' },
 ];
 
-/** En móvil no entran todos abajo: estos van como iconos en la barra de arriba. */
-const mobileTopItems = [
+/**
+ * En móvil la barra de abajo tiene cinco lugares y el resto vive en este menú.
+ * Como iconos sueltos en la barra de arriba no escalaban: cada pantalla nueva
+ * le robaba ancho al nombre de la cuenta hasta empujar la última fuera del
+ * borde. Un solo botón deja el ancho fijo por más pantallas que se agreguen.
+ */
+const mobileMenuItems = [
   { href: '/debts', icon: HandCoins, label: 'Deudas' },
-  { href: '/telegram', icon: Send, label: 'Telegram' },
   { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
+  { href: '/telegram', icon: Send, label: 'Telegram' },
   { href: '/email', icon: Mail, label: 'Correo' },
   { href: '/settings', icon: Settings, label: 'Configuración' },
 ];
@@ -31,8 +37,14 @@ const mobileTopItems = [
 export default function Navigation() {
   const pathname = usePathname();
   const { currentLedger, setSelectorOpen, setGlobalAddOpen } = useLedger();
+  const [menuAbierto, setMenuAbierto] = useState(false);
+
+  // Al navegar el menú tiene que irse solo: si no, tapa la pantalla recién
+  // abierta y hay que cerrarlo a mano.
+  useEffect(() => { setMenuAbierto(false); }, [pathname]);
 
   const ledgerColor = currentLedger ? LEDGER_COLOR_MAP[currentLedger.color] : null;
+  const enMenu = mobileMenuItems.some(i => i.href === pathname);
 
   return (
     <>
@@ -127,23 +139,46 @@ export default function Navigation() {
           </span>
           <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
         </button>
-        {/* La barra inferior tiene cinco lugares: el resto vive acá en móvil */}
-        {mobileTopItems.map(({ href, icon: Icon, label }) => (
-          <Link
-            key={href}
-            href={href}
-            title={label}
-            aria-label={label}
-            className={`p-2 rounded-lg transition-colors flex-shrink-0 ${
-              pathname === href
-                ? 'bg-emerald-500/10 text-emerald-400'
-                : 'bg-slate-800 text-slate-400 hover:bg-emerald-600 hover:text-white'
-            }`}
-          >
-            <Icon className="w-4 h-4" />
-          </Link>
-        ))}
+        <button
+          onClick={() => setMenuAbierto(v => !v)}
+          aria-label="Más opciones"
+          aria-expanded={menuAbierto}
+          className={`p-2 rounded-lg transition-colors flex-shrink-0 ${
+            menuAbierto || enMenu
+              ? 'bg-emerald-500/10 text-emerald-400'
+              : 'bg-slate-800 text-slate-400'
+          }`}
+        >
+          <MoreHorizontal className="w-4 h-4" />
+        </button>
       </header>
+
+      {/* Menú desplegable de móvil */}
+      {menuAbierto && (
+        <>
+          <div
+            className="md:hidden fixed inset-0 z-20"
+            onClick={() => setMenuAbierto(false)}
+            aria-hidden
+          />
+          <div className="md:hidden fixed top-14 right-3 z-30 w-56 bg-slate-900 border border-slate-800 rounded-xl shadow-xl shadow-black/40 overflow-hidden">
+            {mobileMenuItems.map(({ href, icon: Icon, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+                  pathname === href
+                    ? 'bg-emerald-500/10 text-emerald-400 font-medium'
+                    : 'text-slate-300 active:bg-slate-800'
+                }`}
+              >
+                <Icon className="w-4 h-4 flex-shrink-0" />
+                {label}
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Mobile bottom nav — 5 slots with center FAB */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 z-20 flex items-end pb-safe">

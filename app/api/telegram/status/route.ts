@@ -3,24 +3,22 @@ import { getLinksForUser } from '@/lib/chat/db';
 import { MODEL, geminiApiKey } from '@/lib/chat/config';
 import { getMe, getWebhookInfo, telegramToken, webhookUrl } from '@/lib/chat/transports/telegram';
 import { conSesion } from '@/lib/supabase/session';
+import { esAdmin } from '@/lib/supabase/admins';
 import { getSettings } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-/** Todo lo que el sistema sabe, de una: el diagnóstico no debería requerir logs. */
+/**
+ * Dos respuestas según quién pregunte, igual que en WhatsApp: el usuario común
+ * solo necesita el usuario del bot para abrir el chat y saber si va a contestar.
+ * El estado del webhook y las variables de entorno son para quien lo administra,
+ * y no viajan al navegador de los demás.
+ */
 export async function GET() {
   return conSesion(async db => {
-    const faltantes = [
-      !telegramToken() && 'TELEGRAM_BOT_TOKEN',
-      !process.env.TELEGRAM_WEBHOOK_SECRET && 'TELEGRAM_WEBHOOK_SECRET',
-      !process.env.NEXT_PUBLIC_APP_URL && 'NEXT_PUBLIC_APP_URL',
-      !process.env.SUPABASE_SERVICE_ROLE_KEY && 'SUPABASE_SERVICE_ROLE_KEY',
-      !geminiApiKey() && 'GOOGLE_AI_API_KEY',
-    ].filter(Boolean) as string[];
-
-    const [chats, settings] = await Promise.all([
+    const [chats, permiso] = await Promise.all([
       getLinksForUser(db.supabase, db.userId, 'telegram'),
-      getSettings(db),
+      esAdmin(),
     ]);
 
     let bot: { username: string; first_name: string } | null = null;
@@ -53,17 +51,40 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({
-      configurado: telegramToken() !== null,
-      faltantes,
+    const comun = {
+      esAdmin: permiso.ok,
+      // Sin webhook registrado el bot existe pero no escucha: para el usuario
+      // es lo mismo que estar caído, así que se resume en un solo dato.
+      listo: telegramToken() !== null && webhook?.configurado === true,
+      // El usuario del bot sí le sirve: es el enlace para abrir el chat.
       bot,
-      botError,
-      webhook,
-      webhookUrlEsperada: process.env.NEXT_PUBLIC_APP_URL ? webhookUrl() : null,
-      modelo: MODEL,
-      moneda: settings.currency,
-      zonaHoraria: settings.timezone,
       chats,
+    };
+
+    if (!permiso.ok) return NextResponse.json(comun);
+
+    const faltantes = [
+      !telegramToken() && 'TELEGRAM_BOT_TOKEN',
+      !process.env.TELEGRAM_WEBHOOK_SECRET && 'TELEGRAM_WEBHOOK_SECRET',
+      !process.env.NEXT_PUBLIC_APP_URL && 'NEXT_PUBLIC_APP_URL',
+      !process.env.SUPABASE_SERVICE_ROLE_KEY && 'SUPABASE_SERVICE_ROLE_KEY',
+      !geminiApiKey() && 'GOOGLE_AI_API_KEY',
+    ].filter(Boolean) as string[];
+
+    const settings = await getSettings(db);
+
+    return NextResponse.json({
+      ...comun,
+      avanzado: {
+        configurado: telegramToken() !== null,
+        faltantes,
+        botError,
+        webhook,
+        webhookUrlEsperada: process.env.NEXT_PUBLIC_APP_URL ? webhookUrl() : null,
+        modelo: MODEL,
+        moneda: settings.currency,
+        zonaHoraria: settings.timezone,
+      },
     });
   });
 }

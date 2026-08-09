@@ -15,6 +15,9 @@ export interface ChatLinkRow {
 
 interface Props {
   channel: 'whatsapp' | 'telegram';
+  /** Encabezado del paso. "Autorizá tu chat" describe el mecanismo; cada canal
+   *  puede preferir decir qué gana el usuario ("Conectá tu WhatsApp"). */
+  titulo?: string;
   chats: ChatLinkRow[];
   /** Cómo se lee el identificador: un teléfono no se muestra como un chat_id. */
   formatearId: (externalId: string) => string;
@@ -35,7 +38,7 @@ interface Props {
  * instrucciones de a dónde mandarlo.
  */
 export default function ChatLinkPanel({
-  channel, chats, formatearId, instrucciones, onCambio, enlaceBot,
+  channel, titulo = 'Autorizá tu chat', chats, formatearId, instrucciones, onCambio, enlaceBot,
 }: Props) {
   const { ledgers } = useLedger();
 
@@ -95,7 +98,7 @@ export default function ChatLinkPanel({
     <>
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
         <div>
-          <p className="font-semibold text-white text-sm">Autorizá tu chat</p>
+          <p className="font-semibold text-white text-sm">{titulo}</p>
           <div className="text-xs text-slate-400 mt-0.5">{instrucciones}</div>
         </div>
 
