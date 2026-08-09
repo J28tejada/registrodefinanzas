@@ -10,11 +10,13 @@ import { BudgetProgress } from '@/lib/types';
 
 export default function BudgetsPage() {
   const fmt = useFormatters();
-  const { transactionVersion } = useLedger();
+  const { ledgers, currentLedger, transactionVersion } = useLedger();
   const { categorias, refrescar: refrescarCategorias } = useCategories();
 
   const [mes, setMes] = useState<string>(() => fmt.today().slice(0, 7));
   const [budgets, setBudgets] = useState<BudgetProgress[]>([]);
+  // Los que quedaron sin cuenta: solo para avisar cuando se está mirando una.
+  const [sinCuenta, setSinCuenta] = useState<BudgetProgress[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
@@ -32,18 +34,39 @@ export default function BudgetsPage() {
     setCargando(true);
     setError('');
     try {
-      const res = await fetch(`/api/budgets?month=${mes}`);
+      const cuenta = currentLedger ? `&ledger_id=${currentLedger.id}` : '';
+      // Con una cuenta puesta se piden también los globales, para poder avisar
+      // que existen sin mezclarlos en la lista.
+      const [res, resSin] = await Promise.all([
+        fetch(`/api/budgets?month=${mes}${cuenta}`),
+        currentLedger ? fetch(`/api/budgets?month=${mes}&ledger_id=sin_cuenta`) : null,
+      ]);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'No se pudieron cargar los presupuestos');
       setBudgets(data.budgets);
+      setSinCuenta(resSin?.ok ? (await resSin.json()).budgets ?? [] : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar');
     } finally {
       setCargando(false);
     }
-  }, [mes]);
+  }, [mes, currentLedger]);
 
   useEffect(() => { cargar(); }, [cargar, transactionVersion]);
+
+  const mover = async (id: string, ledgerId: string) => {
+    setError('');
+    const res = await fetch(`/api/budgets/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ledger_id: ledgerId || null }),
+    });
+    if (!res.ok) {
+      setError((await res.json()).error ?? 'No se pudo mover el presupuesto');
+      return;
+    }
+    await cargar();
+  };
 
   const moverMes = (delta: number) => {
     const [y, m] = mes.split('-').map(Number);
@@ -59,7 +82,13 @@ export default function BudgetsPage() {
       const res = await fetch('/api/budgets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category: categoria, amount: Number(monto) }),
+        body: JSON.stringify({
+          category: categoria,
+          amount: Number(monto),
+          // El tope se crea donde estás parado. Sin cuenta elegida queda
+          // global, midiendo todo lo que gastás en esa categoría.
+          ledger_id: currentLedger?.id ?? null,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'No se pudo guardar');
@@ -117,9 +146,13 @@ export default function BudgetsPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 pt-14 md:pt-0">
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-white">Presupuestos</h1>
-          <p className="text-slate-400 text-sm">Un tope mensual por categoría de gasto</p>
+          <p className="text-slate-400 text-sm truncate">
+            {currentLedger
+              ? `Topes mensuales de ${currentLedger.name}`
+              : 'Topes de todas tus cuentas'}
+          </p>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 pt-1">
           <button onClick={() => moverMes(-1)} className="p-1 text-slate-500 hover:text-white rounded transition-colors">
@@ -138,6 +171,42 @@ export default function BudgetsPage() {
         <div className="flex items-start gap-2 text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>{error}</span>
+        </div>
+      )}
+
+      {/* Los que venían de antes de que el tope fuera de una cuenta. Se avisan
+          en vez de mostrarse acá: mezclarlos es justo lo que hacía que un tope
+          del hogar apareciera en la cuenta personal. */}
+      {currentLedger && sinCuenta.length > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 space-y-3">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-amber-400">
+              {sinCuenta.length === 1 ? 'Tenés un presupuesto' : `Tenés ${sinCuenta.length} presupuestos`} sin
+              cuenta asignada. Miden lo que gastás en todas tus cuentas juntas — asignalos para que cada
+              tope cuente solo lo suyo.
+            </p>
+          </div>
+          <div className="space-y-2">
+            {sinCuenta.map(b => (
+              <div key={b.id} className="flex items-center gap-2">
+                <span className="text-sm text-slate-300 flex-1 min-w-0 truncate">
+                  {b.category} · {fmt.money(b.amount)}
+                </span>
+                <div className="relative flex-shrink-0">
+                  <select
+                    defaultValue=""
+                    onChange={e => { if (e.target.value) mover(b.id, e.target.value); }}
+                    className="bg-slate-800 border border-slate-700 rounded-lg pl-3 pr-7 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 appearance-none"
+                  >
+                    <option value="">Asignar a…</option>
+                    {ledgers.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400 pointer-events-none" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -263,6 +332,13 @@ export default function BudgetsPage() {
             >
               <div className="flex-1 min-w-0">
                 <BudgetBar budget={b} />
+                {/* Solo en "todas las cuentas": mirando una, decirlo en cada
+                    fila es repetir lo que ya dice el encabezado. */}
+                {!currentLedger && (
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    {b.ledger_name ?? 'Todas las cuentas'}
+                  </p>
+                )}
               </div>
               <button
                 onClick={() => eliminar(b.id, b.category)}
@@ -277,8 +353,10 @@ export default function BudgetsPage() {
       )}
 
       <p className="text-xs text-slate-500 text-center">
-        El tope se compara contra los gastos del mes, en todas tus cuentas.
-        Si vinculaste WhatsApp, te aviso ahí mismo al anotar un gasto que te pase del tope.
+        {currentLedger
+          ? `El tope se compara contra los gastos del mes en ${currentLedger.name}, los tuyos y los de quien comparta la cuenta.`
+          : 'Cada tope se compara contra los gastos del mes de su cuenta. Los que no tienen cuenta miden todas juntas.'}
+        {' '}Si vinculaste WhatsApp, te aviso ahí mismo al anotar un gasto que te pase del tope.
       </p>
     </div>
   );

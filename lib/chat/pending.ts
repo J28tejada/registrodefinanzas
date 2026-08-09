@@ -278,6 +278,9 @@ async function avisoDePresupuesto(ctx: Contexto, categorias: string[]): Promise<
     const { start, end } = limitesDelMes(ctx.fmt.today());
     const progreso = await getBudgetProgress(ctx.db, start, end);
     const avisos = progreso
+      // El tope de otra cuenta no viene al caso: el gasto se anotó en esta.
+      // Los globales (sin cuenta) sí, que miden todo lo que gasta la persona.
+      .filter(b => b.ledger_id === null || b.ledger_id === ctx.ledger?.id)
       .filter(b => categorias.includes(b.category) && b.percent >= 80)
       .map(b =>
         b.percent >= 100

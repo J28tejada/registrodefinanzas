@@ -62,7 +62,9 @@ export default function DashboardPage() {
       const [sumRes, txRes, budRes] = await Promise.all([
         fetch(`/api/summary?${params}`),
         fetch(`/api/transactions?${params}`),
-        fetch(`/api/budgets?month=${monthStart.slice(0, 7)}`),
+        // Con la cuenta puesta: un tope del hogar no tiene nada que hacer en el
+        // panel de la cuenta personal.
+        fetch(`/api/budgets?month=${monthStart.slice(0, 7)}${currentLedger ? `&ledger_id=${currentLedger.id}` : ''}`),
       ]);
       const [sumData, txData, budData] = await Promise.all([sumRes.json(), txRes.json(), budRes.json()]);
       if (!sumRes.ok || sumData.error) {

@@ -976,52 +976,102 @@ export async function borrarPagoDeuda(db: Db, pagoId: string): Promise<boolean> 
 function rowToBudget(row: Record<string, unknown>): Budget {
   return {
     id: row.id as string,
+    ledger_id: (row.ledger_id as string) ?? null,
     category: row.category as string,
     amount: Number(row.amount),
     created_at: row.created_at as string,
   };
 }
 
-export async function getBudgets(db: Db): Promise<Budget[]> {
-  const { data, error } = await db.supabase
-    .from('budgets').select('*').eq('user_id', db.userId).order('category');
+/**
+ * Los topes visibles. Con `ledgerId` se limita a los de esa cuenta; sin él
+ * vienen todos, incluidos los globales.
+ *
+ * RLS ya deja pasar los de las cuentas compartidas, así que no se filtra por
+ * `user_id`: el tope del hogar lo puso uno de los dos y lo ven ambos.
+ */
+export async function getBudgets(db: Db, ledgerId?: string | null): Promise<Budget[]> {
+  let q = db.supabase.from('budgets').select('*').order('category');
+  if (ledgerId !== undefined) {
+    q = ledgerId === null ? q.is('ledger_id', null) : q.eq('ledger_id', ledgerId);
+  }
+  const { data, error } = await q;
   if (error) fallar('No se pudieron leer los presupuestos', error);
   return (data ?? []).map(rowToBudget);
 }
 
-/** Presupuestos con lo gastado en el período, listo para pintar la barra. */
+/**
+ * Presupuestos con lo gastado en el período, listo para pintar la barra.
+ *
+ * Conviven dos clases de tope y no se miden igual: el de una cuenta se compara
+ * contra lo que gastaron todos sus miembros ahí —el gasto del hogar lo hacen
+ * los dos—, y el global contra lo que gastó uno solo en todas sus cuentas.
+ */
 export async function getBudgetProgress(
   db: Db,
   startDate: string,
   endDate: string,
+  ledgerId?: string | null,
 ): Promise<BudgetProgress[]> {
   const [budgets, gastoRes] = await Promise.all([
-    getBudgets(db),
+    getBudgets(db, ledgerId),
     db.supabase.rpc('spent_by_category', { p_user: db.userId, p_start: startDate, p_end: endDate }),
   ]);
   if (gastoRes.error) fallar('No se pudo calcular lo gastado', gastoRes.error);
 
-  const gastado = new Map<string, number>(
-    ((gastoRes.data ?? []) as Record<string, unknown>[]).map(r => [r.category as string, Number(r.spent ?? 0)]),
-  );
+  const filas = (gastoRes.data ?? []) as Record<string, unknown>[];
+
+  // Solo los nombres de las cuentas que aparecen: pedir todas para etiquetar
+  // dos filas sería traer de más.
+  const idsCuentas = [...new Set(budgets.map(b => b.ledger_id).filter(Boolean))] as string[];
+  const nombres = new Map<string, string>();
+  if (idsCuentas.length > 0) {
+    const { data } = await db.supabase.from('ledgers').select('id, name').in('id', idsCuentas);
+    for (const c of data ?? []) nombres.set(c.id as string, c.name as string);
+  }
+
+  // Por cuenta+categoría para los topes de una cuenta; por categoría, sumando
+  // solo lo propio, para los globales.
+  const porCuenta = new Map<string, number>();
+  const propioPorCategoria = new Map<string, number>();
+  for (const f of filas) {
+    const categoria = f.category as string;
+    const cuenta = (f.ledger_id as string) ?? '';
+    porCuenta.set(`${cuenta}|${categoria}`, Number(f.spent_all ?? 0));
+    propioPorCategoria.set(
+      categoria,
+      (propioPorCategoria.get(categoria) ?? 0) + Number(f.spent_mine ?? 0),
+    );
+  }
 
   return budgets.map(b => {
-    const spent = gastado.get(b.category) ?? 0;
+    const spent = b.ledger_id
+      ? porCuenta.get(`${b.ledger_id}|${b.category}`) ?? 0
+      : propioPorCategoria.get(b.category) ?? 0;
     return {
       ...b,
       spent,
       remaining: b.amount - spent,
       percent: b.amount > 0 ? Math.round((spent / b.amount) * 100) : 0,
+      ledger_name: b.ledger_id ? nombres.get(b.ledger_id) ?? null : null,
+      compartido: b.ledger_id !== null,
     };
   });
 }
 
-export async function upsertBudget(db: Db, category: string, amount: number): Promise<Budget> {
+export async function upsertBudget(
+  db: Db,
+  category: string,
+  amount: number,
+  ledgerId: string | null = null,
+): Promise<Budget> {
+  // Dos índices únicos distintos según haya cuenta o no, así que el upsert
+  // tiene que apuntar al que corresponde.
   const { data, error } = await db.supabase
     .from('budgets')
     .upsert(
-      { user_id: db.userId, category, amount, updated_at: new Date().toISOString() },
-      { onConflict: 'user_id,category' },
+      { user_id: db.userId, ledger_id: ledgerId, category, amount, updated_at: new Date().toISOString() },
+      { onConflict: ledgerId ? 'ledger_id,category' : 'user_id,category' },
     )
     .select()
     .single();
@@ -1029,9 +1079,40 @@ export async function upsertBudget(db: Db, category: string, amount: number): Pr
   return rowToBudget(data);
 }
 
-export async function deleteBudget(db: Db, id: string): Promise<boolean> {
+/** Mueve un tope a otra cuenta, o lo deja global con `null`. */
+export async function moverBudget(
+  db: Db, id: string, ledgerId: string | null,
+): Promise<{ ok: true; budget: Budget } | { ok: false; error: string }> {
+  if (ledgerId && !(await getLedgerRole(db, ledgerId))) {
+    return { ok: false, error: 'No tenés acceso a esa cuenta.' };
+  }
   const { data, error } = await db.supabase
-    .from('budgets').delete().eq('user_id', db.userId).eq('id', id).select('id');
+    .from('budgets')
+    .update({ ledger_id: ledgerId, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .maybeSingle();
+
+  // Ya hay un tope de esa categoría en el destino. Decirlo con nombre y
+  // apellido, en vez del error de índice único de Postgres.
+  if (error?.code === '23505') {
+    return {
+      ok: false,
+      error: ledgerId
+        ? 'Esa cuenta ya tiene un presupuesto para esta categoría. Borrá uno de los dos.'
+        : 'Ya tenés un presupuesto global para esta categoría. Borrá uno de los dos.',
+    };
+  }
+  if (error) fallar('No se pudo mover el presupuesto', error);
+  if (!data) return { ok: false, error: 'Ese presupuesto no existe.' };
+  return { ok: true, budget: rowToBudget(data) };
+}
+
+export async function deleteBudget(db: Db, id: string): Promise<boolean> {
+  // Sin filtrar por `user_id`: en una cuenta compartida el tope es del hogar y
+  // cualquiera de los dos puede sacarlo. RLS ya impide tocar los ajenos.
+  const { data, error } = await db.supabase
+    .from('budgets').delete().eq('id', id).select('id');
   if (error) fallar('No se pudo eliminar el presupuesto', error);
   return (data ?? []).length > 0;
 }

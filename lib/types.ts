@@ -186,6 +186,8 @@ export interface CategoryWithUsage extends Category {
 /** Tope mensual de gasto para una categoría. */
 export interface Budget {
   id: string;
+  /** La cuenta a la que le pone el tope. Null = tope personal sobre todas. */
+  ledger_id: string | null;
   category: string;
   amount: number;
   created_at: string;
@@ -195,6 +197,10 @@ export interface BudgetProgress extends Budget {
   spent: number;
   remaining: number;
   percent: number;
+  /** Nombre de la cuenta, para distinguir dos topes de la misma categoría. */
+  ledger_name: string | null;
+  /** Si lo gastado incluye movimientos de otros miembros de la cuenta. */
+  compartido: boolean;
 }
 
 // ─── Deudas ───────────────────────────────────────────────────────────────────

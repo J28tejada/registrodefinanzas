@@ -68,8 +68,10 @@ export async function POST(req: NextRequest) {
 
       // "Ponerla en el presupuesto" es exactamente esto: un tope mensual en su
       // categoría por el monto de la cuota. Después el pago cae ahí solo.
+      // En la misma cuenta donde se paga, o el tope quedaría en otro lado que
+      // el gasto que va a generar.
       if (b.en_presupuesto === true) {
-        await upsertBudget(db, deuda.category, cuota);
+        await upsertBudget(db, deuda.category, cuota, deuda.ledger_id);
       }
 
       return NextResponse.json(deuda, { status: 201 });

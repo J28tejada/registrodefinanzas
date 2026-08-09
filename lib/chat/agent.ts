@@ -269,7 +269,12 @@ async function presupuesto(args: Record<string, unknown>, turno: Turno): Promise
   }
 
   const detalle = filtrados
-    .map(b => `${b.category} ${Math.round(b.spent)}/${Math.round(b.amount)} (${b.percent}%${b.percent >= 100 ? ', PASADO' : ''})`)
+    .map(b => {
+      // Con la misma categoría presupuestada en dos cuentas, sin decir cuál es
+      // cuál el modelo las mezcla en la respuesta.
+      const donde = b.ledger_name ? ` en ${b.ledger_name}` : ' (todas las cuentas)';
+      return `${b.category}${donde} ${Math.round(b.spent)}/${Math.round(b.amount)} (${b.percent}%${b.percent >= 100 ? ', PASADO' : ''})`;
+    })
     .join('; ');
   return `Presupuestos ${start}..${end}: ${detalle}`;
 }
