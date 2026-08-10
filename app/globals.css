@@ -19,6 +19,33 @@ body {
 .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
 
+/**
+ * En iOS, `input[type=date]` trae un ancho intrínseco propio y no baja de ahí
+ * aunque tenga `width: 100%`: dentro de una grilla o un flex, la pista mide el
+ * contenido mínimo del campo y la tarjeta termina desbordada por unos píxeles.
+ *
+ * `appearance: none` le saca ese tamaño de widget nativo y `min-width: 0` deja
+ * que se achique. El selector de fecha del sistema sigue funcionando igual.
+ */
+input[type='date'] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+}
+
+/* Y el valor va a la izquierda, como el texto de todos los demás campos:
+   iOS lo centra por su cuenta y queda desalineado con el resto del formulario. */
+input[type='date']::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+/* El ícono del calendario que agrega Chrome viene en negro y sobre el fondo
+   oscuro de la app queda casi invisible. Invertido se ve. */
+input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { @apply bg-slate-950; }
 ::-webkit-scrollbar-thumb { @apply bg-slate-700 rounded-full; }

@@ -220,7 +220,9 @@ function TransactionsInner() {
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
           <p className="text-xs text-slate-400 font-medium">RANGO DE FECHAS</p>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+            {/* min-w-0: sin esto el item de la grilla mide su contenido mínimo,
+                que en iOS es el ancho intrínseco del campo de fecha. */}
+            <div className="space-y-1.5 min-w-0">
               <label className="text-xs text-slate-500">Desde</label>
               <input
                 type="date"
@@ -229,7 +231,7 @@ function TransactionsInner() {
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-w-0">
               <label className="text-xs text-slate-500">Hasta</label>
               <input
                 type="date"

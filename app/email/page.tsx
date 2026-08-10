@@ -363,7 +363,7 @@ function EmailPageInner() {
                           {/* Bottom row: controls */}
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             {/* Date */}
-                            <div className="space-y-1">
+                            <div className="space-y-1 min-w-0">
                               <label className="text-slate-500">Fecha</label>
                               <input
                                 type="date"

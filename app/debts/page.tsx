@@ -441,7 +441,9 @@ function FormularioDeuda({
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-1">
+        {/* min-w-0: el campo de fecha de iOS no baja de su ancho intrínseco y
+            estira la pista de la grilla hasta desbordar la tarjeta. */}
+        <div className="space-y-1 min-w-0">
           <label className="text-xs text-slate-500">Categoría del gasto</label>
           <div className="relative">
             <select
@@ -453,7 +455,7 @@ function FormularioDeuda({
             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
         </div>
-        <div className="space-y-1">
+        <div className="space-y-1 min-w-0">
           <label className="text-xs text-slate-500">Primera cuota</label>
           <input
             type="date" value={inicio} onChange={e => setInicio(e.target.value)}
