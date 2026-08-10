@@ -11,12 +11,13 @@ body {
  * Márgenes de seguridad del teléfono. La barra de abajo ya usaba `pb-safe`,
  * pero la clase no estaba definida en ninguna parte.
  *
- * Sin `viewport-fit=cover` el navegador ya recorta el viewport por su cuenta y
- * estos insets valen 0, que es justo lo que corresponde. Quedan definidos para
- * que la clase haga algo el día que se active, y para que no vuelva a haber
- * una clase inventada que parece resolver un problema y no resuelve ninguno.
+ * `max()` y no el inset pelado: sin `viewport-fit=cover` el navegador recorta
+ * el viewport por su cuenta y el inset vale 0, con lo que las etiquetas quedan
+ * pegadas al borde de la pantalla y se leen como si se cayeran. El piso de
+ * 0.75rem las despega siempre; en un teléfono con barra de gestos gana el inset,
+ * que es más grande.
  */
-.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px)); }
 .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
 
 /**

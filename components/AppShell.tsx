@@ -17,7 +17,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       <Navigation />
-      <main className="flex-1 md:ml-60 p-4 md:p-6 pb-24 md:pb-6">
+      {/* pb-32 en móvil: la barra inferior mide ~77px y flota sobre el
+          contenido, así que sin este espacio la última tarjeta queda debajo.
+          Es el alto de la barra más un respiro, no un número al azar. */}
+      <main className="flex-1 md:ml-60 p-4 md:p-6 pb-32 md:pb-6">
         {children}
       </main>
     </div>
