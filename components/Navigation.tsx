@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail, MessageCircle, Send, Target, Settings, HandCoins, Menu, X, LogOut } from 'lucide-react';
+import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail, MessageCircle, Send, Target, Settings, HandCoins, Menu, X, LogOut, PieChart } from 'lucide-react';
 import { useLedger } from './LedgerContext';
 import LedgerSelector from './LedgerSelector';
 import { createClient } from '@/lib/supabase/browser';
@@ -13,6 +13,7 @@ import { LEDGER_COLOR_MAP } from '@/lib/types';
 const navItems = [
   { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/transactions', icon: Receipt, label: 'Transacciones' },
+  { href: '/stats', icon: PieChart, label: 'Estadísticas' },
   { href: '/budgets', icon: Target, label: 'Presupuestos' },
   { href: '/debts', icon: HandCoins, label: 'Deudas' },
   { href: '/chat', icon: Bot, label: 'Chat IA' },
