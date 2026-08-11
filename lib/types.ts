@@ -138,6 +138,8 @@ export interface Transaction {
   receipt_url?: string | null;
   /** Efectivo, tarjeta, transferencia… lo captura el agente si se menciona. */
   payment_method?: string | null;
+  /** La tarjeta o medio de pago, cuando está enlazado a uno de la lista. */
+  card_id?: string | null;
   /** Quién lo registró. En una cuenta compartida no siempre sos vos. */
   author_id?: string | null;
   /** Su nombre, para mostrarlo sin tener que resolver el id en cada vista. */
@@ -160,6 +162,37 @@ export interface Summary {
   totalExpenses: number;
   totalBalance: number;
   byCategory: CategorySummary[];
+}
+
+// ─── Tarjetas y medios de pago ────────────────────────────────────────────────
+
+export type CardKind = 'credit' | 'debit' | 'cash' | 'transfer' | 'other';
+
+export const CARD_KIND_LABEL: Record<CardKind, string> = {
+  credit: 'Crédito',
+  debit: 'Débito',
+  cash: 'Efectivo',
+  transfer: 'Transferencia',
+  other: 'Otro',
+};
+
+export interface Card {
+  id: string;
+  name: string;
+  kind: CardKind;
+  /** Los últimos cuatro dígitos, o vacío. Texto: "0042" conserva los ceros. */
+  last4: string;
+  issuer: string;
+  color: LedgerColor;
+  archived: boolean;
+  created_at: string;
+}
+
+export interface CardWithUsage extends Card {
+  /** Cuántos movimientos la usan. Decide si borrarla se puede o hay que avisar. */
+  usos: number;
+  /** Gasto del mes en curso, para verlo sin salir de la sección. */
+  gastoDelMes: number;
 }
 
 export interface CategorySummary {

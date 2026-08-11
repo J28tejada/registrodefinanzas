@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   return conSesion(async db => {
     try {
       const body = await req.json();
-      const { ledger_id, type, scope, amount, category, description, date, source, payment_method } = body;
+      const { ledger_id, type, scope, amount, category, description, date, source, payment_method, card_id } = body;
 
       if (!type || !scope || amount == null || !category || !description || !date) {
         return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 });
@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
         date,
         source: source ?? 'manual',
         payment_method: payment_method ?? null,
+        card_id: typeof card_id === 'string' && card_id ? card_id : null,
         receipt_url: null,
       });
       return NextResponse.json(tx, { status: 201 });

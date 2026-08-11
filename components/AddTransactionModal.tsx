@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Loader2, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
-import { Transaction, TransactionType, TransactionScope, AIInterpretation, LEDGER_COLOR_MAP } from '@/lib/types';
+import { Transaction, TransactionType, TransactionScope, AIInterpretation, LEDGER_COLOR_MAP, Card, CARD_KIND_LABEL } from '@/lib/types';
 import { useCategories } from './CategoriesContext';
 import { useLedger } from './LedgerContext';
 import { useFormatters } from './SettingsContext';
@@ -22,6 +22,8 @@ interface FormData {
   category: string;
   description: string;
   date: string;
+  /** Vacío = sin especificar. No es obligatorio: muchos gastos no lo tienen. */
+  card_id: string;
 }
 
 export default function AddTransactionModal({
@@ -41,6 +43,7 @@ export default function AddTransactionModal({
     description: '',
     // "Hoy" en la zona del usuario, no en la del navegador.
     date: fmt.today(),
+    card_id: '',
   };
 
   const [form, setForm] = useState<FormData>(defaultForm);
@@ -48,6 +51,17 @@ export default function AddTransactionModal({
   const [interpreting, setInterpreting] = useState(false);
   const [interpretation, setInterpretation] = useState<AIInterpretation | null>(null);
   const [error, setError] = useState('');
+  const [cards, setCards] = useState<Card[]>([]);
+
+  // Se piden al abrir y no una sola vez: si acabás de crear una en
+  // Configuración, tiene que estar en el desplegable sin recargar la página.
+  useEffect(() => {
+    if (!isOpen) return;
+    fetch('/api/cards')
+      .then(r => r.ok ? r.json() : { cards: [] })
+      .then(d => setCards(d.cards ?? []))
+      .catch(() => setCards([]));
+  }, [isOpen]);
 
   // Derive scope from selected ledger
   const selectedLedger = ledgers.find(l => l.id === form.ledger_id) ?? currentLedger;
@@ -64,6 +78,7 @@ export default function AddTransactionModal({
         category: editingTransaction.category,
         description: editingTransaction.description,
         date: editingTransaction.date,
+        card_id: editingTransaction.card_id ?? '',
       });
     } else {
       setForm({ ...defaultForm, date: fmt.today(), ledger_id: currentLedger?.id ?? (ledgers[0]?.id ?? '') });
@@ -135,6 +150,10 @@ export default function AddTransactionModal({
           category: form.category,
           description: form.description,
           date: form.date,
+          card_id: form.card_id || null,
+          // El texto acompaña a la FK: si más adelante se borra la tarjeta, el
+          // movimiento conserva con qué se pagó.
+          payment_method: cards.find(c => c.id === form.card_id)?.name ?? null,
           source: interpretation ? 'voice' : 'manual',
         }),
       });
@@ -330,6 +349,30 @@ export default function AddTransactionModal({
               required
             />
           </div>
+
+          {/* Con qué se pagó. Opcional: la mayoría de los gastos se anotan sin
+              pensar en esto, y volverlo obligatorio agrega un paso a la acción
+              más frecuente de la app. Solo aparece si hay tarjetas cargadas. */}
+          {cards.length > 0 && (
+            <div className="space-y-1.5">
+              <label className="text-xs text-slate-400 font-medium">PAGADO CON</label>
+              <div className="relative">
+                <select
+                  value={form.card_id}
+                  onChange={e => setForm(p => ({ ...p, card_id: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 pr-8 text-white focus:outline-none focus:border-emerald-500 text-sm appearance-none"
+                >
+                  <option value="">Sin especificar</option>
+                  {cards.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}{c.last4 ? ` ···· ${c.last4}` : ''} — {CARD_KIND_LABEL[c.kind]}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="flex items-center gap-2 text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">

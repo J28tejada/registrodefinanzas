@@ -4,7 +4,7 @@
  * Nada de lo que hay acá pasa por el modelo: la respuesta del usuario se
  * clasifica en código y el payload guardado se aplica tal cual se propuso.
  */
-import { createTransaction, getBudgetProgress } from '@/lib/db';
+import { buscarCardPorTexto, createTransaction, getBudgetProgress } from '@/lib/db';
 import { limitesDelMes } from '@/lib/format';
 import { cerrarPendiente } from './db';
 import { fechaCorta } from './config';
@@ -236,6 +236,11 @@ export async function aplicar(pendiente: PendingAction, ctx: Contexto): Promise<
     const monto = agrupar ? m.monto * m.cantidad : m.monto;
     const descripcion = agrupar && m.cantidad > 1 ? `${m.descripcion} (×${m.cantidad})` : m.descripcion;
 
+    // El agente escribe el medio de pago como texto libre; si coincide con
+    // alguna tarjeta cargada, el movimiento queda enlazado y suma al gasto por
+    // tarjeta. Se resuelve una vez por movimiento, no por repetición.
+    const tarjeta = await buscarCardPorTexto(ctx.db, m.metodo_pago);
+
     for (let i = 0; i < veces; i++) {
       await createTransaction(ctx.db, {
         ledger_id: ctx.link.ledger_id,
@@ -248,6 +253,7 @@ export async function aplicar(pendiente: PendingAction, ctx: Contexto): Promise<
         source: ctx.link.channel === 'telegram' ? 'telegram' : 'whatsapp',
         receipt_url: m.receipt_url ?? null,
         payment_method: m.metodo_pago ?? null,
+        card_id: tarjeta?.id ?? null,
       });
     }
 

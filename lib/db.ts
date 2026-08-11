@@ -2,6 +2,8 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import {
   Budget,
   BudgetProgress,
+  Card,
+  CardWithUsage,
   Category,
   CategoryWithUsage,
   Debt,
@@ -382,6 +384,7 @@ function rowToTransaction(row: Record<string, unknown>): Transaction {
     source: ((row.source as string) || 'manual') as Transaction['source'],
     receipt_url: (row.receipt_url as string) ?? null,
     payment_method: (row.payment_method as string) ?? null,
+    card_id: (row.card_id as string) ?? null,
     author_id: (row.user_id as string) ?? null,
     author_name: nombreDePerfil(row.profiles),
   };
@@ -518,6 +521,7 @@ export async function createTransaction(
       source: datos.source ?? 'manual',
       receipt_url: datos.receipt_url ?? null,
       payment_method: datos.payment_method ?? null,
+      card_id: datos.card_id ?? null,
     })
     .select()
     .single();
@@ -531,7 +535,7 @@ export async function updateTransaction(
   datos: Partial<Omit<Transaction, 'id' | 'createdAt'>>,
 ): Promise<Transaction | null> {
   const campos: Record<string, unknown> = {};
-  for (const clave of ['ledger_id', 'type', 'scope', 'amount', 'category', 'description', 'date', 'source', 'receipt_url', 'payment_method'] as const) {
+  for (const clave of ['ledger_id', 'type', 'scope', 'amount', 'category', 'description', 'date', 'source', 'receipt_url', 'payment_method', 'card_id'] as const) {
     if (datos[clave] !== undefined) campos[clave] = datos[clave];
   }
   if (Object.keys(campos).length === 0) return getTransactionById(db, id);
@@ -1191,4 +1195,188 @@ export async function deleteEmailConnection(db: Db): Promise<void> {
   const { error } = await db.supabase
     .from('email_connections').delete().eq('user_id', db.userId);
   if (error) fallar('No se pudo desconectar el correo', error);
+}
+
+// ─── Tarjetas y medios de pago ────────────────────────────────────────────────
+
+function rowToCard(row: Record<string, unknown>): Card {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    kind: row.kind as Card['kind'],
+    last4: (row.last4 as string) ?? '',
+    issuer: (row.issuer as string) ?? '',
+    color: (row.color as Card['color']) ?? 'blue',
+    archived: Boolean(row.archived),
+    created_at: row.created_at as string,
+  };
+}
+
+export async function getCards(db: Db, incluirArchivadas = false): Promise<Card[]> {
+  let q = db.supabase.from('cards').select('*').eq('user_id', db.userId).order('name');
+  if (!incluirArchivadas) q = q.eq('archived', false);
+  const { data, error } = await q;
+  if (error) fallar('No se pudieron leer las tarjetas', error);
+  return (data ?? []).map(rowToCard);
+}
+
+/**
+ * Las tarjetas con su uso y el gasto del período.
+ *
+ * El uso decide si borrarla se puede; el gasto es lo que se viene a ver. Los dos
+ * salen de una consulta cada uno en vez de una por tarjeta.
+ */
+export async function getCardsWithUsage(
+  db: Db,
+  startDate: string,
+  endDate: string,
+  incluirArchivadas = false,
+): Promise<CardWithUsage[]> {
+  const [cards, gastoRes, usosRes] = await Promise.all([
+    getCards(db, incluirArchivadas),
+    db.supabase.rpc('spent_by_card', { p_user: db.userId, p_start: startDate, p_end: endDate }),
+    db.supabase.from('transactions').select('card_id').eq('user_id', db.userId).not('card_id', 'is', null),
+  ]);
+  if (gastoRes.error) fallar('No se pudo calcular el gasto por tarjeta', gastoRes.error);
+  if (usosRes.error) fallar('No se pudo contar el uso de las tarjetas', usosRes.error);
+
+  const gasto = new Map<string, number>(
+    ((gastoRes.data ?? []) as Record<string, unknown>[])
+      .map(r => [r.card_id as string, Number(r.spent ?? 0)]),
+  );
+  const usos = new Map<string, number>();
+  for (const fila of usosRes.data ?? []) {
+    const id = fila.card_id as string;
+    usos.set(id, (usos.get(id) ?? 0) + 1);
+  }
+
+  return cards.map(c => ({
+    ...c,
+    usos: usos.get(c.id) ?? 0,
+    gastoDelMes: gasto.get(c.id) ?? 0,
+  }));
+}
+
+export async function createCard(
+  db: Db,
+  datos: Omit<Card, 'id' | 'created_at' | 'archived'>,
+): Promise<{ ok: true; card: Card } | { ok: false; error: string }> {
+  const { data, error } = await db.supabase
+    .from('cards')
+    .insert({
+      user_id: db.userId,
+      name: datos.name,
+      kind: datos.kind,
+      last4: datos.last4 ?? '',
+      issuer: datos.issuer ?? '',
+      color: datos.color ?? 'blue',
+    })
+    .select()
+    .single();
+  if (error?.code === '23505') {
+    return { ok: false, error: 'Ya tenés una con ese nombre.' };
+  }
+  if (error) fallar('No se pudo crear la tarjeta', error);
+  return { ok: true, card: rowToCard(data) };
+}
+
+/**
+ * Renombrar propaga el nombre a los movimientos, igual que en categorías.
+ *
+ * `transactions.payment_method` es texto y sigue existiendo para que un
+ * movimiento sobreviva a que borren su tarjeta; si no se propaga, la lista
+ * seguiría mostrando el nombre viejo al lado del nuevo.
+ */
+export async function updateCard(
+  db: Db,
+  id: string,
+  cambios: Partial<Omit<Card, 'id' | 'created_at'>>,
+): Promise<{ ok: true; card: Card } | { ok: false; error: string }> {
+  const anterior = await getCardById(db, id);
+  if (!anterior) return { ok: false, error: 'Esa tarjeta no existe.' };
+
+  const campos: Record<string, unknown> = {};
+  for (const clave of ['name', 'kind', 'last4', 'issuer', 'color', 'archived'] as const) {
+    if (cambios[clave] !== undefined) campos[clave] = cambios[clave];
+  }
+
+  const { data, error } = await db.supabase
+    .from('cards').update(campos).eq('user_id', db.userId).eq('id', id).select().maybeSingle();
+  if (error?.code === '23505') return { ok: false, error: 'Ya tenés una con ese nombre.' };
+  if (error) fallar('No se pudo actualizar la tarjeta', error);
+  if (!data) return { ok: false, error: 'Esa tarjeta no existe.' };
+
+  if (cambios.name !== undefined && cambios.name !== anterior.name) {
+    const { error: errProp } = await db.supabase
+      .from('transactions')
+      .update({ payment_method: cambios.name })
+      .eq('user_id', db.userId)
+      .eq('card_id', id);
+    if (errProp) fallar('Se renombró la tarjeta pero no sus movimientos', errProp);
+  }
+
+  return { ok: true, card: rowToCard(data) };
+}
+
+export async function getCardById(db: Db, id: string): Promise<Card | null> {
+  const { data, error } = await db.supabase
+    .from('cards').select('*').eq('user_id', db.userId).eq('id', id).maybeSingle();
+  if (error) fallar('No se pudo leer la tarjeta', error);
+  return data ? rowToCard(data) : null;
+}
+
+/**
+ * Borra una tarjeta que no esté en uso.
+ *
+ * Con movimientos anotados no se borra: la FK los dejaría sin enlace y el gasto
+ * por tarjeta perdería ese historial sin avisar. Archivarla sí se puede siempre,
+ * y es lo que corresponde cuando una tarjeta se vence o se cancela.
+ */
+export async function deleteCard(db: Db, id: string): Promise<{ ok: boolean; error?: string }> {
+  const { count, error: errUso } = await db.supabase
+    .from('transactions')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', db.userId)
+    .eq('card_id', id);
+  if (errUso) fallar('No se pudo verificar el uso de la tarjeta', errUso);
+
+  if ((count ?? 0) > 0) {
+    return {
+      ok: false,
+      error: `La usan ${count} movimiento${count === 1 ? '' : 's'}. Archivala para sacarla de la lista sin perder el historial.`,
+    };
+  }
+
+  const { error } = await db.supabase
+    .from('cards').delete().eq('user_id', db.userId).eq('id', id);
+  if (error) fallar('No se pudo eliminar la tarjeta', error);
+  return { ok: true };
+}
+
+/**
+ * Busca una tarjeta por lo que escribió el agente ("visa", "efectivo", …).
+ *
+ * El agente captura el medio de pago como texto libre, así que sin esto todo lo
+ * anotado por WhatsApp quedaría sin enlazar y el gasto por tarjeta solo
+ * reflejaría lo cargado a mano — que es la minoría.
+ *
+ * Coincidencia laxa a propósito: "pagué con la visa" tiene que encontrar
+ * "Visa Popular". Si hay varias candidatas gana la de nombre más corto, que es
+ * la menos específica y por lo tanto la que el usuario probablemente quiso.
+ */
+export async function buscarCardPorTexto(db: Db, texto: string | null | undefined): Promise<Card | null> {
+  const busca = (texto ?? '').trim().toLowerCase();
+  if (!busca) return null;
+
+  const cards = await getCards(db);
+  const normal = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const objetivo = normal(busca);
+
+  const candidatas = cards.filter(c => {
+    const nombre = normal(c.name);
+    return objetivo === nombre || objetivo.includes(nombre) || nombre.includes(objetivo);
+  });
+  if (candidatas.length === 0) return null;
+
+  return candidatas.sort((a, b) => a.name.length - b.name.length)[0];
 }
