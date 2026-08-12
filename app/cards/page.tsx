@@ -90,7 +90,9 @@ export default function CardsPage() {
       )}
 
       {cards.length > 0 && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 grid grid-cols-3 gap-3">
+        // Dos columnas en el teléfono: con tres, "RD$2,250.00" no entra en su
+        // tercio y el número —que es a lo que se viene— sale cortado.
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="min-w-0">
             <p className="text-[11px] sm:text-xs text-slate-400 uppercase tracking-wider">Gastado</p>
             <p className="text-lg sm:text-xl font-bold text-white mt-1 truncate">{fmt.money(total)}</p>
@@ -99,7 +101,7 @@ export default function CardsPage() {
             <p className="text-[11px] sm:text-xs text-slate-400 uppercase tracking-wider">En uso</p>
             <p className="text-lg sm:text-xl font-bold text-white mt-1">{activas.length}</p>
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 col-span-2 sm:col-span-1">
             <p className="text-[11px] sm:text-xs text-slate-400 uppercase tracking-wider">La que más</p>
             <p className="text-sm sm:text-base font-semibold text-emerald-400 mt-1.5 truncate">
               {lider && lider.gastoDelMes > 0 ? lider.name : '—'}
@@ -170,13 +172,14 @@ function FilaTarjeta({
           aria-hidden
         />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-white truncate">
-            {card.name}
-            {card.last4 && <span className="text-slate-500"> ···· {card.last4}</span>}
-          </p>
+          {/* El nombre se queda con el renglón entero. Los últimos cuatro bajan
+              a la línea de abajo: en un teléfono le comían la mitad al nombre,
+              que es lo que uno lee para saber cuál es. */}
+          <p className="text-sm font-medium text-white truncate">{card.name}</p>
           <p className="text-xs text-slate-500 truncate">
             {CARD_KIND_LABEL[card.kind]}
             {card.issuer && ` · ${card.issuer}`}
+            {card.last4 && ` · ···· ${card.last4}`}
             {card.archived && ' · archivada'}
           </p>
         </div>

@@ -217,7 +217,9 @@ export default function CardDetailPage() {
         </button>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 grid grid-cols-3 gap-3">
+      {/* Dos columnas en el teléfono, igual que en la lista: en un tercio de
+          pantalla los montos salen cortados. */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div className="min-w-0">
           <p className="text-[11px] sm:text-xs text-slate-400 uppercase tracking-wider">Gastado</p>
           <p className="text-lg sm:text-xl font-bold text-white mt-1 truncate">{fmt.money(detalle.spent)}</p>
@@ -226,7 +228,7 @@ export default function CardDetailPage() {
           <p className="text-[11px] sm:text-xs text-slate-400 uppercase tracking-wider">Movimientos</p>
           <p className="text-lg sm:text-xl font-bold text-white mt-1">{detalle.count}</p>
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 col-span-2 sm:col-span-1">
           <p className="text-[11px] sm:text-xs text-slate-400 uppercase tracking-wider">Promedio</p>
           <p className="text-lg sm:text-xl font-bold text-white mt-1 truncate">{fmt.money(detalle.average)}</p>
         </div>
