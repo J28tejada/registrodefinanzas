@@ -3,6 +3,8 @@ import {
   Budget,
   BudgetProgress,
   Card,
+  CardDetail,
+  CardMonth,
   CardWithUsage,
   Category,
   CategoryWithUsage,
@@ -435,6 +437,7 @@ export async function getAllTransactions(
   if (filters?.type) q = q.eq('type', filters.type);
   if (filters?.scope) q = q.eq('scope', filters.scope);
   if (filters?.category) q = q.eq('category', filters.category);
+  if (filters?.card_id) q = q.eq('card_id', filters.card_id);
   if (filters?.startDate) q = q.gte('date', filters.startDate);
   if (filters?.endDate) q = q.lte('date', filters.endDate);
   if (filters?.search) {
@@ -1255,6 +1258,107 @@ export async function getCardsWithUsage(
     usos: usos.get(c.id) ?? 0,
     gastoDelMes: gasto.get(c.id) ?? 0,
   }));
+}
+
+/** Cuántos meses de historia acompañan al detalle de una tarjeta. */
+const MESES_DE_SERIE = 6;
+
+/** El primer día del mes que está `delta` meses de `iso`. */
+function mesCorrido(iso: string, delta: number): string {
+  const [y, m] = iso.split('-').map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + delta, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-01`;
+}
+
+/**
+ * El detalle de una tarjeta para un período: lo de esos días, lo de siempre y
+ * la serie de los últimos meses.
+ *
+ * La serie termina en el período pedido y no en el mes actual: mirando un mes
+ * viejo, la tendencia que importa es la de ese momento.
+ *
+ * Las filas de la serie se piden una sola vez y de ahí sale también el gasto
+ * del período y su reparto por categoría, porque el período es el último tramo
+ * de esa misma ventana. Una consulta en lugar de tres.
+ */
+export async function getCardDetail(
+  db: Db,
+  id: string,
+  startDate: string,
+  endDate: string,
+): Promise<CardDetail | null> {
+  const card = await getCardById(db, id);
+  if (!card) return null;
+
+  const desdeSerie = mesCorrido(startDate, -(MESES_DE_SERIE - 1));
+
+  const [filasRes, historicoRes, usosRes] = await Promise.all([
+    db.supabase
+      .from('transactions')
+      .select('date, amount, category')
+      .eq('user_id', db.userId)
+      .eq('card_id', id)
+      .eq('type', 'expense')
+      .gte('date', desdeSerie)
+      .lte('date', endDate),
+    // Rango abierto a propósito: es el total de siempre, y la función de gasto
+    // por tarjeta ya existe. Ver `spent_by_card` en 0012_tarjetas.sql.
+    db.supabase.rpc('spent_by_card', {
+      p_user: db.userId, p_start: '1900-01-01', p_end: '2999-12-31',
+    }),
+    // Sin filtrar por tipo, igual que el uso que mira `deleteCard`: lo que
+    // decide si se puede borrar es cuántos movimientos quedarían sin enlace.
+    db.supabase
+      .from('transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', db.userId)
+      .eq('card_id', id),
+  ]);
+  if (filasRes.error) fallar('No se pudieron leer los movimientos de la tarjeta', filasRes.error);
+  if (historicoRes.error) fallar('No se pudo calcular el gasto de la tarjeta', historicoRes.error);
+  if (usosRes.error) fallar('No se pudo contar el uso de la tarjeta', usosRes.error);
+
+  const filas = (filasRes.data ?? []) as { date: string; amount: number; category: string }[];
+
+  // Los meses se arman vacíos y después se llenan: un mes sin gastos tiene que
+  // aparecer en la serie como cero, no faltar y desplazar a los demás.
+  const meses = new Map<string, CardMonth>();
+  for (let i = MESES_DE_SERIE - 1; i >= 0; i--) {
+    const month = mesCorrido(startDate, -i).slice(0, 7);
+    meses.set(month, { month, total: 0, count: 0 });
+  }
+
+  const categorias = new Map<string, { category: string; total: number; count: number }>();
+  let spent = 0;
+  let count = 0;
+
+  for (const fila of filas) {
+    const monto = Number(fila.amount ?? 0);
+
+    const mes = meses.get(fila.date.slice(0, 7));
+    if (mes) { mes.total += monto; mes.count += 1; }
+
+    if (fila.date < startDate) continue;
+    spent += monto;
+    count += 1;
+    const acumulada = categorias.get(fila.category);
+    if (acumulada) { acumulada.total += monto; acumulada.count += 1; }
+    else categorias.set(fila.category, { category: fila.category, total: monto, count: 1 });
+  }
+
+  const historico = ((historicoRes.data ?? []) as Record<string, unknown>[])
+    .find(r => r.card_id === id);
+
+  return {
+    card,
+    spent,
+    count,
+    average: count > 0 ? spent / count : 0,
+    spentAllTime: Number(historico?.spent ?? 0),
+    countAllTime: usosRes.count ?? 0,
+    byCategory: [...categorias.values()].sort((a, b) => b.total - a.total),
+    monthly: [...meses.values()],
+  };
 }
 
 export async function createCard(

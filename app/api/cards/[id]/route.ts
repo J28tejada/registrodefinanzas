@@ -1,11 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { deleteCard, updateCard } from '@/lib/db';
+import { deleteCard, getAllTransactions, getCardDetail, getSettings, updateCard } from '@/lib/db';
 import { conSesion } from '@/lib/supabase/session';
+import { hoyEnZona, limitesDelMes } from '@/lib/format';
 import { Card, CardKind } from '@/lib/types';
+
+export const dynamic = 'force-dynamic';
 
 type Contexto = { params: Promise<{ id: string }> };
 
 const TIPOS: CardKind[] = ['credit', 'debit', 'cash', 'transfer', 'other'];
+
+/** El detalle de una tarjeta en un mes, con los movimientos que lo componen. */
+export async function GET(req: NextRequest, { params }: Contexto) {
+  const { id } = await params;
+  return conSesion(async db => {
+    try {
+      const mes = req.nextUrl.searchParams.get('month');
+      const settings = await getSettings(db);
+      const referencia = /^\d{4}-\d{2}$/.test(mes ?? '') ? `${mes}-01` : hoyEnZona(settings.timezone);
+      const { start, end } = limitesDelMes(referencia);
+
+      const detail = await getCardDetail(db, id, start, end);
+      if (!detail) return NextResponse.json({ error: 'Esa tarjeta no existe.' }, { status: 404 });
+
+      const transactions = await getAllTransactions(db, {
+        card_id: id, startDate: start, endDate: end,
+      });
+
+      return NextResponse.json({ month: start.slice(0, 7), detail, transactions });
+    } catch (err) {
+      return NextResponse.json({ error: mensaje(err) }, { status: 500 });
+    }
+  });
+}
 
 export async function PATCH(req: NextRequest, { params }: Contexto) {
   const { id } = await params;

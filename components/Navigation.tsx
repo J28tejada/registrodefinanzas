@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail, MessageCircle, Send, Target, Settings, HandCoins, Menu, X, LogOut, PieChart } from 'lucide-react';
+import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail, MessageCircle, Send, Target, Settings, HandCoins, CreditCard, Menu, X, LogOut, PieChart } from 'lucide-react';
 import { useLedger } from './LedgerContext';
 import LedgerSelector from './LedgerSelector';
 import { createClient } from '@/lib/supabase/browser';
@@ -16,12 +16,21 @@ const navItems = [
   { href: '/stats', icon: PieChart, label: 'Estadísticas' },
   { href: '/budgets', icon: Target, label: 'Presupuestos' },
   { href: '/debts', icon: HandCoins, label: 'Deudas' },
+  { href: '/cards', icon: CreditCard, label: 'Tarjetas' },
   { href: '/chat', icon: Bot, label: 'Chat IA' },
   { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
   { href: '/telegram', icon: Send, label: 'Telegram' },
   { href: '/email', icon: Mail, label: 'Correo' },
   { href: '/settings', icon: Settings, label: 'Configuración' },
 ];
+
+/**
+ * El dashboard va exacto y el resto por prefijo: estando en el detalle de una
+ * tarjeta (`/cards/<id>`), su sección tiene que seguir marcada en el menú.
+ */
+function esActiva(pathname: string, href: string): boolean {
+  return href === '/' ? pathname === '/' : pathname.startsWith(href);
+}
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -105,7 +114,7 @@ export default function Navigation() {
 
         <nav className="flex-1 p-3 space-y-1">
           {navItems.map(({ href, icon: Icon, label }) => {
-            const active = pathname === href;
+            const active = esActiva(pathname, href);
             return (
               <Link
                 key={href}
@@ -189,7 +198,7 @@ export default function Navigation() {
           </div>
         </div>
 
-        {/* Con nueve pantallas ya no entran todas en un teléfono chico */}
+        {/* Con tantas pantallas ya no entran todas en un teléfono chico */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {navItems.map(({ href, icon: Icon, label }) => (
             <Link
@@ -199,7 +208,7 @@ export default function Navigation() {
               // que ya estás no navega, y el panel se quedaría abierto.
               onClick={() => setMenuAbierto(false)}
               className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-colors ${
-                pathname === href
+                esActiva(pathname, href)
                   ? 'bg-emerald-500/10 text-emerald-400 font-medium'
                   : 'text-slate-300 active:bg-slate-800'
               }`}

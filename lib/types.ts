@@ -151,6 +151,8 @@ export interface TransactionFilters {
   type?: TransactionType;
   scope?: TransactionScope;
   category?: string;
+  /** Lo pagado con una tarjeta concreta. */
+  card_id?: string;
   startDate?: string;
   endDate?: string;
   search?: string;
@@ -193,6 +195,39 @@ export interface CardWithUsage extends Card {
   usos: number;
   /** Gasto del mes en curso, para verlo sin salir de la sección. */
   gastoDelMes: number;
+}
+
+/** Un mes de la serie: cuánto se pagó con la tarjeta y en cuántos movimientos. */
+export interface CardMonth {
+  /** YYYY-MM */
+  month: string;
+  total: number;
+  count: number;
+}
+
+/**
+ * Todo lo que se muestra en el detalle de una tarjeta.
+ *
+ * El período es un mes, pero el histórico y la serie van igual: una tarjeta se
+ * mira para saber si se está usando más que antes, y eso no se ve en un mes
+ * suelto.
+ */
+export interface CardDetail {
+  card: Card;
+  /** Gasto del período pedido. */
+  spent: number;
+  /** Movimientos del período. */
+  count: number;
+  /** Gasto promedio por movimiento del período. 0 si no hubo ninguno. */
+  average: number;
+  /** Lo gastado con la tarjeta desde siempre. */
+  spentAllTime: number;
+  /** Todos los movimientos que la usan. Con 0 se la puede borrar. */
+  countAllTime: number;
+  /** Gasto del período por categoría, de mayor a menor. */
+  byCategory: { category: string; total: number; count: number }[];
+  /** Los últimos meses hasta el período pedido, del más viejo al más nuevo. */
+  monthly: CardMonth[];
 }
 
 export interface CategorySummary {
