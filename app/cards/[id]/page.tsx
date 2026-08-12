@@ -7,7 +7,9 @@ import {
   AlertCircle, Archive, ArchiveRestore, ArrowLeft, ChevronLeft, ChevronRight,
   Loader2, Pencil, Trash2,
 } from 'lucide-react';
+import AddTransactionModal from '@/components/AddTransactionModal';
 import CardForm from '@/components/CardForm';
+import TransactionList from '@/components/TransactionList';
 import { useFormatters } from '@/components/SettingsContext';
 import { useLedger } from '@/components/LedgerContext';
 import {
@@ -18,7 +20,7 @@ export default function CardDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const fmt = useFormatters();
-  const { transactionVersion } = useLedger();
+  const { transactionVersion, notifyTransactionSaved, refreshLedgers } = useLedger();
 
   const [mes, setMes] = useState<string>(() => fmt.today().slice(0, 7));
   const [detalle, setDetalle] = useState<CardDetail | null>(null);
@@ -27,6 +29,8 @@ export default function CardDetailPage() {
   const [error, setError] = useState('');
   const [editando, setEditando] = useState(false);
   const [ocupado, setOcupado] = useState(false);
+  const [txEditando, setTxEditando] = useState<Transaction | null>(null);
+  const [modalAbierto, setModalAbierto] = useState(false);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -50,6 +54,22 @@ export default function CardDetailPage() {
     const [a, m] = mes.split('-').map(Number);
     const d = new Date(Date.UTC(a, m - 1 + delta, 1));
     setMes(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`);
+  };
+
+  /**
+   * Después de tocar un movimiento se recarga todo, no solo su fila.
+   *
+   * Cambiarle el medio de pago es de las correcciones más comunes, y ahí el
+   * movimiento deja de ser de esta tarjeta: tiene que irse de la lista y salir
+   * de las cifras del mes. Avisar por el contexto alcanza para las dos cosas,
+   * porque de ese contador cuelga la recarga de esta pantalla y la del resto.
+   */
+  const movimientoGuardado = () => { notifyTransactionSaved(); refreshLedgers(); };
+
+  const borrarMovimiento = async (idMovimiento: string) => {
+    if (!confirm('¿Eliminar esta transacción?')) return;
+    await fetch(`/api/transactions/${idMovimiento}`, { method: 'DELETE' });
+    movimientoGuardado();
   };
 
   const archivar = async () => {
@@ -284,28 +304,23 @@ export default function CardDetailPage() {
             Nada pagado con esta tarjeta en {fmt.monthLabel(`${mes}-01`)}.
           </p>
         ) : (
-          // Solo lectura: editar y borrar viven en Movimientos, que es donde se
-          // van a buscar. Duplicar las acciones acá sería duplicar sus modales.
-          movimientos.map(t => (
-            <div
-              key={t.id}
-              className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex items-center gap-3"
-            >
-              <div className={`w-2 h-9 rounded-full flex-shrink-0 ${t.type === 'income' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-white truncate">{t.description}</p>
-                <p className="text-xs text-slate-500 truncate">
-                  {t.category} · {fmt.date(t.date)}
-                  {t.author_name && ` · ${t.author_name}`}
-                </p>
-              </div>
-              <p className={`text-sm font-semibold flex-shrink-0 ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {t.type === 'income' ? '+' : '−'}{fmt.money(t.amount)}
-              </p>
-            </div>
-          ))
+          // Las mismas piezas que Movimientos: un gasto corregido desde acá
+          // tiene que comportarse igual que corregido allá, y con el modal
+          // completo se le puede cambiar hasta la tarjeta.
+          <TransactionList
+            transactions={movimientos}
+            onEdit={t => { setTxEditando(t); setModalAbierto(true); }}
+            onDelete={borrarMovimiento}
+          />
         )}
       </div>
+
+      <AddTransactionModal
+        isOpen={modalAbierto}
+        onClose={() => { setModalAbierto(false); setTxEditando(null); }}
+        onSave={movimientoGuardado}
+        editingTransaction={txEditando}
+      />
     </div>
   );
 }
