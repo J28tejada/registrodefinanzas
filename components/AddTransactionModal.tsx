@@ -134,6 +134,9 @@ export default function AddTransactionModal({
     }
     setSaving(true);
     setError('');
+    // La última palabra la tiene el tipo, no lo que quedó en el formulario: un
+    // ingreso viaja sin tarjeta aunque se hubiera elegido una antes de cambiarlo.
+    const cardId = form.type === 'expense' ? (form.card_id || null) : null;
     try {
       const url = editingTransaction
         ? `/api/transactions/${editingTransaction.id}`
@@ -150,10 +153,10 @@ export default function AddTransactionModal({
           category: form.category,
           description: form.description,
           date: form.date,
-          card_id: form.card_id || null,
+          card_id: cardId,
           // El texto acompaña a la FK: si más adelante se borra la tarjeta, el
           // movimiento conserva con qué se pagó.
-          payment_method: cards.find(c => c.id === form.card_id)?.name ?? null,
+          payment_method: cardId ? (cards.find(c => c.id === cardId)?.name ?? null) : null,
           source: interpretation ? 'voice' : 'manual',
         }),
       });
@@ -174,7 +177,11 @@ export default function AddTransactionModal({
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative w-full md:max-w-lg bg-slate-900 border border-slate-700 md:rounded-2xl rounded-t-2xl shadow-2xl max-h-[95vh] overflow-y-auto">
-        <div className="sticky top-0 bg-slate-900 border-b border-slate-800 px-5 py-4 flex items-center justify-between">
+        {/* z-10: sin él la cabecera queda en el fondo del apilado y cualquier
+            elemento posicionado del formulario —el botón "Hablar", que es
+            `relative`— se pinta ENCIMA del título al desplazar el modal. Estar
+            pegada arriba no alcanza: hay que estar adelante también. */}
+        <div className="sticky top-0 z-10 bg-slate-900 border-b border-slate-800 px-5 py-4 flex items-center justify-between">
           <h2 className="font-semibold text-white">
             {editingTransaction ? 'Editar registro' : 'Nuevo registro'}
           </h2>
@@ -261,7 +268,11 @@ export default function AddTransactionModal({
                 <button
                   key={t}
                   type="button"
-                  onClick={() => setForm(p => ({ ...p, type: t, category: '' }))}
+                  // Al pasar a ingreso se suelta la tarjeta: si no, la elegida
+                  // como gasto se guardaría igual, con el campo ya oculto.
+                  onClick={() => setForm(p => ({
+                    ...p, type: t, category: '', card_id: t === 'income' ? '' : p.card_id,
+                  }))}
                   className={`py-2.5 rounded-lg text-sm font-medium transition-all ${
                     form.type === t
                       ? t === 'expense'
@@ -352,8 +363,12 @@ export default function AddTransactionModal({
 
           {/* Con qué se pagó. Opcional: la mayoría de los gastos se anotan sin
               pensar en esto, y volverlo obligatorio agrega un paso a la acción
-              más frecuente de la app. Solo aparece si hay tarjetas cargadas. */}
-          {cards.length > 0 && (
+              más frecuente de la app. Solo aparece si hay tarjetas cargadas.
+
+              Y solo en gastos: un ingreso no se paga con nada. Además el gasto
+              por tarjeta sale de `spent_by_card`, que cuenta únicamente gastos,
+              así que en un ingreso el dato no alimentaría ninguna vista. */}
+          {form.type === 'expense' && cards.length > 0 && (
             <div className="space-y-1.5">
               <label className="text-xs text-slate-400 font-medium">PAGADO CON</label>
               <div className="relative">
