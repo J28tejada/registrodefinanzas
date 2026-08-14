@@ -21,6 +21,10 @@ import {
   ShoppingList,
   ShoppingListDetail,
   ShoppingListWithTotals,
+  ShoppingTrip,
+  ShoppingTripDetail,
+  ShoppingTripItem,
+  ShoppingTripWithTotals,
   Summary,
   Transaction,
   TransactionFilters,
@@ -1526,17 +1530,14 @@ export async function buscarCardPorTexto(db: Db, texto: string | null | undefine
   return candidatas.sort((a, b) => a.name.length - b.name.length)[0];
 }
 
-// ─── Lista de compras ─────────────────────────────────────────────────────────
+
+// ─── Lista de compras: la plantilla ───────────────────────────────────────────
 
 function rowToShoppingList(row: Record<string, unknown>): ShoppingList {
   return {
     id: row.id as string,
     ledger_id: (row.ledger_id as string) ?? null,
     name: row.name as string,
-    date: row.date as string,
-    closed: Boolean(row.closed),
-    paid_amount: row.paid_amount == null ? null : Number(row.paid_amount),
-    transaction_id: (row.transaction_id as string) ?? null,
     created_at: row.created_at as string,
   };
 }
@@ -1550,50 +1551,33 @@ function rowToShoppingItem(row: Record<string, unknown>): ShoppingItem {
     quantity: Number(row.quantity),
     unit: (row.unit as string) || 'unidad',
     unit_price: Number(row.unit_price),
-    checked: Boolean(row.checked),
     created_at: row.created_at as string,
   };
 }
 
-/** Los totales de varias listas de una, para no consultar una por una. */
-async function totalesDeListas(
-  db: Db, ids: string[],
-): Promise<Map<string, { total: number; checkedTotal: number; items: number; checkedItems: number }>> {
-  const mapa = new Map<string, { total: number; checkedTotal: number; items: number; checkedItems: number }>();
-  if (ids.length === 0) return mapa;
-
-  const { data, error } = await db.supabase.rpc('shopping_totals', { p_list: ids });
-  if (error) fallar('No se pudieron calcular los totales de la lista', error);
-
-  for (const f of (data ?? []) as Record<string, unknown>[]) {
-    mapa.set(f.list_id as string, {
-      total: Number(f.total ?? 0),
-      checkedTotal: Number(f.checked_total ?? 0),
-      items: Number(f.items ?? 0),
-      checkedItems: Number(f.checked_items ?? 0),
-    });
-  }
-  return mapa;
-}
-
-const SIN_TOTALES = { total: 0, checkedTotal: 0, items: 0, checkedItems: 0 };
-
 export async function getShoppingLists(
-  db: Db,
-  opciones?: { ledgerId?: string | null; incluirCerradas?: boolean },
+  db: Db, ledgerId?: string | null,
 ): Promise<ShoppingListWithTotals[]> {
   // Sin filtrar por `user_id`: en una cuenta compartida la lista la arma uno y
-  // la tilda el otro. RLS ya recorta a lo visible.
-  let q = db.supabase.from('shopping_lists').select('*').order('date', { ascending: false });
-  if (opciones?.ledgerId) q = q.eq('ledger_id', opciones.ledgerId);
-  if (!opciones?.incluirCerradas) q = q.eq('closed', false);
+  // la usa el otro. RLS ya recorta a lo visible.
+  let q = db.supabase.from('shopping_lists').select('*').order('created_at', { ascending: false });
+  if (ledgerId) q = q.eq('ledger_id', ledgerId);
 
   const { data, error } = await q;
   if (error) fallar('No se pudieron leer las listas', error);
 
   const listas = (data ?? []).map(rowToShoppingList);
-  const totales = await totalesDeListas(db, listas.map(l => l.id));
-  return listas.map(l => ({ ...l, ...(totales.get(l.id) ?? SIN_TOTALES) }));
+  if (listas.length === 0) return [];
+
+  const { data: tot, error: errTot } = await db.supabase
+    .rpc('shopping_list_totals', { p_list: listas.map(l => l.id) });
+  if (errTot) fallar('No se pudieron calcular los totales', errTot);
+
+  const mapa = new Map(
+    ((tot ?? []) as Record<string, unknown>[])
+      .map(f => [f.list_id as string, { total: Number(f.total ?? 0), items: Number(f.items ?? 0) }]),
+  );
+  return listas.map(l => ({ ...l, ...(mapa.get(l.id) ?? { total: 0, items: 0 }) }));
 }
 
 export async function getShoppingList(db: Db, id: string): Promise<ShoppingListDetail | null> {
@@ -1602,26 +1586,25 @@ export async function getShoppingList(db: Db, id: string): Promise<ShoppingListD
   if (error) fallar('No se pudo leer la lista', error);
   if (!data) return null;
 
-  const lista = rowToShoppingList(data);
-  const [itemsRes, totales] = await Promise.all([
-    db.supabase.from('shopping_items').select('*').eq('list_id', id).order('created_at'),
-    totalesDeListas(db, [id]),
-  ]);
-  if (itemsRes.error) fallar('No se pudieron leer los artículos', itemsRes.error);
+  const { data: items, error: errItems } = await db.supabase
+    .from('shopping_items').select('*').eq('list_id', id).order('created_at');
+  if (errItems) fallar('No se pudieron leer los artículos', errItems);
 
+  const articulos = (items ?? []).map(rowToShoppingItem);
   return {
-    ...lista,
-    ...(totales.get(id) ?? SIN_TOTALES),
-    articulos: (itemsRes.data ?? []).map(rowToShoppingItem),
+    ...rowToShoppingList(data),
+    articulos,
+    total: articulos.reduce((s, a) => s + a.quantity * a.unit_price, 0),
+    items: articulos.length,
   };
 }
 
 export async function createShoppingList(
-  db: Db, datos: { name: string; date: string; ledger_id: string | null },
+  db: Db, datos: { name: string; ledger_id: string | null },
 ): Promise<ShoppingList> {
   const { data, error } = await db.supabase
     .from('shopping_lists')
-    .insert({ user_id: db.userId, name: datos.name, date: datos.date, ledger_id: datos.ledger_id })
+    .insert({ user_id: db.userId, name: datos.name, ledger_id: datos.ledger_id })
     .select()
     .single();
   if (error) fallar('No se pudo crear la lista', error);
@@ -1629,12 +1612,11 @@ export async function createShoppingList(
 }
 
 export async function updateShoppingList(
-  db: Db, id: string, cambios: { name?: string; date?: string; ledger_id?: string | null },
+  db: Db, id: string, cambios: { name?: string; ledger_id?: string | null },
 ): Promise<ShoppingList | null> {
   const campos: Record<string, unknown> = {};
-  for (const clave of ['name', 'date', 'ledger_id'] as const) {
-    if (cambios[clave] !== undefined) campos[clave] = cambios[clave];
-  }
+  if (cambios.name !== undefined) campos.name = cambios.name;
+  if (cambios.ledger_id !== undefined) campos.ledger_id = cambios.ledger_id;
   const { data, error } = await db.supabase
     .from('shopping_lists').update(campos).eq('id', id).select().maybeSingle();
   if (error) fallar('No se pudo actualizar la lista', error);
@@ -1654,10 +1636,7 @@ export async function addShoppingItem(
   datos: { name: string; category: string; quantity: number; unit: string; unit_price: number },
 ): Promise<ShoppingItem> {
   const { data, error } = await db.supabase
-    .from('shopping_items')
-    .insert({ list_id: listId, ...datos })
-    .select()
-    .single();
+    .from('shopping_items').insert({ list_id: listId, ...datos }).select().single();
   if (error) fallar('No se pudo agregar el artículo', error);
   return rowToShoppingItem(data);
 }
@@ -1666,7 +1645,7 @@ export async function updateShoppingItem(
   db: Db, id: string, cambios: Partial<Omit<ShoppingItem, 'id' | 'list_id' | 'created_at'>>,
 ): Promise<ShoppingItem | null> {
   const campos: Record<string, unknown> = {};
-  for (const clave of ['name', 'category', 'quantity', 'unit', 'unit_price', 'checked'] as const) {
+  for (const clave of ['name', 'category', 'quantity', 'unit', 'unit_price'] as const) {
     if (cambios[clave] !== undefined) campos[clave] = cambios[clave];
   }
   const { data, error } = await db.supabase
@@ -1682,66 +1661,265 @@ export async function deleteShoppingItem(db: Db, id: string): Promise<boolean> {
   return (data ?? []).length > 0;
 }
 
+// ─── Lista de compras: la compra real ─────────────────────────────────────────
+
+function rowToTrip(row: Record<string, unknown>): ShoppingTrip {
+  return {
+    id: row.id as string,
+    ledger_id: (row.ledger_id as string) ?? null,
+    list_id: (row.list_id as string) ?? null,
+    name: row.name as string,
+    date: row.date as string,
+    closed: Boolean(row.closed),
+    paid_amount: row.paid_amount == null ? null : Number(row.paid_amount),
+    transaction_id: (row.transaction_id as string) ?? null,
+    created_at: row.created_at as string,
+  };
+}
+
+function rowToTripItem(row: Record<string, unknown>): ShoppingTripItem {
+  return {
+    id: row.id as string,
+    trip_id: row.trip_id as string,
+    name: row.name as string,
+    category: (row.category as string) || 'Otros',
+    quantity: Number(row.quantity),
+    unit: (row.unit as string) || 'unidad',
+    unit_price: Number(row.unit_price),
+    checked: Boolean(row.checked),
+    planned_quantity: row.planned_quantity == null ? null : Number(row.planned_quantity),
+    planned_unit_price: row.planned_unit_price == null ? null : Number(row.planned_unit_price),
+    created_at: row.created_at as string,
+  };
+}
+
+const SIN_TOTALES = { total: 0, checkedTotal: 0, plannedTotal: 0, items: 0, checkedItems: 0 };
+
+async function totalesDeCompras(db: Db, ids: string[]) {
+  const mapa = new Map<string, typeof SIN_TOTALES>();
+  if (ids.length === 0) return mapa;
+
+  const { data, error } = await db.supabase.rpc('shopping_trip_totals', { p_trip: ids });
+  if (error) fallar('No se pudieron calcular los totales de la compra', error);
+
+  for (const f of (data ?? []) as Record<string, unknown>[]) {
+    mapa.set(f.trip_id as string, {
+      total: Number(f.total ?? 0),
+      checkedTotal: Number(f.checked_total ?? 0),
+      plannedTotal: Number(f.planned_total ?? 0),
+      items: Number(f.items ?? 0),
+      checkedItems: Number(f.checked_items ?? 0),
+    });
+  }
+  return mapa;
+}
+
+export async function getShoppingTrips(
+  db: Db, opciones?: { ledgerId?: string | null; incluirCerradas?: boolean },
+): Promise<ShoppingTripWithTotals[]> {
+  let q = db.supabase.from('shopping_trips').select('*').order('date', { ascending: false });
+  if (opciones?.ledgerId) q = q.eq('ledger_id', opciones.ledgerId);
+  if (!opciones?.incluirCerradas) q = q.eq('closed', false);
+
+  const { data, error } = await q;
+  if (error) fallar('No se pudieron leer las compras', error);
+
+  const compras = (data ?? []).map(rowToTrip);
+  const totales = await totalesDeCompras(db, compras.map(c => c.id));
+  return compras.map(c => ({ ...c, ...(totales.get(c.id) ?? SIN_TOTALES) }));
+}
+
+export async function getShoppingTrip(db: Db, id: string): Promise<ShoppingTripDetail | null> {
+  const { data, error } = await db.supabase
+    .from('shopping_trips').select('*').eq('id', id).maybeSingle();
+  if (error) fallar('No se pudo leer la compra', error);
+  if (!data) return null;
+
+  const [itemsRes, totales] = await Promise.all([
+    db.supabase.from('shopping_trip_items').select('*').eq('trip_id', id).order('created_at'),
+    totalesDeCompras(db, [id]),
+  ]);
+  if (itemsRes.error) fallar('No se pudieron leer los artículos', itemsRes.error);
+
+  return {
+    ...rowToTrip(data),
+    ...(totales.get(id) ?? SIN_TOTALES),
+    articulos: (itemsRes.data ?? []).map(rowToTripItem),
+  };
+}
+
 /**
- * Cierra la lista y la convierte en un gasto.
+ * Arranca una compra, copiando una lista si se indica.
  *
- * Es el punto de la función: una lista de compras que no termina en un
- * movimiento es una app de notas. Cobra solo lo tildado —lo que efectivamente
- * entró al carrito—, en la cuenta de la lista, para que caiga en el presupuesto
- * de su categoría como cualquier otro gasto.
+ * La copia es el punto de todo esto: desde acá los precios y las cantidades son
+ * de esta compra y de ninguna otra. La lista queda intacta para la próxima vez,
+ * y `planned_*` guarda con qué números se salió de casa.
  */
-export async function cerrarShoppingList(
+export async function iniciarCompra(
+  db: Db,
+  datos: { name: string; date: string; ledger_id: string | null; list_id?: string | null },
+): Promise<{ ok: true; compra: ShoppingTrip } | { ok: false; error: string }> {
+  if (datos.ledger_id && !(await getLedgerRole(db, datos.ledger_id))) {
+    return { ok: false, error: 'No tenés acceso a esa cuenta.' };
+  }
+
+  const { data, error } = await db.supabase
+    .from('shopping_trips')
+    .insert({
+      user_id: db.userId,
+      ledger_id: datos.ledger_id,
+      list_id: datos.list_id ?? null,
+      name: datos.name,
+      date: datos.date,
+    })
+    .select()
+    .single();
+  if (error) fallar('No se pudo iniciar la compra', error);
+  const compra = rowToTrip(data);
+
+  if (datos.list_id) {
+    const lista = await getShoppingList(db, datos.list_id);
+    if (lista && lista.articulos.length > 0) {
+      const { error: errCopia } = await db.supabase.from('shopping_trip_items').insert(
+        lista.articulos.map(a => ({
+          trip_id: compra.id,
+          name: a.name,
+          category: a.category,
+          quantity: a.quantity,
+          unit: a.unit,
+          unit_price: a.unit_price,
+          planned_quantity: a.quantity,
+          planned_unit_price: a.unit_price,
+        })),
+      );
+      if (errCopia) fallar('Se creó la compra pero no se copió la lista', errCopia);
+    }
+  }
+
+  return { ok: true, compra };
+}
+
+export async function addTripItem(
+  db: Db,
+  tripId: string,
+  datos: { name: string; category: string; quantity: number; unit: string; unit_price: number },
+): Promise<ShoppingTripItem> {
+  // Sin `planned_*`: lo que se agrega en el súper no estaba planeado, y eso es
+  // justamente lo que después se quiere ver.
+  const { data, error } = await db.supabase
+    .from('shopping_trip_items').insert({ trip_id: tripId, ...datos }).select().single();
+  if (error) fallar('No se pudo agregar el artículo', error);
+  return rowToTripItem(data);
+}
+
+export async function updateTripItem(
+  db: Db,
+  id: string,
+  cambios: Partial<Pick<ShoppingTripItem, 'name' | 'category' | 'quantity' | 'unit' | 'unit_price' | 'checked'>>,
+): Promise<ShoppingTripItem | null> {
+  const campos: Record<string, unknown> = {};
+  for (const clave of ['name', 'category', 'quantity', 'unit', 'unit_price', 'checked'] as const) {
+    if (cambios[clave] !== undefined) campos[clave] = cambios[clave];
+  }
+  const { data, error } = await db.supabase
+    .from('shopping_trip_items').update(campos).eq('id', id).select().maybeSingle();
+  if (error) fallar('No se pudo actualizar el artículo', error);
+  return data ? rowToTripItem(data) : null;
+}
+
+export async function deleteTripItem(db: Db, id: string): Promise<boolean> {
+  const { data, error } = await db.supabase
+    .from('shopping_trip_items').delete().eq('id', id).select('id');
+  if (error) fallar('No se pudo eliminar el artículo', error);
+  return (data ?? []).length > 0;
+}
+
+export async function deleteShoppingTrip(db: Db, id: string): Promise<boolean> {
+  const { data, error } = await db.supabase
+    .from('shopping_trips').delete().eq('id', id).select('id');
+  if (error) fallar('No se pudo eliminar la compra', error);
+  return (data ?? []).length > 0;
+}
+
+/**
+ * Cierra la compra y la convierte en un gasto.
+ *
+ * Cobra solo lo tildado, salvo que se corrija el monto: en la caja aparecen
+ * impuestos, ofertas y precios distintos a los de la góndola, y lo que vale es
+ * el ticket.
+ */
+export async function cerrarCompra(
   db: Db,
   id: string,
   datos: { category: string; card_id?: string | null; amount?: number },
-): Promise<{ ok: true; lista: ShoppingList; transaction: Transaction } | { ok: false; error: string }> {
-  const lista = await getShoppingList(db, id);
-  if (!lista) return { ok: false, error: 'Esa lista no existe.' };
-  if (lista.closed) return { ok: false, error: 'Esa lista ya está cerrada.' };
-  if (!lista.ledger_id) return { ok: false, error: 'Elegí en qué cuenta registrar el gasto.' };
-  if (lista.checkedItems === 0) {
+): Promise<{ ok: true; compra: ShoppingTrip; transaction: Transaction } | { ok: false; error: string }> {
+  const compra = await getShoppingTrip(db, id);
+  if (!compra) return { ok: false, error: 'Esa compra no existe.' };
+  if (compra.closed) return { ok: false, error: 'Esa compra ya está cerrada.' };
+  if (!compra.ledger_id) return { ok: false, error: 'Elegí en qué cuenta registrar el gasto.' };
+  if (compra.checkedItems === 0) {
     return { ok: false, error: 'No tildaste ningún artículo, así que no hay nada que cobrar.' };
   }
 
-  const rol = await getLedgerRole(db, lista.ledger_id);
+  const rol = await getLedgerRole(db, compra.ledger_id);
   if (!rol) return { ok: false, error: 'No tenés acceso a esa cuenta.' };
-  const cuenta = await getLedgerById(db, lista.ledger_id);
+  const cuenta = await getLedgerById(db, compra.ledger_id);
 
-  // Lo que salio en la caja manda sobre la suma de los articulos: ahi aparecen
-  // impuestos, ofertas y precios distintos a los de la gondola. Si no se
-  // corrige, vale lo tildado.
-  const cobrado = datos.amount !== undefined ? datos.amount : lista.checkedTotal;
+  const cobrado = datos.amount !== undefined ? datos.amount : compra.checkedTotal;
 
   const transaction = await createTransaction(db, {
-    ledger_id: lista.ledger_id,
+    ledger_id: compra.ledger_id,
     type: 'expense',
     scope: cuenta?.type ?? 'personal',
     amount: cobrado,
     category: datos.category,
-    description: lista.name,
-    date: lista.date,
+    description: compra.name,
+    date: compra.date,
     source: 'manual',
     receipt_url: null,
     payment_method: null,
     card_id: datos.card_id ?? null,
   });
 
-  const cierre: Record<string, unknown> = {
-    closed: true,
-    transaction_id: transaction.id,
-    paid_amount: cobrado,
-  };
-  let { data, error } = await db.supabase
-    .from('shopping_lists').update(cierre).eq('id', id).select().single();
+  const { data, error } = await db.supabase
+    .from('shopping_trips')
+    .update({ closed: true, transaction_id: transaction.id, paid_amount: cobrado })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) fallar('Se registró el gasto pero no se pudo cerrar la compra', error);
 
-  // Sin la 0014 corrida no existe `paid_amount`. El monto real ya quedó en el
-  // movimiento, que es donde importa; la lista se cierra igual.
-  if (faltaLaColumna(error, 'paid_amount')) {
-    delete cierre.paid_amount;
-    ({ data, error } = await db.supabase
-      .from('shopping_lists').update(cierre).eq('id', id).select().single());
+  return { ok: true, compra: rowToTrip(data), transaction };
+}
+
+/**
+ * Guarda los precios de la compra en la lista de la que salió.
+ *
+ * Es el camino de vuelta, y es explícito a propósito: la lista no se actualiza
+ * sola porque uno pagó más caro un día puntual, pero cuando el precio nuevo vino
+ * para quedarse, actualizar a mano artículo por artículo no lo hace nadie.
+ */
+export async function actualizarPreciosDeLista(
+  db: Db, tripId: string,
+): Promise<{ ok: true; actualizados: number } | { ok: false; error: string }> {
+  const compra = await getShoppingTrip(db, tripId);
+  if (!compra) return { ok: false, error: 'Esa compra no existe.' };
+  if (!compra.list_id) return { ok: false, error: 'Esta compra no salió de ninguna lista.' };
+
+  const lista = await getShoppingList(db, compra.list_id);
+  if (!lista) return { ok: false, error: 'La lista de la que salió ya no existe.' };
+
+  // Solo lo tildado y con precio: un artículo que no se compró no dice nada
+  // sobre cuánto cuesta hoy.
+  let actualizados = 0;
+  for (const a of compra.articulos.filter(x => x.checked && x.unit_price > 0)) {
+    const enLista = lista.articulos.find(
+      l => l.name.trim().toLowerCase() === a.name.trim().toLowerCase(),
+    );
+    if (!enLista || enLista.unit_price === a.unit_price) continue;
+    await updateShoppingItem(db, enLista.id, { unit_price: a.unit_price });
+    actualizados++;
   }
-  if (error) fallar('Se registró el gasto pero no se pudo cerrar la lista', error);
 
-  return { ok: true, lista: rowToShoppingList(data), transaction };
+  return { ok: true, actualizados };
 }

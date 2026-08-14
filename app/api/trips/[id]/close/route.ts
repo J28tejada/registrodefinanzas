@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cerrarShoppingList } from '@/lib/db';
+import { cerrarCompra } from '@/lib/db';
 import { conSesion } from '@/lib/supabase/session';
 
 export const dynamic = 'force-dynamic';
 
 type Contexto = { params: Promise<{ id: string }> };
 
-/** Cierra la lista y la convierte en el gasto del súper. */
+/** Cierra la compra y la convierte en el gasto del súper. */
 export async function POST(req: NextRequest, { params }: Contexto) {
   const { id } = await params;
   return conSesion(async db => {
@@ -26,13 +26,13 @@ export async function POST(req: NextRequest, { params }: Contexto) {
         }
       }
 
-      const res = await cerrarShoppingList(db, id, {
+      const res = await cerrarCompra(db, id, {
         category,
-        card_id: typeof b.card_id === 'string' && b.card_id ? b.card_id : null,
         amount,
+        card_id: typeof b.card_id === 'string' && b.card_id ? b.card_id : null,
       });
       if (!res.ok) return NextResponse.json({ error: res.error }, { status: 400 });
-      return NextResponse.json({ lista: res.lista, transaction: res.transaction });
+      return NextResponse.json({ compra: res.compra, transaction: res.transaction });
     } catch (err) {
       return NextResponse.json({ error: mensaje(err) }, { status: 500 });
     }

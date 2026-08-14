@@ -272,6 +272,17 @@ export interface BudgetProgress extends Budget {
 }
 
 // ─── Lista de compras ─────────────────────────────────────────────────────────
+//
+// Dos cosas distintas, a propósito:
+//
+//   La LISTA es una plantilla. Lo que solés comprar, con precios de referencia
+//   para estimar. Se reusa cada quincena y no se ensucia.
+//
+//   La COMPRA es un evento. Arranca copiando una lista y desde ahí es
+//   independiente: los precios de ese día, lo que realmente entró al carrito.
+//
+// Corregir un precio en el súper tiene que cambiar la compra, nunca la lista:
+// si no, perdés la referencia justo cuando la estás usando.
 
 /** Cómo se mide el artículo. "2.5 libras de carne" es una compra normal. */
 export const UNIDADES = ['unidad', 'libra', 'kg', 'litro', 'paquete', 'caja', 'docena'] as const;
@@ -298,6 +309,8 @@ export const PASILLOS = [
   'Otros',
 ];
 
+// ── La plantilla ──
+
 export interface ShoppingItem {
   id: string;
   list_id: string;
@@ -305,9 +318,8 @@ export interface ShoppingItem {
   category: string;
   quantity: number;
   unit: string;
-  /** Precio POR UNIDAD. El total del artículo es cantidad × precio. */
+  /** Precio de REFERENCIA por unidad. Lo de la última vez, para estimar. */
   unit_price: number;
-  checked: boolean;
   created_at: string;
 }
 
@@ -315,31 +327,64 @@ export interface ShoppingList {
   id: string;
   ledger_id: string | null;
   name: string;
-  date: string;
-  closed: boolean;
-  /**
-   * Lo pagado en la caja. Null mientras está abierta.
-   *
-   * Puede no coincidir con la suma de los artículos: impuestos, una oferta, un
-   * precio distinto al de la góndola. Es el dato real del gasto.
-   */
-  paid_amount: number | null;
-  /** El gasto que generó al cerrarse, si ya se cerró. */
-  transaction_id: string | null;
   created_at: string;
 }
 
 export interface ShoppingListWithTotals extends ShoppingList {
-  /** Lo que costaría la lista entera. */
+  /** Lo que costaría entera, a precios de referencia. */
   total: number;
-  /** Lo que ya está en el carrito: lo tildado. */
-  checkedTotal: number;
   items: number;
-  checkedItems: number;
 }
 
 export interface ShoppingListDetail extends ShoppingListWithTotals {
   articulos: ShoppingItem[];
+}
+
+// ── La compra ──
+
+export interface ShoppingTripItem {
+  id: string;
+  trip_id: string;
+  name: string;
+  category: string;
+  /** Lo que realmente entró al carrito. */
+  quantity: number;
+  unit: string;
+  unit_price: number;
+  checked: boolean;
+  /** Lo que decía la lista al arrancar. Null si se agregó sobre la marcha. */
+  planned_quantity: number | null;
+  planned_unit_price: number | null;
+  created_at: string;
+}
+
+export interface ShoppingTrip {
+  id: string;
+  ledger_id: string | null;
+  /** De qué lista salió, si salió de una. */
+  list_id: string | null;
+  name: string;
+  date: string;
+  closed: boolean;
+  /** Lo pagado en la caja. Null mientras está abierta. */
+  paid_amount: number | null;
+  transaction_id: string | null;
+  created_at: string;
+}
+
+export interface ShoppingTripWithTotals extends ShoppingTrip {
+  /** A precios de hoy, toda la compra. */
+  total: number;
+  /** Lo tildado: lo que va en el carrito. */
+  checkedTotal: number;
+  /** Lo que decía la lista, para comparar contra lo de hoy. */
+  plannedTotal: number;
+  items: number;
+  checkedItems: number;
+}
+
+export interface ShoppingTripDetail extends ShoppingTripWithTotals {
+  articulos: ShoppingTripItem[];
 }
 
 // ─── Deudas ───────────────────────────────────────────────────────────────────

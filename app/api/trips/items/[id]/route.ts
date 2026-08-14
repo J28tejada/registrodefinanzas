@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { deleteShoppingItem, updateShoppingItem } from '@/lib/db';
+import { deleteTripItem, updateTripItem } from '@/lib/db';
 import { conSesion } from '@/lib/supabase/session';
-import { ShoppingItem } from '@/lib/types';
+import { ShoppingTripItem } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +12,8 @@ export async function PATCH(req: NextRequest, { params }: Contexto) {
   return conSesion(async db => {
     try {
       const b = await req.json().catch(() => ({}));
-      const cambios: Partial<Omit<ShoppingItem, 'id' | 'list_id' | 'created_at'>> = {};
+      const cambios: Partial<Pick<ShoppingTripItem,
+        'name' | 'category' | 'quantity' | 'unit' | 'unit_price' | 'checked'>> = {};
 
       if (b.name !== undefined) {
         const name = String(b.name).trim();
@@ -21,6 +22,7 @@ export async function PATCH(req: NextRequest, { params }: Contexto) {
       }
       if (b.category !== undefined) cambios.category = String(b.category).trim() || 'Otros';
       if (b.unit !== undefined) cambios.unit = String(b.unit).trim() || 'unidad';
+      if (b.checked !== undefined) cambios.checked = Boolean(b.checked);
 
       if (b.quantity !== undefined) {
         const n = Number(b.quantity);
@@ -41,7 +43,7 @@ export async function PATCH(req: NextRequest, { params }: Contexto) {
         return NextResponse.json({ error: 'No hay nada que cambiar.' }, { status: 400 });
       }
 
-      const item = await updateShoppingItem(db, id, cambios);
+      const item = await updateTripItem(db, id, cambios);
       if (!item) return NextResponse.json({ error: 'Ese artículo no existe.' }, { status: 404 });
       return NextResponse.json(item);
     } catch (err) {
@@ -54,7 +56,7 @@ export async function DELETE(_req: NextRequest, { params }: Contexto) {
   const { id } = await params;
   return conSesion(async db => {
     try {
-      const borrado = await deleteShoppingItem(db, id);
+      const borrado = await deleteTripItem(db, id);
       if (!borrado) return NextResponse.json({ error: 'Ese artículo no existe.' }, { status: 404 });
       return NextResponse.json({ ok: true });
     } catch (err) {

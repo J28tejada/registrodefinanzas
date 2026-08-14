@@ -14,7 +14,7 @@ const navItems = [
   { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/transactions', icon: Receipt, label: 'Transacciones' },
   { href: '/stats', icon: PieChart, label: 'Estadísticas' },
-  { href: '/shopping', icon: ShoppingCart, label: 'Lista de compras' },
+  { href: '/shopping', icon: ShoppingCart, label: 'Supermercado' },
   { href: '/budgets', icon: Target, label: 'Presupuestos' },
   { href: '/debts', icon: HandCoins, label: 'Deudas' },
   { href: '/cards', icon: CreditCard, label: 'Tarjetas' },

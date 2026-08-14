@@ -24,18 +24,12 @@ export async function PATCH(req: NextRequest, { params }: Contexto) {
   return conSesion(async db => {
     try {
       const b = await req.json().catch(() => ({}));
-      const cambios: { name?: string; date?: string; ledger_id?: string | null } = {};
+      const cambios: { name?: string; ledger_id?: string | null } = {};
 
       if (b.name !== undefined) {
         const name = String(b.name).trim();
         if (!name) return NextResponse.json({ error: 'El nombre no puede quedar vacío.' }, { status: 400 });
         cambios.name = name;
-      }
-      if (b.date !== undefined) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(b.date))) {
-          return NextResponse.json({ error: 'Fecha inválida.' }, { status: 400 });
-        }
-        cambios.date = b.date;
       }
       if (b.ledger_id !== undefined) cambios.ledger_id = b.ledger_id || null;
 
