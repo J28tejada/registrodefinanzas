@@ -271,6 +271,70 @@ export interface BudgetProgress extends Budget {
   compartido: boolean;
 }
 
+// ─── Lista de compras ─────────────────────────────────────────────────────────
+
+/** Cómo se mide el artículo. "2.5 libras de carne" es una compra normal. */
+export const UNIDADES = ['unidad', 'libra', 'kg', 'litro', 'paquete', 'caja', 'docena'] as const;
+export type Unidad = (typeof UNIDADES)[number];
+
+/**
+ * Los pasillos del supermercado, no las categorías contables.
+ *
+ * "Lácteos" y no "Alimentación": agrupar por la categoría del gasto pondría el
+ * 90% de la lista en un solo grupo y no serviría para recorrer el súper. Son
+ * sugerencias, no un catálogo cerrado — el campo es texto libre.
+ */
+export const PASILLOS = [
+  'Frutas y verduras',
+  'Carnes y pescados',
+  'Lácteos y huevos',
+  'Panadería',
+  'Despensa',
+  'Congelados',
+  'Bebidas',
+  'Limpieza',
+  'Higiene personal',
+  'Mascotas',
+  'Otros',
+];
+
+export interface ShoppingItem {
+  id: string;
+  list_id: string;
+  name: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  /** Precio POR UNIDAD. El total del artículo es cantidad × precio. */
+  unit_price: number;
+  checked: boolean;
+  created_at: string;
+}
+
+export interface ShoppingList {
+  id: string;
+  ledger_id: string | null;
+  name: string;
+  date: string;
+  closed: boolean;
+  /** El gasto que generó al cerrarse, si ya se cerró. */
+  transaction_id: string | null;
+  created_at: string;
+}
+
+export interface ShoppingListWithTotals extends ShoppingList {
+  /** Lo que costaría la lista entera. */
+  total: number;
+  /** Lo que ya está en el carrito: lo tildado. */
+  checkedTotal: number;
+  items: number;
+  checkedItems: number;
+}
+
+export interface ShoppingListDetail extends ShoppingListWithTotals {
+  articulos: ShoppingItem[];
+}
+
 // ─── Deudas ───────────────────────────────────────────────────────────────────
 
 export interface Debt {

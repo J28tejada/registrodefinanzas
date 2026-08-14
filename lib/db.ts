@@ -17,6 +17,10 @@ import {
   LedgerMember,
   LedgerRole,
   LedgerWithStats,
+  ShoppingItem,
+  ShoppingList,
+  ShoppingListDetail,
+  ShoppingListWithTotals,
   Summary,
   Transaction,
   TransactionFilters,
@@ -1520,4 +1524,209 @@ export async function buscarCardPorTexto(db: Db, texto: string | null | undefine
   if (candidatas.length === 0) return null;
 
   return candidatas.sort((a, b) => a.name.length - b.name.length)[0];
+}
+
+// ─── Lista de compras ─────────────────────────────────────────────────────────
+
+function rowToShoppingList(row: Record<string, unknown>): ShoppingList {
+  return {
+    id: row.id as string,
+    ledger_id: (row.ledger_id as string) ?? null,
+    name: row.name as string,
+    date: row.date as string,
+    closed: Boolean(row.closed),
+    transaction_id: (row.transaction_id as string) ?? null,
+    created_at: row.created_at as string,
+  };
+}
+
+function rowToShoppingItem(row: Record<string, unknown>): ShoppingItem {
+  return {
+    id: row.id as string,
+    list_id: row.list_id as string,
+    name: row.name as string,
+    category: (row.category as string) || 'Otros',
+    quantity: Number(row.quantity),
+    unit: (row.unit as string) || 'unidad',
+    unit_price: Number(row.unit_price),
+    checked: Boolean(row.checked),
+    created_at: row.created_at as string,
+  };
+}
+
+/** Los totales de varias listas de una, para no consultar una por una. */
+async function totalesDeListas(
+  db: Db, ids: string[],
+): Promise<Map<string, { total: number; checkedTotal: number; items: number; checkedItems: number }>> {
+  const mapa = new Map<string, { total: number; checkedTotal: number; items: number; checkedItems: number }>();
+  if (ids.length === 0) return mapa;
+
+  const { data, error } = await db.supabase.rpc('shopping_totals', { p_list: ids });
+  if (error) fallar('No se pudieron calcular los totales de la lista', error);
+
+  for (const f of (data ?? []) as Record<string, unknown>[]) {
+    mapa.set(f.list_id as string, {
+      total: Number(f.total ?? 0),
+      checkedTotal: Number(f.checked_total ?? 0),
+      items: Number(f.items ?? 0),
+      checkedItems: Number(f.checked_items ?? 0),
+    });
+  }
+  return mapa;
+}
+
+const SIN_TOTALES = { total: 0, checkedTotal: 0, items: 0, checkedItems: 0 };
+
+export async function getShoppingLists(
+  db: Db,
+  opciones?: { ledgerId?: string | null; incluirCerradas?: boolean },
+): Promise<ShoppingListWithTotals[]> {
+  // Sin filtrar por `user_id`: en una cuenta compartida la lista la arma uno y
+  // la tilda el otro. RLS ya recorta a lo visible.
+  let q = db.supabase.from('shopping_lists').select('*').order('date', { ascending: false });
+  if (opciones?.ledgerId) q = q.eq('ledger_id', opciones.ledgerId);
+  if (!opciones?.incluirCerradas) q = q.eq('closed', false);
+
+  const { data, error } = await q;
+  if (error) fallar('No se pudieron leer las listas', error);
+
+  const listas = (data ?? []).map(rowToShoppingList);
+  const totales = await totalesDeListas(db, listas.map(l => l.id));
+  return listas.map(l => ({ ...l, ...(totales.get(l.id) ?? SIN_TOTALES) }));
+}
+
+export async function getShoppingList(db: Db, id: string): Promise<ShoppingListDetail | null> {
+  const { data, error } = await db.supabase
+    .from('shopping_lists').select('*').eq('id', id).maybeSingle();
+  if (error) fallar('No se pudo leer la lista', error);
+  if (!data) return null;
+
+  const lista = rowToShoppingList(data);
+  const [itemsRes, totales] = await Promise.all([
+    db.supabase.from('shopping_items').select('*').eq('list_id', id).order('created_at'),
+    totalesDeListas(db, [id]),
+  ]);
+  if (itemsRes.error) fallar('No se pudieron leer los artículos', itemsRes.error);
+
+  return {
+    ...lista,
+    ...(totales.get(id) ?? SIN_TOTALES),
+    articulos: (itemsRes.data ?? []).map(rowToShoppingItem),
+  };
+}
+
+export async function createShoppingList(
+  db: Db, datos: { name: string; date: string; ledger_id: string | null },
+): Promise<ShoppingList> {
+  const { data, error } = await db.supabase
+    .from('shopping_lists')
+    .insert({ user_id: db.userId, name: datos.name, date: datos.date, ledger_id: datos.ledger_id })
+    .select()
+    .single();
+  if (error) fallar('No se pudo crear la lista', error);
+  return rowToShoppingList(data);
+}
+
+export async function updateShoppingList(
+  db: Db, id: string, cambios: { name?: string; date?: string; ledger_id?: string | null },
+): Promise<ShoppingList | null> {
+  const campos: Record<string, unknown> = {};
+  for (const clave of ['name', 'date', 'ledger_id'] as const) {
+    if (cambios[clave] !== undefined) campos[clave] = cambios[clave];
+  }
+  const { data, error } = await db.supabase
+    .from('shopping_lists').update(campos).eq('id', id).select().maybeSingle();
+  if (error) fallar('No se pudo actualizar la lista', error);
+  return data ? rowToShoppingList(data) : null;
+}
+
+export async function deleteShoppingList(db: Db, id: string): Promise<boolean> {
+  const { data, error } = await db.supabase
+    .from('shopping_lists').delete().eq('id', id).select('id');
+  if (error) fallar('No se pudo eliminar la lista', error);
+  return (data ?? []).length > 0;
+}
+
+export async function addShoppingItem(
+  db: Db,
+  listId: string,
+  datos: { name: string; category: string; quantity: number; unit: string; unit_price: number },
+): Promise<ShoppingItem> {
+  const { data, error } = await db.supabase
+    .from('shopping_items')
+    .insert({ list_id: listId, ...datos })
+    .select()
+    .single();
+  if (error) fallar('No se pudo agregar el artículo', error);
+  return rowToShoppingItem(data);
+}
+
+export async function updateShoppingItem(
+  db: Db, id: string, cambios: Partial<Omit<ShoppingItem, 'id' | 'list_id' | 'created_at'>>,
+): Promise<ShoppingItem | null> {
+  const campos: Record<string, unknown> = {};
+  for (const clave of ['name', 'category', 'quantity', 'unit', 'unit_price', 'checked'] as const) {
+    if (cambios[clave] !== undefined) campos[clave] = cambios[clave];
+  }
+  const { data, error } = await db.supabase
+    .from('shopping_items').update(campos).eq('id', id).select().maybeSingle();
+  if (error) fallar('No se pudo actualizar el artículo', error);
+  return data ? rowToShoppingItem(data) : null;
+}
+
+export async function deleteShoppingItem(db: Db, id: string): Promise<boolean> {
+  const { data, error } = await db.supabase
+    .from('shopping_items').delete().eq('id', id).select('id');
+  if (error) fallar('No se pudo eliminar el artículo', error);
+  return (data ?? []).length > 0;
+}
+
+/**
+ * Cierra la lista y la convierte en un gasto.
+ *
+ * Es el punto de la función: una lista de compras que no termina en un
+ * movimiento es una app de notas. Cobra solo lo tildado —lo que efectivamente
+ * entró al carrito—, en la cuenta de la lista, para que caiga en el presupuesto
+ * de su categoría como cualquier otro gasto.
+ */
+export async function cerrarShoppingList(
+  db: Db,
+  id: string,
+  datos: { category: string; card_id?: string | null },
+): Promise<{ ok: true; lista: ShoppingList; transaction: Transaction } | { ok: false; error: string }> {
+  const lista = await getShoppingList(db, id);
+  if (!lista) return { ok: false, error: 'Esa lista no existe.' };
+  if (lista.closed) return { ok: false, error: 'Esa lista ya está cerrada.' };
+  if (!lista.ledger_id) return { ok: false, error: 'Elegí en qué cuenta registrar el gasto.' };
+  if (lista.checkedItems === 0) {
+    return { ok: false, error: 'No tildaste ningún artículo, así que no hay nada que cobrar.' };
+  }
+
+  const rol = await getLedgerRole(db, lista.ledger_id);
+  if (!rol) return { ok: false, error: 'No tenés acceso a esa cuenta.' };
+  const cuenta = await getLedgerById(db, lista.ledger_id);
+
+  const transaction = await createTransaction(db, {
+    ledger_id: lista.ledger_id,
+    type: 'expense',
+    scope: cuenta?.type ?? 'personal',
+    amount: lista.checkedTotal,
+    category: datos.category,
+    description: lista.name,
+    date: lista.date,
+    source: 'manual',
+    receipt_url: null,
+    payment_method: null,
+    card_id: datos.card_id ?? null,
+  });
+
+  const { data, error } = await db.supabase
+    .from('shopping_lists')
+    .update({ closed: true, transaction_id: transaction.id })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) fallar('Se registró el gasto pero no se pudo cerrar la lista', error);
+
+  return { ok: true, lista: rowToShoppingList(data), transaction };
 }
