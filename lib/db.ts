@@ -41,6 +41,24 @@ function fallar(contexto: string, error: { message: string } | null): never {
   throw new Error(`${contexto}: ${error?.message ?? 'error desconocido'}`);
 }
 
+/**
+ * ¿Este error es "esa columna no existe todavía"?
+ *
+ * Vercel despliega apenas se hace push, pero las migraciones las corre una
+ * persona a mano y más tarde. En esa ventana el código nuevo le escribe a una
+ * columna que aún no está, y lo que se rompe no es la función nueva sino
+ * registrar un gasto: lo más usado de la app. Detectarlo permite reintentar sin
+ * ese campo en vez de dejar al usuario sin poder anotar nada.
+ *
+ * PGRST204 es PostgREST ("no encuentro la columna en el cache de esquema") y
+ * 42703 es Postgres (undefined_column).
+ */
+function faltaLaColumna(error: { code?: string; message?: string } | null, columna: string): boolean {
+  if (!error) return false;
+  const esFaltante = error.code === 'PGRST204' || error.code === '42703';
+  return esFaltante && (error.message ?? '').includes(columna);
+}
+
 // ─── Configuración del usuario ────────────────────────────────────────────────
 
 function rowToSettings(row: Record<string, unknown> | null, userId: string): UserSettings {
@@ -510,24 +528,31 @@ export async function createTransaction(
     throw new Error('No tenés acceso a esa cuenta');
   }
 
-  const { data, error } = await db.supabase
-    .from('transactions')
-    .insert({
-      user_id: db.userId,
-      ledger_id: datos.ledger_id ?? null,
-      type: datos.type,
-      scope: datos.scope,
-      amount: datos.amount,
-      category: datos.category,
-      description: datos.description,
-      date: datos.date,
-      source: datos.source ?? 'manual',
-      receipt_url: datos.receipt_url ?? null,
-      payment_method: datos.payment_method ?? null,
-      card_id: datos.card_id ?? null,
-    })
-    .select()
-    .single();
+  const fila: Record<string, unknown> = {
+    user_id: db.userId,
+    ledger_id: datos.ledger_id ?? null,
+    type: datos.type,
+    scope: datos.scope,
+    amount: datos.amount,
+    category: datos.category,
+    description: datos.description,
+    date: datos.date,
+    source: datos.source ?? 'manual',
+    receipt_url: datos.receipt_url ?? null,
+    payment_method: datos.payment_method ?? null,
+    card_id: datos.card_id ?? null,
+  };
+
+  let { data, error } = await db.supabase.from('transactions').insert(fila).select().single();
+
+  // Sin la migración de tarjetas corrida, `card_id` no existe. Anotar el gasto
+  // importa mucho más que enlazarlo con la tarjeta: se guarda igual, y el medio
+  // de pago queda en `payment_method`, que sí está desde el principio.
+  if (faltaLaColumna(error, 'card_id')) {
+    delete fila.card_id;
+    ({ data, error } = await db.supabase.from('transactions').insert(fila).select().single());
+  }
+
   if (error) fallar('No se pudo guardar el movimiento', error);
   return rowToTransaction(data);
 }
@@ -1074,14 +1099,26 @@ export async function upsertBudget(
 ): Promise<Budget> {
   // Dos índices únicos distintos según haya cuenta o no, así que el upsert
   // tiene que apuntar al que corresponde.
-  const { data, error } = await db.supabase
+  const fila = { user_id: db.userId, ledger_id: ledgerId, category, amount, updated_at: new Date().toISOString() };
+
+  let { data, error } = await db.supabase
     .from('budgets')
-    .upsert(
-      { user_id: db.userId, ledger_id: ledgerId, category, amount, updated_at: new Date().toISOString() },
-      { onConflict: ledgerId ? 'ledger_id,category' : 'user_id,category' },
-    )
+    .upsert(fila, { onConflict: ledgerId ? 'ledger_id,category' : 'user_id,category' })
     .select()
     .single();
+
+  // Sin la migración corrida no hay `ledger_id` ni su índice único: el tope se
+  // guarda como global, que es exactamente lo que era antes. Mejor eso que no
+  // poder crear un presupuesto.
+  if (faltaLaColumna(error, 'ledger_id')) {
+    const { ledger_id: _descartado, ...sinCuenta } = fila;
+    ({ data, error } = await db.supabase
+      .from('budgets')
+      .upsert(sinCuenta, { onConflict: 'user_id,category' })
+      .select()
+      .single());
+  }
+
   if (error) fallar('No se pudo guardar el presupuesto', error);
   return rowToBudget(data);
 }
