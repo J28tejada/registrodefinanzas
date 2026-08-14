@@ -17,9 +17,19 @@ export async function POST(req: NextRequest, { params }: Contexto) {
         return NextResponse.json({ error: 'Elegí en qué categoría anotar el gasto.' }, { status: 400 });
       }
 
+      // Opcional: sin monto vale la suma de lo tildado.
+      let amount: number | undefined;
+      if (b.amount !== undefined && b.amount !== null && b.amount !== '') {
+        amount = Number(b.amount);
+        if (!Number.isFinite(amount) || amount <= 0) {
+          return NextResponse.json({ error: 'El monto pagado tiene que ser mayor que cero.' }, { status: 400 });
+        }
+      }
+
       const res = await cerrarShoppingList(db, id, {
         category,
         card_id: typeof b.card_id === 'string' && b.card_id ? b.card_id : null,
+        amount,
       });
       if (!res.ok) return NextResponse.json({ error: res.error }, { status: 400 });
       return NextResponse.json({ lista: res.lista, transaction: res.transaction });

@@ -163,7 +163,7 @@ function Tarjeta({
   lista, fmt,
 }: {
   lista: ShoppingListWithTotals;
-  fmt: { money: (n: number) => string; dateLabel?: (iso: string) => string };
+  fmt: { money: (n: number) => string };
 }) {
   const avance = lista.total > 0 ? Math.round((lista.checkedTotal / lista.total) * 100) : 0;
 
@@ -187,9 +187,21 @@ function Tarjeta({
           </p>
         </div>
         <div className="text-right flex-shrink-0">
-          <p className="text-sm font-semibold text-white tabular-nums">{fmt.money(lista.checkedTotal)}</p>
+          {/* Cerrada muestra lo que salió en la caja, no lo que sumaba la lista. */}
+          <p className="text-sm font-semibold text-white tabular-nums">
+            {fmt.money(lista.closed && lista.paid_amount != null ? lista.paid_amount : lista.checkedTotal)}
+          </p>
           {!lista.closed && lista.total !== lista.checkedTotal && (
             <p className="text-[11px] text-slate-500 tabular-nums">de {fmt.money(lista.total)}</p>
+          )}
+          {lista.closed && lista.paid_amount != null
+            && Math.abs(lista.paid_amount - lista.checkedTotal) >= 0.01 && (
+            <p className={`text-[11px] tabular-nums ${
+              lista.paid_amount > lista.checkedTotal ? 'text-amber-400' : 'text-emerald-400'
+            }`}>
+              {lista.paid_amount > lista.checkedTotal ? '+' : '−'}
+              {fmt.money(Math.abs(lista.paid_amount - lista.checkedTotal))}
+            </p>
           )}
         </div>
         <ChevronRight className="w-4 h-4 text-slate-600 flex-shrink-0" />

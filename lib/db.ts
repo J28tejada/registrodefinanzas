@@ -1535,6 +1535,7 @@ function rowToShoppingList(row: Record<string, unknown>): ShoppingList {
     name: row.name as string,
     date: row.date as string,
     closed: Boolean(row.closed),
+    paid_amount: row.paid_amount == null ? null : Number(row.paid_amount),
     transaction_id: (row.transaction_id as string) ?? null,
     created_at: row.created_at as string,
   };
@@ -1692,7 +1693,7 @@ export async function deleteShoppingItem(db: Db, id: string): Promise<boolean> {
 export async function cerrarShoppingList(
   db: Db,
   id: string,
-  datos: { category: string; card_id?: string | null },
+  datos: { category: string; card_id?: string | null; amount?: number },
 ): Promise<{ ok: true; lista: ShoppingList; transaction: Transaction } | { ok: false; error: string }> {
   const lista = await getShoppingList(db, id);
   if (!lista) return { ok: false, error: 'Esa lista no existe.' };
@@ -1706,11 +1707,16 @@ export async function cerrarShoppingList(
   if (!rol) return { ok: false, error: 'No tenés acceso a esa cuenta.' };
   const cuenta = await getLedgerById(db, lista.ledger_id);
 
+  // Lo que salio en la caja manda sobre la suma de los articulos: ahi aparecen
+  // impuestos, ofertas y precios distintos a los de la gondola. Si no se
+  // corrige, vale lo tildado.
+  const cobrado = datos.amount !== undefined ? datos.amount : lista.checkedTotal;
+
   const transaction = await createTransaction(db, {
     ledger_id: lista.ledger_id,
     type: 'expense',
     scope: cuenta?.type ?? 'personal',
-    amount: lista.checkedTotal,
+    amount: cobrado,
     category: datos.category,
     description: lista.name,
     date: lista.date,
@@ -1720,12 +1726,21 @@ export async function cerrarShoppingList(
     card_id: datos.card_id ?? null,
   });
 
-  const { data, error } = await db.supabase
-    .from('shopping_lists')
-    .update({ closed: true, transaction_id: transaction.id })
-    .eq('id', id)
-    .select()
-    .single();
+  const cierre: Record<string, unknown> = {
+    closed: true,
+    transaction_id: transaction.id,
+    paid_amount: cobrado,
+  };
+  let { data, error } = await db.supabase
+    .from('shopping_lists').update(cierre).eq('id', id).select().single();
+
+  // Sin la 0014 corrida no existe `paid_amount`. El monto real ya quedó en el
+  // movimiento, que es donde importa; la lista se cierra igual.
+  if (faltaLaColumna(error, 'paid_amount')) {
+    delete cierre.paid_amount;
+    ({ data, error } = await db.supabase
+      .from('shopping_lists').update(cierre).eq('id', id).select().single());
+  }
   if (error) fallar('Se registró el gasto pero no se pudo cerrar la lista', error);
 
   return { ok: true, lista: rowToShoppingList(data), transaction };

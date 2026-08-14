@@ -137,24 +137,41 @@ export default function ShoppingListPage() {
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-2">
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[11px] uppercase tracking-wider text-slate-500">En el carrito</p>
-            <p className="text-2xl font-bold text-emerald-400 tabular-nums">{fmt.money(lista.checkedTotal)}</p>
+            <p className="text-[11px] uppercase tracking-wider text-slate-500">
+              {lista.closed ? 'Pagado' : 'En el carrito'}
+            </p>
+            <p className="text-2xl font-bold text-emerald-400 tabular-nums">
+              {fmt.money(lista.closed && lista.paid_amount != null ? lista.paid_amount : lista.checkedTotal)}
+            </p>
           </div>
-          {falta > 0 && (
+          {!lista.closed && falta > 0 && (
             <div className="text-right flex-shrink-0">
               <p className="text-[11px] uppercase tracking-wider text-slate-500">Falta</p>
               <p className="text-sm text-slate-300 tabular-nums">{fmt.money(falta)}</p>
             </div>
           )}
         </div>
-        {lista.items > 0 && (
+        {!lista.closed && lista.items > 0 && (
           <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
             <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${Math.min(avance, 100)}%` }} />
           </div>
         )}
-        <p className="text-xs text-slate-500">
-          Lista completa: {fmt.money(lista.total)}
-        </p>
+        {/* Cerrada: lo planeado contra lo pagado es el dato que se viene a
+            buscar después, y la diferencia es todo el punto del control. */}
+        {lista.closed && lista.paid_amount != null ? (
+          <p className="text-xs text-slate-500">
+            La lista sumaba {fmt.money(lista.checkedTotal)}
+            {Math.abs(lista.paid_amount - lista.checkedTotal) >= 0.01 && (
+              <span className={lista.paid_amount > lista.checkedTotal ? 'text-amber-400' : 'text-emerald-400'}>
+                {' '}· {lista.paid_amount > lista.checkedTotal ? 'pagaste' : 'te ahorraste'}{' '}
+                {fmt.money(Math.abs(lista.paid_amount - lista.checkedTotal))}
+                {lista.paid_amount > lista.checkedTotal ? ' de más' : ''}
+              </span>
+            )}
+          </p>
+        ) : (
+          <p className="text-xs text-slate-500">Lista completa: {fmt.money(lista.total)}</p>
+        )}
       </div>
 
       {!lista.closed && <AgregarArticulo listId={lista.id} onListo={cargar} />}
@@ -431,8 +448,15 @@ function CerrarLista({
   const [categoria, setCategoria] = useState(
     categorias.find(c => /aliment|super|comida|mercado/i.test(c)) ?? categorias[0] ?? '',
   );
+  // Arranca en lo tildado y se corrige con lo que diga el ticket.
+  const [monto, setMonto] = useState(String(lista.checkedTotal));
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+
+  const abrir = () => {
+    setMonto(String(lista.checkedTotal));
+    setAbierto(true);
+  };
 
   const cerrar = async () => {
     setGuardando(true);
@@ -441,7 +465,7 @@ function CerrarLista({
       const res = await fetch(`/api/shopping/${lista.id}/close`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category: categoria }),
+        body: JSON.stringify({ category: categoria, amount: monto }),
       });
       const datos = await res.json();
       if (!res.ok) { setError(datos.error ?? 'No se pudo cerrar'); return; }
@@ -451,10 +475,13 @@ function CerrarLista({
     }
   };
 
+  const cobrado = Number(monto);
+  const diferencia = Number.isFinite(cobrado) ? cobrado - lista.checkedTotal : 0;
+
   if (!abierto) {
     return (
       <button
-        onClick={() => setAbierto(true)}
+        onClick={abrir}
         className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
       >
         <Receipt className="w-4 h-4" />
@@ -468,8 +495,28 @@ function CerrarLista({
       <div>
         <p className="text-sm font-medium text-white">Anotar la compra</p>
         <p className="text-xs text-slate-500 mt-0.5">
-          Se registra {fmt.money(lista.checkedTotal)} —solo lo tildado— como gasto del{' '}
-          {lista.date}. Los {lista.items - lista.checkedItems} artículos sin tildar no se cobran.
+          Se registra como gasto del {lista.date}. Los {lista.items - lista.checkedItems} artículos
+          sin tildar no se cuentan.
+        </p>
+      </div>
+
+      {/* El monto se puede corregir: en la caja aparecen impuestos, una oferta o
+          un precio distinto al de la góndola, y lo que vale es el ticket. */}
+      <div className="space-y-1">
+        <label className="text-xs text-slate-500">Monto pagado</label>
+        <input
+          type="number" min="0" step="0.01" inputMode="decimal"
+          value={monto}
+          onChange={e => setMonto(e.target.value)}
+          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 tabular-nums"
+        />
+        <p className="text-xs text-slate-500">
+          La lista sumaba {fmt.money(lista.checkedTotal)}
+          {Math.abs(diferencia) >= 0.01 && (
+            <span className={diferencia > 0 ? 'text-amber-400' : 'text-emerald-400'}>
+              {' '}· {diferencia > 0 ? 'pagaste' : 'te ahorraste'} {fmt.money(Math.abs(diferencia))} {diferencia > 0 ? 'de más' : ''}
+            </span>
+          )}
         </p>
       </div>
 
@@ -498,7 +545,7 @@ function CerrarLista({
         </button>
         <button
           onClick={cerrar}
-          disabled={guardando || !categoria}
+          disabled={guardando || !categoria || !Number.isFinite(cobrado) || cobrado <= 0}
           className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
         >
           {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}

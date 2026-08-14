@@ -317,6 +317,13 @@ export interface ShoppingList {
   name: string;
   date: string;
   closed: boolean;
+  /**
+   * Lo pagado en la caja. Null mientras está abierta.
+   *
+   * Puede no coincidir con la suma de los artículos: impuestos, una oferta, un
+   * precio distinto al de la góndola. Es el dato real del gasto.
+   */
+  paid_amount: number | null;
   /** El gasto que generó al cerrarse, si ya se cerró. */
   transaction_id: string | null;
   created_at: string;
