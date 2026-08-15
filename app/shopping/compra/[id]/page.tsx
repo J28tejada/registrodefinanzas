@@ -10,7 +10,7 @@ import {
 import { useFormatters } from '@/components/SettingsContext';
 import { useLedger } from '@/components/LedgerContext';
 import { useCategories } from '@/components/CategoriesContext';
-import { PASILLOS, ShoppingTripDetail, ShoppingTripItem, UNIDADES } from '@/lib/types';
+import { Card, CARD_KIND_LABEL, PASILLOS, ShoppingTripDetail, ShoppingTripItem, UNIDADES } from '@/lib/types';
 import { agruparPorPasillo } from '@/lib/compras';
 
 /**
@@ -473,8 +473,20 @@ function CerrarCompra({
     categorias.find(c => /aliment|super|comida|mercado/i.test(c)) ?? categorias[0] ?? '',
   );
   const [monto, setMonto] = useState(String(compra.checkedTotal));
+  const [tarjeta, setTarjeta] = useState('');
+  const [tarjetas, setTarjetas] = useState<Card[]>([]);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+
+  // Se piden al abrir el panel y no al cargar la pantalla: en el súper esto no
+  // se toca hasta pasar por caja, y son datos que no hacen falta antes.
+  useEffect(() => {
+    if (!abierto) return;
+    fetch('/api/cards')
+      .then(r => r.ok ? r.json() : { cards: [] })
+      .then(d => setTarjetas(d.cards ?? []))
+      .catch(() => setTarjetas([]));
+  }, [abierto]);
 
   const abrir = () => { setMonto(String(compra.checkedTotal)); setAbierto(true); };
 
@@ -485,7 +497,7 @@ function CerrarCompra({
       const res = await fetch(`/api/trips/${compra.id}/close`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category: categoria, amount: monto }),
+        body: JSON.stringify({ category: categoria, amount: monto, card_id: tarjeta || null }),
       });
       const datos = await res.json();
       if (!res.ok) { setError(datos.error ?? 'No se pudo cerrar'); return; }
@@ -554,6 +566,29 @@ function CerrarCompra({
           <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
         </div>
       </div>
+
+      {/* Con qué se pagó. Opcional, y solo si hay tarjetas cargadas: el gasto
+          del súper queda atado a su tarjeta como cualquier otro movimiento. */}
+      {tarjetas.length > 0 && (
+        <div className="space-y-1">
+          <label className="text-xs text-slate-500">Pagado con</label>
+          <div className="relative">
+            <select
+              value={tarjeta}
+              onChange={e => setTarjeta(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 pr-8 text-sm text-white focus:outline-none focus:border-emerald-500 appearance-none"
+            >
+              <option value="">Sin especificar</option>
+              {tarjetas.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name}{c.last4 ? ` ···· ${c.last4}` : ''} — {CARD_KIND_LABEL[c.kind]}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          </div>
+        </div>
+      )}
 
       {error && <p className="text-xs text-rose-400">{error}</p>}
 

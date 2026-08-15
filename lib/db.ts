@@ -1953,6 +1953,12 @@ export async function cerrarCompra(
 
   const cobrado = datos.amount !== undefined ? datos.amount : compra.checkedTotal;
 
+  // `getCardById` filtra por dueño, así que esto también valida que la tarjeta
+  // sea suya. El nombre se guarda junto al id para que el movimiento conserve
+  // con qué se pagó aunque después borren la tarjeta.
+  const tarjeta = datos.card_id ? await getCardById(db, datos.card_id) : null;
+  if (datos.card_id && !tarjeta) return { ok: false, error: 'Esa tarjeta no existe.' };
+
   const transaction = await createTransaction(db, {
     ledger_id: compra.ledger_id,
     type: 'expense',
@@ -1963,8 +1969,8 @@ export async function cerrarCompra(
     date: compra.date,
     source: 'manual',
     receipt_url: null,
-    payment_method: null,
-    card_id: datos.card_id ?? null,
+    payment_method: tarjeta?.name ?? null,
+    card_id: tarjeta?.id ?? null,
   });
 
   const { data, error } = await db.supabase
