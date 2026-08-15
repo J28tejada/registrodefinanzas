@@ -124,6 +124,10 @@ async function procesar(supabase: SupabaseClient, update: Json): Promise<string>
     eco,
     receiptUrl,
   });
+  // null = el bot decidió no meterse en la conversación del grupo. Telegram
+  // todavía no arma grupos, pero el tipo es el mismo y hay que contemplarlo.
+  if (respuesta === null) return 'silencio';
+
   await responder(supabase, userId, externalId, respuesta);
   return 'ok';
 }

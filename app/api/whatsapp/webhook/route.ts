@@ -73,6 +73,10 @@ function interpretarWebhook(data: Json): MensajeEntrante | null {
   const message = desenvolver(data.message as Json | undefined);
   if (!message) return null;
 
+  // No se detecta "está citando al bot": `chat_messages` no guarda el id que
+  // devuelve el proveedor al enviar, así que no hay con qué comparar el
+  // `stanzaId` del citado. Adivinarlo por el JID del autor sale mal en grupos.
+  // La confirmación —el caso que importa— ya la cubre el pendiente vigente.
   const base = {
     channel: 'whatsapp' as const,
     externalId, replyTo, participant, esGrupo, providerMessageId,
@@ -252,6 +256,9 @@ async function procesar(supabase: SupabaseClient, data: Json): Promise<string> {
     participant,
     esGrupo: entrante.esGrupo === true,
   });
+  // null = el bot decidió no meterse en la conversación del grupo.
+  if (respuesta === null) return 'silencio';
+
   await responder(supabase, userId, externalId, respuesta, entrante.replyTo, participant);
   return 'ok';
 }

@@ -33,6 +33,7 @@ import {
   preguntarCuenta,
   resumirMovimientos,
 } from './pending';
+import { leDirigeLaPalabra } from './grupos';
 import { CHANNEL_LABEL, Channel, ChatLink, Contexto } from './types';
 
 export interface Entrada {
@@ -40,6 +41,8 @@ export interface Entrada {
   channel: Channel;
   externalId: string;
   texto: string;
+  /** El mensaje responde a uno del bot: en un grupo, eso lo interpela. */
+  respondeAlBot?: boolean;
   /** "🎤 Escuché: ..." o "🧾 Leí: ...", para que revise antes de confirmar. */
   eco: string | null;
   receiptUrl: string | null;
@@ -83,7 +86,7 @@ export async function construirContexto(
   return { db, link, settings, fmt: makeFormatters(settings), ledger, scope, nombre, participant };
 }
 
-export async function handleInboundMessage(entrada: Entrada): Promise<string> {
+export async function handleInboundMessage(entrada: Entrada): Promise<string | null> {
   const { supabase, channel, externalId, texto, eco, receiptUrl } = entrada;
   const esGrupo = entrada.esGrupo === true;
   const participant = entrada.participant ?? null;
@@ -156,6 +159,19 @@ export async function handleInboundMessage(entrada: Entrada): Promise<string> {
 
     // La cuenta la manda el grupo; la identidad, la persona.
     linkEfectivo = { ...link, user_id: linkPersona.user_id };
+
+    // En un grupo la mayoría de los mensajes son entre las personas. Sin este
+    // filtro el bot contesta a cada "jaja" —una llamada al modelo por mensaje—
+    // y el grupo se vuelve inusable. Se consulta el pendiente ANTES de decidir:
+    // un "sí" suelto es charla, salvo que haya algo esperando confirmación.
+    const pendienteEnGrupo = await pendienteVigente(supabase, channel, externalId, participant);
+    const paraElBot = leDirigeLaPalabra({
+      texto,
+      hayPendiente: pendienteEnGrupo !== null,
+      interpelaAlBot: entrada.respondeAlBot === true,
+      esMedia: eco !== null,
+    });
+    if (!paraElBot) return null;
   }
 
   let ctx = await construirContexto(supabase, linkEfectivo, participant);
