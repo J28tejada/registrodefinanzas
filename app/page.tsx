@@ -190,17 +190,20 @@ export default function DashboardPage() {
           </div>
 
           {/* Balance total */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
+          {/* `min-w-0` a la izquierda y `flex-shrink-0` al monto: sin eso, un
+              balance de seis cifras no se achica y termina pisando al texto,
+              como pasaba en la tarjeta de totales de Presupuestos. */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Wallet className="w-5 h-5 text-emerald-400" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-slate-400 text-sm capitalize">Balance — {monthName}</p>
                 <p className="text-xs text-slate-500">Ingresos − Gastos</p>
               </div>
             </div>
-            <p className={`text-xl sm:text-2xl font-bold ${summary.totalBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+            <p className={`text-xl sm:text-2xl font-bold tabular-nums flex-shrink-0 ${summary.totalBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
               {fmt.money(summary.totalBalance)}
             </p>
           </div>

@@ -215,8 +215,12 @@ export default function BudgetsPage() {
       {/* Totales */}
       {budgets.length > 0 && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
+          {/* Apilado en móvil: "RD$14,114.00 / RD$31,224.00" no entra al lado de
+              la etiqueta en una pantalla de teléfono, y como el monto no puede
+              achicarse por debajo de su contenido, terminaba pisando al texto.
+              Recién a partir de `sm` hay ancho para ponerlos en una línea. */}
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-1 sm:gap-3">
+            <div className="min-w-0">
               <p className="text-sm text-slate-300">Total presupuestado</p>
               <p className="text-xs text-slate-500">
                 {excedidos.length > 0
@@ -224,7 +228,7 @@ export default function BudgetsPage() {
                   : 'Todo dentro del tope'}
               </p>
             </div>
-            <p className={`text-xl font-bold ${budgetTone(totalTope > 0 ? Math.round((totalGastado / totalTope) * 100) : 0).text}`}>
+            <p className={`text-xl font-bold tabular-nums flex-shrink-0 ${budgetTone(totalTope > 0 ? Math.round((totalGastado / totalTope) * 100) : 0).text}`}>
               {fmt.money(totalGastado)}
               <span className="text-sm text-slate-500 font-normal"> / {fmt.money(totalTope)}</span>
             </p>
