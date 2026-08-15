@@ -20,7 +20,7 @@ const GRUPOS: { type: TransactionType; scope: TransactionScope; titulo: string }
  * el botón de borrar falla y no se entiende por qué.
  */
 export default function CategoriesPanel() {
-  const { categorias, cargando, refrescar, para } = useCategories();
+  const { categorias, cargando, error: errorCarga, refrescar, para } = useCategories();
 
   const [creandoEn, setCreandoEn] = useState<string | null>(null);
   const [nombreNuevo, setNombreNuevo] = useState('');
@@ -28,6 +28,10 @@ export default function CategoriesPanel() {
   const [nombreEditado, setNombreEditado] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState('');
+
+  // Si la carga falló, el panel se ve vacío y parecería que no hay categorías:
+  // alguien las volvería a crear y quedarían duplicadas al recuperarse.
+  const aMostrar = error || errorCarga;
 
   const clave = (t: TransactionType, s: TransactionScope) => `${t}|${s}`;
 
@@ -100,10 +104,10 @@ export default function CategoriesPanel() {
         </p>
       </div>
 
-      {error && (
+      {aMostrar && (
         <p className="flex items-start gap-2 text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <span>{error}</span>
+          <span>{aMostrar}</span>
         </p>
       )}
 

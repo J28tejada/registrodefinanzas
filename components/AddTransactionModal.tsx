@@ -30,7 +30,7 @@ export default function AddTransactionModal({
   isOpen, onClose, onSave, editingTransaction,
 }: AddTransactionModalProps) {
   const { currentLedger, ledgers, setSelectorOpen } = useLedger();
-  const { para } = useCategories();
+  const { para, categorias, cargando: cargandoCats, error: errorCats } = useCategories();
   const fmt = useFormatters();
 
   const defaultLedgerId = currentLedger?.id ?? (ledgers[0]?.id ?? '');
@@ -67,7 +67,18 @@ export default function AddTransactionModal({
   const selectedLedger = ledgers.find(l => l.id === form.ledger_id) ?? currentLedger;
   const scope: TransactionScope = selectedLedger?.type ?? 'personal';
   // Salen de la base: el usuario puede agregarlas y renombrarlas.
-  const categories = para(form.type, scope).map(c => c.name);
+  //
+  // El respaldo importa: las categorías tienen ámbito (personal o negocio), pero
+  // todo lo que se crea desde Configuración o Presupuestos nace personal. En una
+  // cuenta de negocio eso dejaba el desplegable VACÍO, y como la categoría es
+  // obligatoria, no había forma de guardar el movimiento ni pista de por qué.
+  // Antes de eso, mejor ofrecer las del otro ámbito.
+  const delAmbito = para(form.type, scope).map(c => c.name);
+  const todasDelTipo = categorias.filter(c => c.type === form.type).map(c => c.name);
+  const categories = delAmbito.length > 0
+    ? delAmbito
+    : [...new Set(todasDelTipo)].sort((a, b) => a.localeCompare(b, 'es'));
+  const usandoRespaldo = delAmbito.length === 0 && categories.length > 0;
 
   useEffect(() => {
     if (editingTransaction) {
@@ -319,6 +330,18 @@ export default function AddTransactionModal({
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
+            {errorCats && <p className="text-xs text-rose-400 mt-1">{errorCats}</p>}
+            {!errorCats && !cargandoCats && categories.length === 0 && (
+              <p className="text-xs text-amber-400 mt-1">
+                No tenés categorías todavía. Creá una en Configuración → Categorías.
+              </p>
+            )}
+            {usandoRespaldo && (
+              <p className="text-xs text-slate-500 mt-1">
+                Son tus categorías {scope === 'business' ? 'personales' : 'de negocio'}: no tenés
+                ninguna de {scope === 'business' ? 'negocio' : 'uso personal'} para gastos.
+              </p>
+            )}
             {interpretation?.suggestions && interpretation.suggestions.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-1">
                 <span className="text-xs text-slate-500">Sugerencias:</span>

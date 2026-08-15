@@ -9,11 +9,14 @@ interface Contexto {
   refrescar: () => Promise<void>;
   /** Las de un tipo y ámbito, ya ordenadas: lo que va en un desplegable. */
   para: (type: TransactionType, scope: TransactionScope) => CategoryWithUsage[];
+  /** Vacío si cargaron bien. Las pantallas lo muestran en vez de callarlo. */
+  error: string;
 }
 
 const CategoriesContext = createContext<Contexto>({
   categorias: [],
   cargando: true,
+  error: '',
   refrescar: async () => {},
   para: () => [],
 });
@@ -31,14 +34,23 @@ export function useCategories() {
 export function CategoriesProvider({ children }: { children: React.ReactNode }) {
   const [categorias, setCategorias] = useState<CategoryWithUsage[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
 
   const refrescar = useCallback(async () => {
     try {
       const res = await fetch('/api/categories');
       const datos = await res.json();
-      if (Array.isArray(datos)) setCategorias(datos);
+      if (Array.isArray(datos)) {
+        setCategorias(datos);
+        setError('');
+        return;
+      }
+      // Antes esto se descartaba en silencio: si la respuesta no era una lista,
+      // los desplegables quedaban vacíos en toda la app sin decir por qué, y no
+      // había manera de darse cuenta de que había fallado algo.
+      setError(datos?.error ?? 'No se pudieron cargar las categorías.');
     } catch {
-      // Sin categorías los desplegables quedan vacíos, pero la pantalla carga.
+      setError('No se pudieron cargar las categorías. Revisá la conexión.');
     } finally {
       setCargando(false);
     }
@@ -53,7 +65,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
   );
 
   return (
-    <CategoriesContext.Provider value={{ categorias, cargando, refrescar, para }}>
+    <CategoriesContext.Provider value={{ categorias, cargando, error, refrescar, para }}>
       {children}
     </CategoriesContext.Provider>
   );
