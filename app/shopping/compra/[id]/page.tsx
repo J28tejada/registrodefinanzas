@@ -11,7 +11,7 @@ import { useFormatters } from '@/components/SettingsContext';
 import { useLedger } from '@/components/LedgerContext';
 import { useCategories } from '@/components/CategoriesContext';
 import { Card, CARD_KIND_LABEL, PASILLOS, ShoppingTripDetail, ShoppingTripItem, UNIDADES } from '@/lib/types';
-import { agruparPorPasillo } from '@/lib/compras';
+import { agruparPorPasillo, totalesDeCompra } from '@/lib/compras';
 
 /**
  * La compra: esta pantalla se usa parado en un pasillo, con una mano.
@@ -54,16 +54,25 @@ export default function CompraPage() {
    * toque no registró y la gente toca dos veces.
    */
   const tildar = async (item: ShoppingTripItem) => {
-    setCompra(c => c && {
-      ...c,
-      articulos: c.articulos.map(a => a.id === item.id ? { ...a, checked: !a.checked } : a),
+    // Sin refetch: los totales se recalculan acá. Volver al servidor por cada
+    // toque hace que dos toques seguidos lancen dos GET solapados, y el que
+    // vuelve tarde destilda el segundo artículo en pantalla.
+    setCompra(c => {
+      if (!c) return c;
+      const articulos = c.articulos.map(a => a.id === item.id ? { ...a, checked: !a.checked } : a);
+      return { ...c, articulos, ...totalesDeCompra(articulos) };
     });
-    await fetch(`/api/trips/items/${item.id}`, {
+
+    const res = await fetch(`/api/trips/items/${item.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ checked: !item.checked }),
     });
-    await cargar();
+    // Solo si falló: ahí sí hay que volver a la verdad del servidor.
+    if (!res.ok) {
+      setError('No se pudo guardar el tilde. Revisá la conexión.');
+      await cargar();
+    }
   };
 
   const editarItem = async (itemId: string, cambios: Record<string, unknown>) => {
