@@ -67,6 +67,57 @@ function faltaLaColumna(error: { code?: string; message?: string } | null, colum
   return esFaltante && (error.message ?? '').includes(columna);
 }
 
+/**
+ * Recorta una consulta a lo que el usuario puede ver: suyo, o de una cuenta que
+ * comparte. Es el equivalente en código de la política de RLS.
+ *
+ * Hace falta porque el webhook de WhatsApp usa la service role, que NO pasa por
+ * RLS: ahí, una consulta sin filtro devuelve las filas de todos los usuarios.
+ *
+ * No es `async` a propósito. El builder de PostgREST es "thenable", así que
+ * devolverlo desde una función asíncrona lo ejecuta al resolverse y lo que
+ * vuelve es el resultado, no la consulta para seguir encadenando.
+ */
+/** ¿Esta fila es del usuario o de una cuenta que comparte? */
+async function puedoVer(db: Db, fila: { user_id?: unknown; ledger_id?: unknown }): Promise<boolean> {
+  if (fila.user_id === db.userId) return true;
+  if (!fila.ledger_id) return false;
+  return (await misCuentas(db)).includes(fila.ledger_id as string);
+}
+
+/**
+ * ¿El usuario puede tocar la fila hija? Se decide por su padre, que es quien
+ * tiene dueño y cuenta. Devuelve false en vez de lanzar para que la ruta
+ * responda 404 y no filtre si el id existe.
+ */
+async function padreVisible(
+  db: Db,
+  tabla: string,
+  columnaPadre: string,
+  id: string,
+  cargarPadre: (db: Db, id: string) => Promise<unknown | null>,
+): Promise<boolean> {
+  const { data } = await db.supabase.from(tabla).select(columnaPadre).eq('id', id).maybeSingle();
+  const padre = (data as Record<string, unknown> | null)?.[columnaPadre] as string | undefined;
+  return padre ? (await cargarPadre(db, padre)) !== null : false;
+}
+
+/** Lo mismo para un presupuesto, que no tiene padre pero sí dueño y cuenta. */
+async function budgetVisible(db: Db, id: string): Promise<boolean> {
+  const { data } = await db.supabase
+    .from('budgets').select('user_id, ledger_id').eq('id', id).maybeSingle();
+  return data ? puedoVer(db, data) : false;
+}
+
+function soloVisibles<T extends {
+  or(f: string): T;
+  eq(c: string, v: string): T;
+}>(q: T, userId: string, cuentas: string[]): T {
+  return cuentas.length === 0
+    ? q.eq('user_id', userId)
+    : q.or(`user_id.eq.${userId},ledger_id.in.(${cuentas.join(',')})`);
+}
+
 // ─── Configuración del usuario ────────────────────────────────────────────────
 
 function rowToSettings(row: Record<string, unknown> | null, userId: string): UserSettings {
@@ -1035,6 +1086,9 @@ export async function getBudgets(db: Db, ledgerId?: string | null): Promise<Budg
   if (ledgerId !== undefined) {
     q = ledgerId === null ? q.is('ledger_id', null) : q.eq('ledger_id', ledgerId);
   }
+  // El recorte va acá y no solo en RLS: `getBudgetProgress` lo llama el agente
+  // de WhatsApp, que corre con la service role y ve la tabla entera.
+  q = soloVisibles(q, db.userId, await misCuentas(db));
   const { data, error } = await q;
   if (error) fallar('No se pudieron leer los presupuestos', error);
   return (data ?? []).map(rowToBudget);
@@ -1152,6 +1206,9 @@ export async function updateBudget(
     campos.ledger_id = cambios.ledger_id;
   }
 
+  // Igual que arriba: sin RLS, `.eq('id')` a secas alcanza cualquier fila.
+  if (!(await budgetVisible(db, id))) return { ok: false, error: 'Ese presupuesto no existe.' };
+
   const { data, error } = await db.supabase
     .from('budgets')
     .update(campos)
@@ -1176,7 +1233,10 @@ export async function updateBudget(
 
 export async function deleteBudget(db: Db, id: string): Promise<boolean> {
   // Sin filtrar por `user_id`: en una cuenta compartida el tope es del hogar y
-  // cualquiera de los dos puede sacarlo. RLS ya impide tocar los ajenos.
+  // cualquiera de los dos puede sacarlo. Pero el recorte tiene que estar igual,
+  // porque con la service role RLS no interviene.
+  if (!(await budgetVisible(db, id))) return false;
+
   const { data, error } = await db.supabase
     .from('budgets').delete().eq('id', id).select('id');
   if (error) fallar('No se pudo eliminar el presupuesto', error);
@@ -1562,6 +1622,7 @@ export async function getShoppingLists(
   // la usa el otro. RLS ya recorta a lo visible.
   let q = db.supabase.from('shopping_lists').select('*').order('created_at', { ascending: false });
   if (ledgerId) q = q.eq('ledger_id', ledgerId);
+  q = soloVisibles(q, db.userId, await misCuentas(db));
 
   const { data, error } = await q;
   if (error) fallar('No se pudieron leer las listas', error);
@@ -1585,6 +1646,8 @@ export async function getShoppingList(db: Db, id: string): Promise<ShoppingListD
     .from('shopping_lists').select('*').eq('id', id).maybeSingle();
   if (error) fallar('No se pudo leer la lista', error);
   if (!data) return null;
+  // RLS ya filtró en la web; con la service role no filtra nada.
+  if (!(await puedoVer(db, data))) return null;
 
   const { data: items, error: errItems } = await db.supabase
     .from('shopping_items').select('*').eq('list_id', id).order('created_at');
@@ -1617,6 +1680,8 @@ export async function updateShoppingList(
   const campos: Record<string, unknown> = {};
   if (cambios.name !== undefined) campos.name = cambios.name;
   if (cambios.ledger_id !== undefined) campos.ledger_id = cambios.ledger_id;
+  if (!(await getShoppingList(db, id))) return null;
+
   const { data, error } = await db.supabase
     .from('shopping_lists').update(campos).eq('id', id).select().maybeSingle();
   if (error) fallar('No se pudo actualizar la lista', error);
@@ -1624,6 +1689,8 @@ export async function updateShoppingList(
 }
 
 export async function deleteShoppingList(db: Db, id: string): Promise<boolean> {
+  if (!(await getShoppingList(db, id))) return false;
+
   const { data, error } = await db.supabase
     .from('shopping_lists').delete().eq('id', id).select('id');
   if (error) fallar('No se pudo eliminar la lista', error);
@@ -1635,6 +1702,11 @@ export async function addShoppingItem(
   listId: string,
   datos: { name: string; category: string; quantity: number; unit: string; unit_price: number },
 ): Promise<ShoppingItem> {
+  // El artículo no tiene dueño propio: hereda el de su lista, así que el
+  // permiso se comprueba ahí. Sin esto, con la service role se podría escribir
+  // en la lista de cualquiera pasando su id.
+  if (!(await getShoppingList(db, listId))) throw new Error('No tenés acceso a esa lista');
+
   const { data, error } = await db.supabase
     .from('shopping_items').insert({ list_id: listId, ...datos }).select().single();
   if (error) fallar('No se pudo agregar el artículo', error);
@@ -1644,6 +1716,8 @@ export async function addShoppingItem(
 export async function updateShoppingItem(
   db: Db, id: string, cambios: Partial<Omit<ShoppingItem, 'id' | 'list_id' | 'created_at'>>,
 ): Promise<ShoppingItem | null> {
+  if (!(await padreVisible(db, 'shopping_items', 'list_id', id, getShoppingList))) return null;
+
   const campos: Record<string, unknown> = {};
   for (const clave of ['name', 'category', 'quantity', 'unit', 'unit_price'] as const) {
     if (cambios[clave] !== undefined) campos[clave] = cambios[clave];
@@ -1655,6 +1729,8 @@ export async function updateShoppingItem(
 }
 
 export async function deleteShoppingItem(db: Db, id: string): Promise<boolean> {
+  if (!(await padreVisible(db, 'shopping_items', 'list_id', id, getShoppingList))) return false;
+
   const { data, error } = await db.supabase
     .from('shopping_items').delete().eq('id', id).select('id');
   if (error) fallar('No se pudo eliminar el artículo', error);
@@ -1720,6 +1796,7 @@ export async function getShoppingTrips(
   let q = db.supabase.from('shopping_trips').select('*').order('date', { ascending: false });
   if (opciones?.ledgerId) q = q.eq('ledger_id', opciones.ledgerId);
   if (!opciones?.incluirCerradas) q = q.eq('closed', false);
+  q = soloVisibles(q, db.userId, await misCuentas(db));
 
   const { data, error } = await q;
   if (error) fallar('No se pudieron leer las compras', error);
@@ -1734,6 +1811,7 @@ export async function getShoppingTrip(db: Db, id: string): Promise<ShoppingTripD
     .from('shopping_trips').select('*').eq('id', id).maybeSingle();
   if (error) fallar('No se pudo leer la compra', error);
   if (!data) return null;
+  if (!(await puedoVer(db, data))) return null;
 
   const [itemsRes, totales] = await Promise.all([
     db.supabase.from('shopping_trip_items').select('*').eq('trip_id', id).order('created_at'),
@@ -1804,6 +1882,8 @@ export async function addTripItem(
   tripId: string,
   datos: { name: string; category: string; quantity: number; unit: string; unit_price: number },
 ): Promise<ShoppingTripItem> {
+  if (!(await getShoppingTrip(db, tripId))) throw new Error('No tenés acceso a esa compra');
+
   // Sin `planned_*`: lo que se agrega en el súper no estaba planeado, y eso es
   // justamente lo que después se quiere ver.
   const { data, error } = await db.supabase
@@ -1817,6 +1897,8 @@ export async function updateTripItem(
   id: string,
   cambios: Partial<Pick<ShoppingTripItem, 'name' | 'category' | 'quantity' | 'unit' | 'unit_price' | 'checked'>>,
 ): Promise<ShoppingTripItem | null> {
+  if (!(await padreVisible(db, 'shopping_trip_items', 'trip_id', id, getShoppingTrip))) return null;
+
   const campos: Record<string, unknown> = {};
   for (const clave of ['name', 'category', 'quantity', 'unit', 'unit_price', 'checked'] as const) {
     if (cambios[clave] !== undefined) campos[clave] = cambios[clave];
@@ -1828,6 +1910,8 @@ export async function updateTripItem(
 }
 
 export async function deleteTripItem(db: Db, id: string): Promise<boolean> {
+  if (!(await padreVisible(db, 'shopping_trip_items', 'trip_id', id, getShoppingTrip))) return false;
+
   const { data, error } = await db.supabase
     .from('shopping_trip_items').delete().eq('id', id).select('id');
   if (error) fallar('No se pudo eliminar el artículo', error);
@@ -1835,6 +1919,8 @@ export async function deleteTripItem(db: Db, id: string): Promise<boolean> {
 }
 
 export async function deleteShoppingTrip(db: Db, id: string): Promise<boolean> {
+  if (!(await getShoppingTrip(db, id))) return false;
+
   const { data, error } = await db.supabase
     .from('shopping_trips').delete().eq('id', id).select('id');
   if (error) fallar('No se pudo eliminar la compra', error);
