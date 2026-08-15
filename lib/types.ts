@@ -377,10 +377,13 @@ export interface ShoppingTripWithTotals extends ShoppingTrip {
   total: number;
   /** Lo tildado: lo que va en el carrito. */
   checkedTotal: number;
-  /** Lo que decía la lista, para comparar contra lo de hoy. */
+  /** Lo que decía la lista. Lo agregado en el súper no suma acá. */
   plannedTotal: number;
+  /** Lo que se agarró sobre la marcha: el gasto por impulso, aparte. */
+  unplannedTotal: number;
   items: number;
   checkedItems: number;
+  unplannedItems: number;
 }
 
 export interface ShoppingTripDetail extends ShoppingTripWithTotals {

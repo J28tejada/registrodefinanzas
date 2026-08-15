@@ -1769,7 +1769,10 @@ function rowToTripItem(row: Record<string, unknown>): ShoppingTripItem {
   };
 }
 
-const SIN_TOTALES = { total: 0, checkedTotal: 0, plannedTotal: 0, items: 0, checkedItems: 0 };
+const SIN_TOTALES = {
+  total: 0, checkedTotal: 0, plannedTotal: 0, unplannedTotal: 0,
+  items: 0, checkedItems: 0, unplannedItems: 0,
+};
 
 async function totalesDeCompras(db: Db, ids: string[]) {
   const mapa = new Map<string, typeof SIN_TOTALES>();
@@ -1783,8 +1786,10 @@ async function totalesDeCompras(db: Db, ids: string[]) {
       total: Number(f.total ?? 0),
       checkedTotal: Number(f.checked_total ?? 0),
       plannedTotal: Number(f.planned_total ?? 0),
+      unplannedTotal: Number(f.unplanned_total ?? 0),
       items: Number(f.items ?? 0),
       checkedItems: Number(f.checked_items ?? 0),
+      unplannedItems: Number(f.unplanned_items ?? 0),
     });
   }
   return mapa;

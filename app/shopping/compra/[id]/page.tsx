@@ -164,11 +164,20 @@ export default function CompraPage() {
           <p className="text-xs text-slate-500">
             La lista decía {fmt.money(compra.plannedTotal)}
             <span className={desvio > 0 ? ' text-amber-400' : ' text-emerald-400'}>
-              {' '}· {desvio > 0 ? 'vas' : 'vas'} {fmt.money(Math.abs(desvio))} {desvio > 0 ? 'por encima' : 'por debajo'}
+              {' '}· vas {fmt.money(Math.abs(desvio))} {desvio > 0 ? 'por encima' : 'por debajo'}
             </span>
           </p>
         ) : (
           <p className="text-xs text-slate-500">Toda la compra: {fmt.money(compra.total)}</p>
+        )}
+
+        {/* Lo que no estaba en la lista, aparte. Es el número que explica la
+            mayor parte de los desvíos y el que no se ve mientras uno compra. */}
+        {compra.unplannedItems > 0 && (
+          <p className="text-xs text-amber-400">
+            {fmt.money(compra.unplannedTotal)} en {compra.unplannedItems}{' '}
+            {compra.unplannedItems === 1 ? 'artículo que no estaba' : 'artículos que no estaban'} en la lista
+          </p>
         )}
       </div>
 
