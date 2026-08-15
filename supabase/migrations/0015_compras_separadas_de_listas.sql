@@ -87,9 +87,17 @@ create policy "por_compra" on public.shopping_trip_items for all to authenticate
 -- Toda lista que ya se había cerrado era, en realidad, una compra. Se convierte
 -- en una para no perder el gasto ni su detalle.
 
+-- 0014 pudo no haberse corrido nunca. Sin esto, el select de abajo falla con
+-- "column paid_amount does not exist" y la migración entera se aborta.
+alter table public.shopping_lists add column if not exists paid_amount numeric(14,2);
+
+-- `list_id` apunta al original mientras dura la mudanza: es lo que empareja
+-- cada compra con sus artículos sin adivinar por nombre y fecha, que se
+-- duplicaría si alguien tuvo dos listas iguales el mismo día. Al borrar las
+-- listas más abajo, el `on delete set null` lo deja en null solo.
 insert into public.shopping_trips
   (user_id, ledger_id, list_id, name, date, closed, paid_amount, transaction_id, created_at)
-select l.user_id, l.ledger_id, null, l.name, l.date, true, l.paid_amount, l.transaction_id, l.created_at
+select l.user_id, l.ledger_id, l.id, l.name, l.date, true, l.paid_amount, l.transaction_id, l.created_at
   from public.shopping_lists l
  where l.closed = true;
 
@@ -97,12 +105,8 @@ insert into public.shopping_trip_items
   (trip_id, name, category, quantity, unit, unit_price, checked, created_at)
 select t.id, i.name, i.category, i.quantity, i.unit, i.unit_price, i.checked, i.created_at
   from public.shopping_items i
-  join public.shopping_lists l on l.id = i.list_id
-  -- El nombre + la fecha + el dueño identifican la compra recién creada: las
-  -- cerradas ya no se tocan, así que no hay ambigüedad.
-  join public.shopping_trips t
-    on t.user_id = l.user_id and t.name = l.name and t.date = l.date and t.closed
- where l.closed = true;
+  join public.shopping_trips t on t.list_id = i.list_id
+ where t.closed = true;
 
 delete from public.shopping_lists where closed = true;
 
