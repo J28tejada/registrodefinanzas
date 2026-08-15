@@ -1159,26 +1159,46 @@ export async function upsertBudget(
   amount: number,
   ledgerId: string | null = null,
 ): Promise<Budget> {
-  // Dos índices únicos distintos según haya cuenta o no, así que el upsert
-  // tiene que apuntar al que corresponde.
-  const fila = { user_id: db.userId, ledger_id: ledgerId, category, amount, updated_at: new Date().toISOString() };
+  // Sin `on conflict`: los dos índices únicos de `budgets` son PARCIALES
+  // (uno para topes con cuenta, otro para los globales) y Postgres no puede
+  // inferir un índice parcial en un ON CONFLICT sin repetir su predicado, que
+  // es algo que PostgREST no sabe expresar. Con el upsert, crear cualquier
+  // presupuesto fallaba con 42P10.
+  //
+  // Así que se busca primero y se decide después. Dos viajes en vez de uno, en
+  // una operación que pasa una vez por categoría y por mes.
+  const clave = ledgerId
+    ? db.supabase.from('budgets').select('id').eq('ledger_id', ledgerId).eq('category', category)
+    : db.supabase.from('budgets').select('id').is('ledger_id', null).eq('user_id', db.userId).eq('category', category);
 
-  let { data, error } = await db.supabase
-    .from('budgets')
-    .upsert(fila, { onConflict: ledgerId ? 'ledger_id,category' : 'user_id,category' })
-    .select()
-    .single();
+  const { data: existente, error: errBuscar } = await clave.maybeSingle();
+  if (errBuscar) fallar('No se pudo guardar el presupuesto', errBuscar);
 
-  // Sin la migración corrida no hay `ledger_id` ni su índice único: el tope se
-  // guarda como global, que es exactamente lo que era antes. Mejor eso que no
-  // poder crear un presupuesto.
-  if (faltaLaColumna(error, 'ledger_id')) {
-    const { ledger_id: _descartado, ...sinCuenta } = fila;
-    ({ data, error } = await db.supabase
+  if (existente) {
+    const { data, error } = await db.supabase
       .from('budgets')
-      .upsert(sinCuenta, { onConflict: 'user_id,category' })
+      .update({ amount, updated_at: new Date().toISOString() })
+      .eq('id', existente.id)
       .select()
-      .single());
+      .single();
+    if (error) fallar('No se pudo guardar el presupuesto', error);
+    return rowToBudget(data);
+  }
+
+  const fila = { user_id: db.userId, ledger_id: ledgerId, category, amount, updated_at: new Date().toISOString() };
+  const { data, error } = await db.supabase.from('budgets').insert(fila).select().single();
+
+  // Dos personas creando el mismo tope a la vez: el índice único frena al
+  // segundo y acá se resuelve como lo que era, una actualización.
+  if (error?.code === '23505') return upsertBudget(db, category, amount, ledgerId);
+
+  // Sin la migración corrida no existe `ledger_id`: el tope se guarda como
+  // global, que es exactamente lo que era antes de la 0011.
+  if (faltaLaColumna(error, 'ledger_id')) {
+    const { ledger_id: _sinUsar, ...sinCuenta } = fila;
+    const reintento = await db.supabase.from('budgets').insert(sinCuenta).select().single();
+    if (reintento.error) fallar('No se pudo guardar el presupuesto', reintento.error);
+    return rowToBudget(reintento.data);
   }
 
   if (error) fallar('No se pudo guardar el presupuesto', error);
