@@ -74,7 +74,11 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
             {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm text-white font-medium truncate">{tx.description}</span>
+                {/* Sin descripción la fila quedaría con el título en blanco:
+                    la categoría es lo que mejor la identifica. */}
+                <span className="text-sm text-white font-medium truncate">
+                  {tx.description?.trim() || tx.category}
+                </span>
                 {showLedgerBadge && (
                   <span
                     className="text-xs px-1.5 py-0.5 rounded font-medium"

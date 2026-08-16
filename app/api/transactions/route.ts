@@ -42,7 +42,9 @@ export async function POST(req: NextRequest) {
       const body = await req.json();
       const { ledger_id, type, scope, amount, category, description, date, source, payment_method, card_id } = body;
 
-      if (!type || !scope || amount == null || !category || !description || !date) {
+      // La descripción no entra: muchos gastos no tienen nada que agregarle al
+      // nombre de la categoría, y obligar a escribir algo termina en "Gasto".
+      if (!type || !scope || amount == null || !category || !date) {
         return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 });
       }
       if (!['income', 'expense'].includes(type)) {
@@ -66,7 +68,7 @@ export async function POST(req: NextRequest) {
         scope,
         amount: Number(amount),
         category,
-        description,
+        description: typeof description === 'string' ? description.trim() : '',
         date,
         source: source ?? 'manual',
         payment_method: payment_method ?? null,

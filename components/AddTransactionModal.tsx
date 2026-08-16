@@ -119,7 +119,7 @@ export default function AddTransactionModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.amount || !form.category || !form.description) {
+    if (!form.amount || !form.category) {
       setError('Completa todos los campos requeridos');
       return;
     }
@@ -343,16 +343,17 @@ export default function AddTransactionModal({
             )}
           </div>
 
-          {/* Description */}
+          {/* Descripción: opcional. Muchos gastos no tienen nada que agregarle
+              al nombre de la categoría, y obligar a escribir algo termina en
+              "Gasto" o "Varios", que no dicen más que la categoría sola. */}
           <div className="space-y-1.5">
-            <label className="text-xs text-slate-400 font-medium">DESCRIPCIÓN *</label>
+            <label className="text-xs text-slate-400 font-medium">DESCRIPCIÓN</label>
             <input
               type="text"
               value={form.description}
               onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-              placeholder="Ej: Almuerzo en restaurante"
+              placeholder={form.category ? `Opcional — se anota como "${form.category}"` : 'Opcional'}
               className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm"
-              required
             />
           </div>
 
