@@ -112,7 +112,11 @@ export default function CategoriesPanel() {
       )}
 
       {GRUPOS.map(({ type, scope, titulo }) => {
-        const lista = para(type, scope);
+        // Las propias primero: son pocas entre treinta que vinieron con la app,
+        // y son las que uno viene a tocar.
+        const lista = [...para(type, scope)].sort((a, b) =>
+          a.origen === b.origen ? a.name.localeCompare(b.name, 'es') : a.origen === 'usuario' ? -1 : 1,
+        );
         const k = clave(type, scope);
         return (
           <div key={k} className="space-y-2">
@@ -190,7 +194,12 @@ export default function CategoriesPanel() {
                 ) : (
                   <div
                     key={cat.id}
-                    className="group flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-lg pl-3 pr-1.5 py-1.5"
+                    className={`group flex items-center gap-1.5 rounded-lg pl-3 pr-1.5 py-1.5 border ${
+                      cat.origen === 'usuario'
+                        ? 'bg-emerald-500/10 border-emerald-500/30'
+                        : 'bg-slate-800 border-slate-700'
+                    }`}
+                    title={cat.origen === 'usuario' ? 'La agregaste vos' : 'Vino con la app'}
                   >
                     <span className="text-sm text-slate-200">{cat.name}</span>
                     {cat.usos > 0 && (
@@ -220,10 +229,21 @@ export default function CategoriesPanel() {
         );
       })}
 
-      <p className="text-xs text-slate-500">
-        Una categoría con movimientos no se puede borrar —quedarían con un nombre
-        que ya no existe—, pero sí renombrar.
-      </p>
+      <div className="text-xs text-slate-500 space-y-1.5">
+        <p className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded bg-emerald-500/10 border border-emerald-500/30 flex-shrink-0" />
+          Las que agregaste vos. El resto vino con la app.
+        </p>
+        <p>
+          Tus categorías son solo tuyas: cada persona tiene las suyas, aunque
+          compartan una cuenta. Lo que sí ven las dos es en qué categoría quedó
+          cada gasto de esa cuenta.
+        </p>
+        <p>
+          Una categoría con movimientos no se puede borrar —quedarían con un
+          nombre que ya no existe—, pero sí renombrar.
+        </p>
+      </div>
     </div>
   );
 }

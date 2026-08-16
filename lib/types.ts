@@ -243,6 +243,11 @@ export interface Category {
   name: string;
   type: TransactionType;
   scope: TransactionScope;
+  /**
+   * De dónde salió. La lista de arranque es idéntica para todos, así que sin
+   * esto no hay forma de distinguir lo que trajo la app de lo que agregaste vos.
+   */
+  origen: 'app' | 'usuario';
   created_at: string;
 }
 

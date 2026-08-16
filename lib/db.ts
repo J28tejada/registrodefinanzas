@@ -692,6 +692,9 @@ function rowToCategory(row: Record<string, unknown>): Category {
     name: row.name as string,
     type: row.type as Category['type'],
     scope: row.scope as Category['scope'],
+    // Sin la 0017 corrida la columna no viene: se asume propia, que es el
+    // default de la migración y lo que menos sorprende.
+    origen: (row.origen as Category['origen']) ?? 'usuario',
     created_at: row.created_at as string,
   };
 }
