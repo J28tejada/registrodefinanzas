@@ -345,12 +345,14 @@ export async function correrAgente(
   const apiKey = geminiApiKey();
   if (!apiKey) throw new Error('Falta GOOGLE_AI_API_KEY: el agente no puede interpretar mensajes.');
 
-  // Del ámbito de la cuenta activa: las de negocio no tienen sentido en una
-  // cuenta personal, y mandarlas todas al modelo es enum de más en cada llamada.
-  const [gastos, ingresos] = await Promise.all([
-    getCategories(ctx.db, { type: 'expense', scope: ctx.scope }),
-    getCategories(ctx.db, { type: 'income', scope: ctx.scope }),
-  ]);
+  // Las de la cuenta donde se va a anotar. Sin cuenta elegida no hay lista que
+  // ofrecer: el handler pregunta cuál antes de guardar nada.
+  const [gastos, ingresos] = ctx.ledger
+    ? await Promise.all([
+        getCategories(ctx.db, ctx.ledger.id, { type: 'expense' }),
+        getCategories(ctx.db, ctx.ledger.id, { type: 'income' }),
+      ])
+    : [[], []];
 
   const turno: Turno = {
     ctx,

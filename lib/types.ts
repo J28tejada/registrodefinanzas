@@ -240,12 +240,13 @@ export interface CategorySummary {
 /** Una categoría del usuario. Las de arranque salen de 0009_categorias.sql. */
 export interface Category {
   id: string;
+  /** La cuenta a la que pertenece. Cada una tiene su propia lista. */
+  ledger_id: string;
   name: string;
   type: TransactionType;
-  scope: TransactionScope;
   /**
-   * De dónde salió. La lista de arranque es idéntica para todos, así que sin
-   * esto no hay forma de distinguir lo que trajo la app de lo que agregaste vos.
+   * De dónde salió. La lista de arranque es idéntica en todas las cuentas, así
+   * que sin esto no hay forma de distinguir lo que trajo la app de lo tuyo.
    */
   origen: 'app' | 'usuario';
   created_at: string;

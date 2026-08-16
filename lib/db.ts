@@ -689,68 +689,88 @@ export async function getSummary(
 function rowToCategory(row: Record<string, unknown>): Category {
   return {
     id: row.id as string,
+    ledger_id: row.ledger_id as string,
     name: row.name as string,
     type: row.type as Category['type'],
-    scope: row.scope as Category['scope'],
-    // Sin la 0017 corrida la columna no viene: se asume propia, que es el
-    // default de la migración y lo que menos sorprende.
     origen: (row.origen as Category['origen']) ?? 'usuario',
     created_at: row.created_at as string,
   };
 }
 
-/** Las categorías del usuario, opcionalmente filtradas por tipo y ámbito. */
+/**
+ * Las categorías de una cuenta.
+ *
+ * Colgaban del usuario y se separaban por ámbito, así que dos cuentas
+ * personales veían la misma lista y una categoría del hogar aparecía también en
+ * la personal. Ahora son de la cuenta: en una compartida, la lista es una sola
+ * para sus miembros.
+ */
 export async function getCategories(
   db: Db,
-  filtros?: { type?: Category['type']; scope?: Category['scope'] },
+  ledgerId: string,
+  filtros?: { type?: Category['type'] },
 ): Promise<Category[]> {
-  let q = db.supabase.from('categories').select('*').eq('user_id', db.userId);
+  let q = db.supabase.from('categories').select('*').eq('ledger_id', ledgerId);
   if (filtros?.type) q = q.eq('type', filtros.type);
-  if (filtros?.scope) q = q.eq('scope', filtros.scope);
 
   const { data, error } = await q.order('name');
   if (error) fallar('No se pudieron leer las categorías', error);
   return (data ?? []).map(rowToCategory);
 }
 
-/** Igual, pero contando en cuántos movimientos se usa cada una. */
-export async function getCategoriesWithUsage(db: Db): Promise<CategoryWithUsage[]> {
+/** Igual, pero contando en cuántos movimientos de esa cuenta se usa cada una. */
+export async function getCategoriesWithUsage(db: Db, ledgerId: string): Promise<CategoryWithUsage[]> {
+  // El acceso se comprueba acá: con la service role RLS no filtra, y sin esto
+  // bastaría pasar el id de una cuenta ajena.
+  if (!(await getLedgerRole(db, ledgerId))) return [];
+
   const [cats, movs] = await Promise.all([
-    getCategories(db),
-    db.supabase.from('transactions').select('category, type, scope').eq('user_id', db.userId),
+    getCategories(db, ledgerId),
+    db.supabase.from('transactions').select('category, type').eq('ledger_id', ledgerId),
   ]);
   if (movs.error) fallar('No se pudieron contar los usos', movs.error);
 
-  const clave = (c: { category?: string; name?: string; type: string; scope: string }) =>
-    `${c.type}|${c.scope}|${(c.category ?? c.name ?? '').toLowerCase()}`;
+  const clave = (tipo: string, nombre: string) => `${tipo}|${nombre.toLowerCase()}`;
 
   const conteo = new Map<string, number>();
   for (const m of movs.data ?? []) {
-    const k = clave(m as { category: string; type: string; scope: string });
+    const k = clave(m.type as string, (m.category as string) ?? '');
     conteo.set(k, (conteo.get(k) ?? 0) + 1);
   }
 
-  return cats.map(c => ({ ...c, usos: conteo.get(clave(c)) ?? 0 }));
+  return cats.map(c => ({ ...c, usos: conteo.get(clave(c.type, c.name)) ?? 0 }));
 }
 
 export async function createCategory(
   db: Db,
-  datos: { name: string; type: Category['type']; scope: Category['scope'] },
+  datos: { ledger_id: string; name: string; type: Category['type'] },
 ): Promise<Category | { error: string }> {
   const name = datos.name.trim();
   if (!name) return { error: 'El nombre no puede estar vacío.' };
   if (name.length > 40) return { error: 'El nombre es demasiado largo.' };
+  if (!(await getLedgerRole(db, datos.ledger_id))) {
+    return { error: 'No tenés acceso a esa cuenta.' };
+  }
 
   const { data, error } = await db.supabase
     .from('categories')
-    .insert({ user_id: db.userId, name, type: datos.type, scope: datos.scope })
+    .insert({ user_id: db.userId, ledger_id: datos.ledger_id, name, type: datos.type })
     .select()
     .single();
 
-  // 23505: ya existe una igual. Es lo esperable, no un fallo del sistema.
-  if (error?.code === '23505') return { error: 'Ya tenés una categoría con ese nombre.' };
+  // 23505: ya existe una igual en esta cuenta. Es lo esperable, no un fallo.
+  if (error?.code === '23505') return { error: 'Esta cuenta ya tiene una categoría con ese nombre.' };
   if (error) fallar('No se pudo crear la categoría', error);
   return rowToCategory(data);
+}
+
+/** Lee una categoría verificando que el usuario tenga acceso a su cuenta. */
+async function leerCategoria(db: Db, id: string) {
+  const { data, error } = await db.supabase
+    .from('categories').select('*').eq('id', id).maybeSingle();
+  if (error) fallar('No se pudo leer la categoría', error);
+  if (!data) return null;
+  return (await getLedgerRole(db, data.ledger_id as string)) ? data : null;
 }
 
 /**
@@ -760,6 +780,9 @@ export async function createCategory(
  * cambiara la fila de `categories`, los movimientos anteriores quedarían con un
  * nombre que ya no existe: desaparecerían de los totales por categoría y de su
  * presupuesto, sin que nada avise.
+ *
+ * El arrastre se limita a SU cuenta: otra cuenta puede tener una categoría con
+ * el mismo nombre y no tiene por qué cambiar.
  */
 export async function renameCategory(
   db: Db,
@@ -770,17 +793,16 @@ export async function renameCategory(
   if (!name) return { error: 'El nombre no puede estar vacío.' };
   if (name.length > 40) return { error: 'El nombre es demasiado largo.' };
 
-  const { data: actual, error: errLeer } = await db.supabase
-    .from('categories').select('*').eq('user_id', db.userId).eq('id', id).maybeSingle();
-  if (errLeer) fallar('No se pudo leer la categoría', errLeer);
+  const actual = await leerCategoria(db, id);
   if (!actual) return { error: 'Esa categoría no existe.' };
 
   const anterior = actual.name as string;
+  const cuenta = actual.ledger_id as string;
   if (anterior === name) return rowToCategory(actual);
 
   const { data, error } = await db.supabase
-    .from('categories').update({ name }).eq('user_id', db.userId).eq('id', id).select().single();
-  if (error?.code === '23505') return { error: 'Ya tenés una categoría con ese nombre.' };
+    .from('categories').update({ name }).eq('id', id).select().single();
+  if (error?.code === '23505') return { error: 'Esta cuenta ya tiene una categoría con ese nombre.' };
   if (error) fallar('No se pudo renombrar la categoría', error);
 
   // El arrastre va después de que el renombre salió bien: si fallara antes,
@@ -788,51 +810,47 @@ export async function renameCategory(
   const { error: errMovs } = await db.supabase
     .from('transactions')
     .update({ category: name })
-    .eq('user_id', db.userId)
+    .eq('ledger_id', cuenta)
     .eq('category', anterior)
-    .eq('type', actual.type)
-    .eq('scope', actual.scope);
+    .eq('type', actual.type);
   if (errMovs) fallar('Se renombró la categoría pero no sus movimientos', errMovs);
 
   // Los presupuestos también la referencian por nombre.
   const { error: errPres } = await db.supabase
-    .from('budgets').update({ category: name }).eq('user_id', db.userId).eq('category', anterior);
+    .from('budgets').update({ category: name }).eq('ledger_id', cuenta).eq('category', anterior);
   if (errPres) fallar('Se renombró la categoría pero no su presupuesto', errPres);
 
   return rowToCategory(data);
 }
 
 /**
- * Borra una categoría que no esté en uso.
+ * Borra una categoría que no esté en uso EN SU CUENTA.
  *
  * Con movimientos anotados no se borra: quedarían con un nombre huérfano y sin
  * forma de volver a elegirlo. Renombrarla sí se puede siempre.
  */
 export async function deleteCategory(db: Db, id: string): Promise<{ ok: boolean; error?: string }> {
-  const { data: actual, error: errLeer } = await db.supabase
-    .from('categories').select('*').eq('user_id', db.userId).eq('id', id).maybeSingle();
-  if (errLeer) fallar('No se pudo leer la categoría', errLeer);
+  const actual = await leerCategoria(db, id);
   if (!actual) return { ok: false, error: 'Esa categoría no existe.' };
 
+  const cuenta = actual.ledger_id as string;
   const { count, error: errUso } = await db.supabase
     .from('transactions')
     .select('id', { count: 'exact', head: true })
-    .eq('user_id', db.userId)
+    .eq('ledger_id', cuenta)
     .eq('category', actual.name as string)
-    .eq('type', actual.type as string)
-    .eq('scope', actual.scope as string);
+    .eq('type', actual.type as string);
   if (errUso) fallar('No se pudo verificar el uso de la categoría', errUso);
 
   if ((count ?? 0) > 0) {
     return {
       ok: false,
-      error: `La usan ${count} movimiento${count === 1 ? '' : 's'}. Podés renombrarla, pero no borrarla.`,
+      error: `La usan ${count} movimiento${count === 1 ? '' : 's'} de esta cuenta. Podés renombrarla, pero no borrarla.`,
     };
   }
 
-  await db.supabase.from('budgets').delete().eq('user_id', db.userId).eq('category', actual.name as string);
-  const { error } = await db.supabase
-    .from('categories').delete().eq('user_id', db.userId).eq('id', id);
+  await db.supabase.from('budgets').delete().eq('ledger_id', cuenta).eq('category', actual.name as string);
+  const { error } = await db.supabase.from('categories').delete().eq('id', id);
   if (error) fallar('No se pudo eliminar la categoría', error);
   return { ok: true };
 }

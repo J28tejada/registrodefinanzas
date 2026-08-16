@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import { Tags, Plus, Pencil, Trash2, Check, X, Loader2, AlertCircle } from 'lucide-react';
 import { useCategories } from './CategoriesContext';
-import { CategoryWithUsage, TransactionScope, TransactionType } from '@/lib/types';
+import { CategoryWithUsage, TransactionType } from '@/lib/types';
+import { useLedger } from './LedgerContext';
 
-const GRUPOS: { type: TransactionType; scope: TransactionScope; titulo: string }[] = [
-  { type: 'expense', scope: 'personal', titulo: 'Gastos personales' },
-  { type: 'income', scope: 'personal', titulo: 'Ingresos personales' },
-  { type: 'expense', scope: 'business', titulo: 'Gastos del negocio' },
-  { type: 'income', scope: 'business', titulo: 'Ingresos del negocio' },
+/** Ya no hay ámbito: la cuenta lo define, y cada cuenta tiene su lista. */
+const GRUPOS: { type: TransactionType; titulo: string }[] = [
+  { type: 'expense', titulo: 'Gastos' },
+  { type: 'income', titulo: 'Ingresos' },
 ];
 
 /**
@@ -21,6 +21,8 @@ const GRUPOS: { type: TransactionType; scope: TransactionScope; titulo: string }
  */
 export default function CategoriesPanel() {
   const { categorias, cargando, error: errorCarga, refrescar, para } = useCategories();
+  const { currentLedger, ledgers } = useLedger();
+  const ledgerId = currentLedger?.id ?? ledgers[0]?.id ?? null;
 
   const [creandoEn, setCreandoEn] = useState<string | null>(null);
   const [nombreNuevo, setNombreNuevo] = useState('');
@@ -33,9 +35,9 @@ export default function CategoriesPanel() {
   // alguien las volvería a crear y quedarían duplicadas al recuperarse.
   const aMostrar = error || errorCarga;
 
-  const clave = (t: TransactionType, s: TransactionScope) => `${t}|${s}`;
+  const clave = (t: TransactionType) => t;
 
-  const crear = async (type: TransactionType, scope: TransactionScope) => {
+  const crear = async (type: TransactionType) => {
     const name = nombreNuevo.trim();
     if (!name) return;
     setOcupado(true);
@@ -44,7 +46,7 @@ export default function CategoriesPanel() {
       const res = await fetch('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, type, scope }),
+        body: JSON.stringify({ name, type, ledger_id: ledgerId }),
       });
       const datos = await res.json();
       if (!res.ok) { setError(datos.error ?? 'No se pudo crear'); return; }
@@ -111,13 +113,13 @@ export default function CategoriesPanel() {
         </p>
       )}
 
-      {GRUPOS.map(({ type, scope, titulo }) => {
+      {GRUPOS.map(({ type, titulo }) => {
         // Las propias primero: son pocas entre treinta que vinieron con la app,
         // y son las que uno viene a tocar.
-        const lista = [...para(type, scope)].sort((a, b) =>
+        const lista = [...para(type)].sort((a, b) =>
           a.origen === b.origen ? a.name.localeCompare(b.name, 'es') : a.origen === 'usuario' ? -1 : 1,
         );
-        const k = clave(type, scope);
+        const k = clave(type);
         return (
           <div key={k} className="space-y-2">
             <div className="flex items-center justify-between">
@@ -140,14 +142,14 @@ export default function CategoriesPanel() {
                   type="text"
                   value={nombreNuevo}
                   onChange={e => setNombreNuevo(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); crear(type, scope); } }}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); crear(type); } }}
                   placeholder="Nombre de la categoría"
                   autoFocus
                   maxLength={40}
                   className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
                 />
                 <button
-                  onClick={() => crear(type, scope)}
+                  onClick={() => crear(type)}
                   disabled={ocupado || !nombreNuevo.trim()}
                   className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-sm transition-colors"
                 >

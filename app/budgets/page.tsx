@@ -126,8 +126,8 @@ export default function BudgetsPage() {
       const res = await fetch('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Personal por defecto: es el ámbito de la enorme mayoría de los topes.
-        body: JSON.stringify({ name: nombre, type: 'expense', scope: 'personal' }),
+        // En la cuenta donde estás parado: las categorías son de la cuenta.
+        body: JSON.stringify({ name: nombre, type: 'expense', ledger_id: currentLedger?.id ?? ledgers[0]?.id }),
       });
       const datos = await res.json();
       if (!res.ok) { setErrorCat(datos.error ?? 'No se pudo crear'); return; }
@@ -307,7 +307,7 @@ export default function BudgetsPage() {
             </div>
             {errorCat && <p className="text-xs text-rose-400">{errorCat}</p>}
             <p className="text-xs text-slate-500">
-              Se crea como gasto personal. Podés renombrarla o borrarla desde Configuración.
+              Se crea en esta cuenta. Podés renombrarla o borrarla desde Configuración.
             </p>
           </div>
         )}

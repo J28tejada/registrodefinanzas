@@ -20,13 +20,16 @@ function GlobalAddModal() {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
+    /* El orden importa: las categorías son de la cuenta activa, así que
+       `CategoriesProvider` usa `useLedger` y tiene que estar DENTRO. Al revés
+       leería el contexto vacío por defecto y nunca cargaría ninguna. */
     <SettingsProvider>
-      <CategoriesProvider>
       <LedgerProvider>
-        {children}
-        <GlobalAddModal />
+        <CategoriesProvider>
+          {children}
+          <GlobalAddModal />
+        </CategoriesProvider>
       </LedgerProvider>
-      </CategoriesProvider>
     </SettingsProvider>
   );
 }

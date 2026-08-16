@@ -1,14 +1,15 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { CategoryWithUsage, TransactionScope, TransactionType } from '@/lib/types';
+import { CategoryWithUsage, TransactionType } from '@/lib/types';
+import { useLedger } from './LedgerContext';
 
 interface Contexto {
   categorias: CategoryWithUsage[];
   cargando: boolean;
   refrescar: () => Promise<void>;
-  /** Las de un tipo y ámbito, ya ordenadas: lo que va en un desplegable. */
-  para: (type: TransactionType, scope: TransactionScope) => CategoryWithUsage[];
+  /** Las de un tipo, en la cuenta activa: lo que va en un desplegable. */
+  para: (type: TransactionType) => CategoryWithUsage[];
   /** Vacío si cargaron bien. Las pantallas lo muestran en vez de callarlo. */
   error: string;
 }
@@ -32,13 +33,20 @@ export function useCategories() {
  * salen de la base, y sin esto cada desplegable haría su propia consulta.
  */
 export function CategoriesProvider({ children }: { children: React.ReactNode }) {
+  // Las categorías son de la cuenta, así que se recargan al cambiar de cuenta.
+  const { currentLedger, ledgers } = useLedger();
+  const ledgerId = currentLedger?.id ?? ledgers[0]?.id ?? null;
+
   const [categorias, setCategorias] = useState<CategoryWithUsage[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
   const refrescar = useCallback(async () => {
+    // Sin cuenta no hay lista que pedir: recién creado el usuario, el contexto
+    // de cuentas todavía puede no haber cargado.
+    if (!ledgerId) { setCategorias([]); setCargando(false); return; }
     try {
-      const res = await fetch('/api/categories');
+      const res = await fetch(`/api/categories?ledger_id=${ledgerId}`);
       const datos = await res.json();
       if (Array.isArray(datos)) {
         setCategorias(datos);
@@ -54,13 +62,12 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
     } finally {
       setCargando(false);
     }
-  }, []);
+  }, [ledgerId]);
 
   useEffect(() => { refrescar(); }, [refrescar]);
 
   const para = useCallback(
-    (type: TransactionType, scope: TransactionScope) =>
-      categorias.filter(c => c.type === type && c.scope === scope),
+    (type: TransactionType) => categorias.filter(c => c.type === type),
     [categorias],
   );
 
