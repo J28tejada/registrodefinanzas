@@ -2,9 +2,12 @@
 
 import { useState } from 'react';
 import { Check, ChevronDown, Loader2, X } from 'lucide-react';
-import { Card, CardKind, CARD_KIND_LABEL, LedgerColor, LEDGER_COLOR_MAP } from '@/lib/types';
+import {
+  Card, CardKind, CARD_GROUPS, CARD_KIND_LABEL, LedgerColor, LEDGER_COLOR_MAP,
+  etiquetaUltimosDigitos,
+} from '@/lib/types';
 
-const TIPOS: CardKind[] = ['credit', 'debit', 'cash', 'transfer', 'other'];
+
 const COLORES = Object.keys(LEDGER_COLOR_MAP) as LedgerColor[];
 
 interface Borrador {
@@ -63,14 +66,14 @@ export default function CardForm({
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-2.5">
       <p className="text-sm font-medium text-slate-300">
-        {card ? 'Editar tarjeta' : 'Nueva tarjeta o medio de pago'}
+        {card ? 'Editar medio de pago' : 'Nuevo medio de pago'}
       </p>
 
       <input
         type="text"
         value={borrador.name}
         onChange={e => setBorrador(b => ({ ...b, name: e.target.value }))}
-        placeholder="Nombre — ej: Visa Popular"
+        placeholder="Nombre — ej: Visa Popular, Ahorros BHD"
         autoFocus
         maxLength={40}
         className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
@@ -83,7 +86,13 @@ export default function CardForm({
             onChange={e => setBorrador(b => ({ ...b, kind: e.target.value as CardKind }))}
             className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 pr-8 text-sm text-white focus:outline-none focus:border-emerald-500 appearance-none"
           >
-            {TIPOS.map(t => <option key={t} value={t}>{CARD_KIND_LABEL[t]}</option>)}
+            {/* Agrupado: con siete tipos sueltos hay que leerlos todos para
+                encontrar "Cuenta de ahorro" entre las tarjetas. */}
+            {CARD_GROUPS.map(({ titulo, kinds }) => (
+              <optgroup key={titulo} label={titulo}>
+                {kinds.map(t => <option key={t} value={t}>{CARD_KIND_LABEL[t]}</option>)}
+              </optgroup>
+            ))}
           </select>
           <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
         </div>
@@ -92,7 +101,7 @@ export default function CardForm({
           inputMode="numeric"
           value={borrador.last4}
           onChange={e => setBorrador(b => ({ ...b, last4: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
-          placeholder="Últimos 4"
+          placeholder={etiquetaUltimosDigitos(borrador.kind)}
           className="min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
         />
       </div>
@@ -101,7 +110,9 @@ export default function CardForm({
         type="text"
         value={borrador.issuer}
         onChange={e => setBorrador(b => ({ ...b, issuer: e.target.value }))}
-        placeholder="Banco (opcional)"
+        placeholder={borrador.kind === 'checking' || borrador.kind === 'savings'
+          ? 'Banco'
+          : 'Banco (opcional)'}
         maxLength={40}
         className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
       />

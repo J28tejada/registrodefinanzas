@@ -6,7 +6,7 @@ import { CardKind } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-const TIPOS: CardKind[] = ['credit', 'debit', 'cash', 'transfer', 'other'];
+const TIPOS: CardKind[] = ['credit', 'debit', 'checking', 'savings', 'cash', 'transfer', 'other'];
 
 export async function GET(req: NextRequest) {
   return conSesion(async db => {

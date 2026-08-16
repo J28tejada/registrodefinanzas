@@ -38,11 +38,11 @@ export default function CardDetailPage() {
     try {
       const res = await fetch(`/api/cards/${id}?month=${mes}`);
       const datos = await res.json();
-      if (!res.ok) { setError(datos.error ?? 'No se pudo cargar la tarjeta'); return; }
+      if (!res.ok) { setError(datos.error ?? 'No se pudo cargar el medio de pago'); return; }
       setDetalle(datos.detail);
       setMovimientos(datos.transactions ?? []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo cargar la tarjeta');
+      setError(err instanceof Error ? err.message : 'No se pudo cargar el medio de pago');
     } finally {
       setCargando(false);
     }
@@ -117,7 +117,7 @@ export default function CardDetailPage() {
         <Volver />
         <p className="flex items-start gap-2 text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <span>{error || 'Esa tarjeta no existe.'}</span>
+          <span>{error || 'Ese medio de pago no existe.'}</span>
         </p>
       </div>
     );
@@ -150,7 +150,7 @@ export default function CardDetailPage() {
             <button
               onClick={() => setEditando(v => !v)}
               className="p-2 bg-black/20 hover:bg-black/30 text-white rounded-lg transition-colors"
-              aria-label="Editar la tarjeta"
+              aria-label="Editar"
             >
               <Pencil className="w-4 h-4" />
             </button>
@@ -158,7 +158,7 @@ export default function CardDetailPage() {
               onClick={archivar}
               disabled={ocupado}
               className="p-2 bg-black/20 hover:bg-black/30 disabled:opacity-50 text-white rounded-lg transition-colors"
-              aria-label={card.archived ? 'Restaurar la tarjeta' : 'Archivar la tarjeta'}
+              aria-label={card.archived ? 'Restaurar' : 'Archivar'}
             >
               {card.archived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
             </button>
@@ -170,7 +170,7 @@ export default function CardDetailPage() {
                 onClick={eliminar}
                 disabled={ocupado}
                 className="p-2 bg-black/20 hover:bg-rose-600 disabled:opacity-50 text-white rounded-lg transition-colors"
-                aria-label="Eliminar la tarjeta"
+                aria-label="Eliminar"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -239,7 +239,7 @@ export default function CardDetailPage() {
         <p className="text-sm font-medium text-white">Últimos meses</p>
         {maxMes === 0 ? (
           <p className="text-xs text-slate-500 py-4 text-center">
-            No hay gastos con esta tarjeta en este período.
+            No hay gastos por acá en este período.
           </p>
         ) : (
           <div className="flex items-end gap-2 h-28">
@@ -303,7 +303,7 @@ export default function CardDetailPage() {
         </p>
         {movimientos.length === 0 ? (
           <p className="text-xs text-slate-500 py-6 text-center bg-slate-900 border border-slate-800 rounded-2xl">
-            Nada pagado con esta tarjeta en {fmt.monthLabel(`${mes}-01`)}.
+            Nada pagado por acá en {fmt.monthLabel(`${mes}-01`)}.
           </p>
         ) : (
           // Las mismas piezas que Movimientos: un gasto corregido desde acá

@@ -8,7 +8,7 @@ import {
 import CardForm from '@/components/CardForm';
 import { useFormatters } from '@/components/SettingsContext';
 import { useLedger } from '@/components/LedgerContext';
-import { CardWithUsage, CARD_KIND_LABEL, LEDGER_COLOR_MAP } from '@/lib/types';
+import { CardWithUsage, CARD_GROUPS, CARD_KIND_LABEL, LEDGER_COLOR_MAP } from '@/lib/types';
 
 export default function CardsPage() {
   const fmt = useFormatters();
@@ -29,10 +29,10 @@ export default function CardsPage() {
       if (verArchivadas) params.set('archivadas', '1');
       const res = await fetch(`/api/cards?${params}`);
       const datos = await res.json();
-      if (!res.ok) { setError(datos.error ?? 'No se pudieron cargar las tarjetas'); return; }
+      if (!res.ok) { setError(datos.error ?? 'No se pudieron cargar los medios de pago'); return; }
       setCards(datos.cards ?? []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar las tarjetas');
+      setError(err instanceof Error ? err.message : 'No se pudieron cargar los medios de pago');
     } finally {
       setCargando(false);
     }
@@ -58,8 +58,8 @@ export default function CardsPage() {
     <div className="max-w-2xl mx-auto space-y-6 pt-14 md:pt-0">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white">Tarjetas</h1>
-          <p className="text-slate-400 text-sm">Tus medios de pago y cuánto va por cada uno</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Medios de pago</h1>
+          <p className="text-slate-400 text-sm">Tarjetas, cuentas de banco y efectivo, con cuánto va por cada uno</p>
         </div>
         <button
           onClick={() => setCreando(v => !v)}
@@ -127,15 +127,28 @@ export default function CardsPage() {
         <div className="text-center py-12 text-slate-500 bg-slate-900 border border-slate-800 rounded-2xl">
           <CreditCard className="w-8 h-8 mx-auto mb-3 text-slate-600" />
           <p className="text-sm">
-            {verArchivadas ? 'No tenés tarjetas archivadas.' : 'Todavía no cargaste ninguna.'}
+            {verArchivadas ? 'No tenés nada archivado.' : 'Todavía no cargaste ninguno.'}
           </p>
-          <p className="text-xs mt-1">Una tarjeta, el efectivo, la cuenta por la que transferís.</p>
+          <p className="text-xs mt-1">Una tarjeta, tu cuenta corriente o de ahorro, el efectivo.</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {cards.map(c => (
-            <FilaTarjeta key={c.id} card={c} total={total} money={fmt.money} />
-          ))}
+        // Agrupado: una tarjeta y una cuenta de banco no se leen igual, y en una
+        // lista sola hay que mirar el subtítulo de cada fila para distinguirlas.
+        <div className="space-y-5">
+          {CARD_GROUPS.map(({ titulo, kinds }) => {
+            const delGrupo = cards.filter(c => kinds.includes(c.kind));
+            if (delGrupo.length === 0) return null;
+            return (
+              <div key={titulo} className="space-y-2">
+                <p className="text-xs font-medium text-slate-400 uppercase tracking-wider px-1">
+                  {titulo}
+                </p>
+                {delGrupo.map(c => (
+                  <FilaTarjeta key={c.id} card={c} total={total} money={fmt.money} />
+                ))}
+              </div>
+            );
+          })}
         </div>
       )}
 

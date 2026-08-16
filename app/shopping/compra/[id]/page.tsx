@@ -10,7 +10,7 @@ import {
 import { useFormatters } from '@/components/SettingsContext';
 import { useLedger } from '@/components/LedgerContext';
 import { useCategories } from '@/components/CategoriesContext';
-import { Card, CARD_KIND_LABEL, PASILLOS, ShoppingTripDetail, ShoppingTripItem, UNIDADES } from '@/lib/types';
+import { Card, CARD_GROUPS, PASILLOS, ShoppingTripDetail, ShoppingTripItem, UNIDADES } from '@/lib/types';
 import { agruparPorPasillo, totalesDeCompra } from '@/lib/compras';
 
 /**
@@ -597,11 +597,19 @@ function CerrarCompra({
               className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 pr-8 text-sm text-white focus:outline-none focus:border-emerald-500 appearance-none"
             >
               <option value="">Sin especificar</option>
-              {tarjetas.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name}{c.last4 ? ` ···· ${c.last4}` : ''} — {CARD_KIND_LABEL[c.kind]}
-                </option>
-              ))}
+              {CARD_GROUPS.map(({ titulo, kinds }) => {
+                const delGrupo = tarjetas.filter(c => kinds.includes(c.kind));
+                if (delGrupo.length === 0) return null;
+                return (
+                  <optgroup key={titulo} label={titulo}>
+                    {delGrupo.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}{c.last4 ? ` ···· ${c.last4}` : ''}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
             </select>
             <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>

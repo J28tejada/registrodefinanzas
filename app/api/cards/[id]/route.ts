@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 type Contexto = { params: Promise<{ id: string }> };
 
-const TIPOS: CardKind[] = ['credit', 'debit', 'cash', 'transfer', 'other'];
+const TIPOS: CardKind[] = ['credit', 'debit', 'checking', 'savings', 'cash', 'transfer', 'other'];
 
 /** El detalle de una tarjeta en un mes, con los movimientos que lo componen. */
 export async function GET(req: NextRequest, { params }: Contexto) {

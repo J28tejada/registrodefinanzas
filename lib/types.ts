@@ -166,17 +166,43 @@ export interface Summary {
   byCategory: CategorySummary[];
 }
 
-// ─── Tarjetas y medios de pago ────────────────────────────────────────────────
+// ─── Medios de pago ───────────────────────────────────────────────────────────
+//
+// La tabla se llama `cards` por su origen, pero guarda cualquier cosa con la
+// que se paga: tarjetas, cuentas de banco, efectivo.
 
-export type CardKind = 'credit' | 'debit' | 'cash' | 'transfer' | 'other';
+export type CardKind =
+  | 'credit' | 'debit'
+  | 'checking' | 'savings'
+  | 'cash' | 'transfer' | 'other';
 
 export const CARD_KIND_LABEL: Record<CardKind, string> = {
-  credit: 'Crédito',
-  debit: 'Débito',
+  credit: 'Tarjeta de crédito',
+  debit: 'Tarjeta de débito',
+  checking: 'Cuenta corriente',
+  savings: 'Cuenta de ahorro',
   cash: 'Efectivo',
   transfer: 'Transferencia',
   other: 'Otro',
 };
+
+/**
+ * Cómo se agrupan en pantalla.
+ *
+ * Una cuenta de banco y una tarjeta no se administran igual —una tiene número
+ * de cuenta, la otra los últimos cuatro dígitos del plástico— y mezclarlas en
+ * una lista sola obliga a leer el subtítulo de cada fila para saber qué es qué.
+ */
+export const CARD_GROUPS: { titulo: string; kinds: CardKind[] }[] = [
+  { titulo: 'Tarjetas', kinds: ['credit', 'debit'] },
+  { titulo: 'Cuentas de banco', kinds: ['checking', 'savings'] },
+  { titulo: 'Otros medios', kinds: ['cash', 'transfer', 'other'] },
+];
+
+/** Los últimos dígitos se piden distinto según qué sea. */
+export function etiquetaUltimosDigitos(kind: CardKind): string {
+  return kind === 'checking' || kind === 'savings' ? 'Últimos 4 de la cuenta' : 'Últimos 4';
+}
 
 export interface Card {
   id: string;

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Loader2, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
-import { Transaction, TransactionType, TransactionScope, AIInterpretation, LEDGER_COLOR_MAP, Card, CARD_KIND_LABEL } from '@/lib/types';
+import { Transaction, TransactionType, TransactionScope, AIInterpretation, LEDGER_COLOR_MAP, Card, CARD_GROUPS } from '@/lib/types';
 import { useCategories } from './CategoriesContext';
 import { useLedger } from './LedgerContext';
 import { useFormatters } from './SettingsContext';
@@ -386,11 +386,19 @@ export default function AddTransactionModal({
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 pr-8 text-white focus:outline-none focus:border-emerald-500 text-sm appearance-none"
                 >
                   <option value="">Sin especificar</option>
-                  {cards.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}{c.last4 ? ` ···· ${c.last4}` : ''} — {CARD_KIND_LABEL[c.kind]}
-                    </option>
-                  ))}
+                  {CARD_GROUPS.map(({ titulo, kinds }) => {
+                    const delGrupo = cards.filter(c => kinds.includes(c.kind));
+                    if (delGrupo.length === 0) return null;
+                    return (
+                      <optgroup key={titulo} label={titulo}>
+                        {delGrupo.map(c => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}{c.last4 ? ` ···· ${c.last4}` : ''}
+                          </option>
+                        ))}
+                      </optgroup>
+                    );
+                  })}
                 </select>
                 <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
               </div>

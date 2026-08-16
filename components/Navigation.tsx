@@ -17,7 +17,7 @@ const navItems = [
   { href: '/shopping', icon: ShoppingCart, label: 'Supermercado' },
   { href: '/budgets', icon: Target, label: 'Presupuestos' },
   { href: '/debts', icon: HandCoins, label: 'Deudas' },
-  { href: '/cards', icon: CreditCard, label: 'Tarjetas' },
+  { href: '/cards', icon: CreditCard, label: 'Medios de pago' },
   { href: '/chat', icon: Bot, label: 'Chat IA' },
   { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
   { href: '/telegram', icon: Send, label: 'Telegram' },
