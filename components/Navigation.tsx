@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail, MessageCircle, Send, Target, Settings, HandCoins, CreditCard, ShoppingCart, Menu, X, LogOut, PieChart } from 'lucide-react';
+import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail, MessageCircle, Send, Target, Settings, HandCoins, WalletCards, ShoppingCart, Menu, X, LogOut, PieChart } from 'lucide-react';
 import { useLedger } from './LedgerContext';
 import LedgerSelector from './LedgerSelector';
 import { createClient } from '@/lib/supabase/browser';
@@ -17,7 +17,9 @@ const navItems = [
   { href: '/shopping', icon: ShoppingCart, label: 'Supermercado' },
   { href: '/budgets', icon: Target, label: 'Presupuestos' },
   { href: '/debts', icon: HandCoins, label: 'Deudas' },
-  { href: '/cards', icon: CreditCard, label: 'Medios de pago' },
+  // `WalletCards` y no `Wallet`: ese ya es el ícono de la marca en la
+  // cabecera, y repetirlo hace que el menú parezca apuntar a la app.
+  { href: '/cards', icon: WalletCards, label: 'Billetera' },
   { href: '/chat', icon: Bot, label: 'Chat IA' },
   { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
   { href: '/telegram', icon: Send, label: 'Telegram' },

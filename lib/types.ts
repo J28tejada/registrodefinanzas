@@ -166,10 +166,11 @@ export interface Summary {
   byCategory: CategorySummary[];
 }
 
-// ─── Medios de pago ───────────────────────────────────────────────────────────
+// ─── Billetera ────────────────────────────────────────────────────────────────
 //
 // La tabla se llama `cards` por su origen, pero guarda cualquier cosa con la
-// que se paga: tarjetas, cuentas de banco, efectivo.
+// que se paga: tarjetas, cuentas de banco, efectivo. En pantalla es "Billetera"
+// y no "Cuentas" porque esa palabra ya es la de los libros (Personal, Hogar).
 
 export type CardKind =
   | 'credit' | 'debit'

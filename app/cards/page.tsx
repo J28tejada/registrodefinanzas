@@ -29,10 +29,10 @@ export default function CardsPage() {
       if (verArchivadas) params.set('archivadas', '1');
       const res = await fetch(`/api/cards?${params}`);
       const datos = await res.json();
-      if (!res.ok) { setError(datos.error ?? 'No se pudieron cargar los medios de pago'); return; }
+      if (!res.ok) { setError(datos.error ?? 'No se pudo cargar la billetera'); return; }
       setCards(datos.cards ?? []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudieron cargar los medios de pago');
+      setError(err instanceof Error ? err.message : 'No se pudo cargar la billetera');
     } finally {
       setCargando(false);
     }
@@ -58,8 +58,8 @@ export default function CardsPage() {
     <div className="max-w-2xl mx-auto space-y-6 pt-14 md:pt-0">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white">Medios de pago</h1>
-          <p className="text-slate-400 text-sm">Tarjetas, cuentas de banco y efectivo, con cuánto va por cada uno</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Billetera</h1>
+          <p className="text-slate-400 text-sm">Tus tarjetas, cuentas y efectivo, con cuánto va por cada uno</p>
         </div>
         <button
           onClick={() => setCreando(v => !v)}
