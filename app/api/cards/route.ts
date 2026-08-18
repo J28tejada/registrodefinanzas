@@ -3,6 +3,7 @@ import { createCard, getCardsWithUsage, getSettings } from '@/lib/db';
 import { conSesion } from '@/lib/supabase/session';
 import { hoyEnZona, limitesDelMes } from '@/lib/format';
 import { CardKind } from '@/lib/types';
+import { leerCamposDeCiclo } from './validacion';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,11 @@ export async function GET(req: NextRequest) {
       const { start, end } = limitesDelMes(referencia);
       const incluirArchivadas = req.nextUrl.searchParams.get('archivadas') === '1';
 
-      const cards = await getCardsWithUsage(db, start, end, incluirArchivadas);
+      // El saldo es el de hoy aunque se esté mirando un mes viejo: navegar a
+      // marzo no cambia cuánto se debe ahora.
+      const cards = await getCardsWithUsage(
+        db, start, end, incluirArchivadas, hoyEnZona(settings.timezone),
+      );
       return NextResponse.json({ month: start.slice(0, 7), cards });
     } catch (err) {
       return NextResponse.json({ error: mensaje(err) }, { status: 500 });
@@ -42,12 +47,16 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Los últimos dígitos tienen que ser cuatro.' }, { status: 400 });
       }
 
+      const ciclo = leerCamposDeCiclo(b);
+      if (!ciclo.ok) return NextResponse.json({ error: ciclo.error }, { status: 400 });
+
       const res = await createCard(db, {
         name,
         kind,
         last4,
         issuer: typeof b.issuer === 'string' ? b.issuer.trim() : '',
         color: b.color ?? 'blue',
+        ...ciclo.campos,
       });
       if (!res.ok) return NextResponse.json({ error: res.error }, { status: 400 });
       return NextResponse.json(res.card, { status: 201 });

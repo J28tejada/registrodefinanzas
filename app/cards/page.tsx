@@ -6,9 +6,12 @@ import {
   CreditCard, Plus, AlertCircle, ChevronLeft, ChevronRight, ChevronRight as Flecha,
 } from 'lucide-react';
 import CardForm from '@/components/CardForm';
+import CardAlerts from '@/components/CardAlerts';
+import { budgetTone } from '@/components/BudgetBar';
 import { useFormatters } from '@/components/SettingsContext';
 import { useLedger } from '@/components/LedgerContext';
 import { CardWithUsage, CARD_GROUPS, CARD_KIND_LABEL, LEDGER_COLOR_MAP } from '@/lib/types';
+import { avisosDeTarjetas } from '@/lib/tarjetas';
 
 export default function CardsPage() {
   const fmt = useFormatters();
@@ -45,6 +48,12 @@ export default function CardsPage() {
     const d = new Date(Date.UTC(a, m - 1 + delta, 1));
     setMes(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`);
   };
+
+  // El saldo y las fechas ya vienen calculados de la API; acá solo se filtra
+  // qué vence pronto.
+  const avisos = avisosDeTarjetas(
+    cards, new Map(cards.filter(c => c.balance).map(c => [c.id, c.balance!])),
+  );
 
   const total = cards.reduce((s, c) => s + c.gastoDelMes, 0);
   const activas = cards.filter(c => !c.archived);
@@ -88,6 +97,8 @@ export default function CardsPage() {
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /> <span>{error}</span>
         </p>
       )}
+
+      <CardAlerts avisos={avisos} />
 
       {cards.length > 0 && (
         // Dos columnas en el teléfono: con tres, "RD$2,250.00" no entra en su
@@ -144,7 +155,7 @@ export default function CardsPage() {
                   {titulo}
                 </p>
                 {delGrupo.map(c => (
-                  <FilaTarjeta key={c.id} card={c} total={total} money={fmt.money} />
+                  <FilaTarjeta key={c.id} card={c} total={total} fmt={fmt} />
                 ))}
               </div>
             );
@@ -164,14 +175,16 @@ export default function CardsPage() {
 
 /** Una tarjeta de la lista. Toda la fila entra al detalle. */
 function FilaTarjeta({
-  card, total, money,
+  card, total, fmt,
 }: {
   card: CardWithUsage;
   total: number;
-  money: (n: number) => string;
+  fmt: { money: (n: number) => string; date: (iso: string) => string };
 }) {
+  const money = fmt.money;
   const colores = LEDGER_COLOR_MAP[card.color] ?? { dark: '#334155', main: '#475569' };
   const parte = total > 0 ? (card.gastoDelMes / total) * 100 : 0;
+  const saldo = card.balance;
 
   return (
     <Link
@@ -203,16 +216,43 @@ function FilaTarjeta({
         <Flecha className="w-4 h-4 text-slate-600 flex-shrink-0" />
       </div>
 
-      {/* Cuánto del gasto del mes se fue por acá: comparar dos tarjetas por sus
-          montos obliga a hacer la cuenta; la barra la muestra hecha. */}
-      {parte > 0 && (
+      {/* En una tarjeta de crédito lo que se quiere saber no es cuánto se gastó
+          este mes sino cuánto se debe, y cuánto queda de cupo. Eso reemplaza a la
+          barra de reparto: dos barras en la misma fila no se distinguen. */}
+      {saldo ? (
+        <div className="mt-3 space-y-1.5">
+          {card.credit_limit != null && (
+            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${budgetTone(saldo.usoDelLimite ?? 0).bar}`}
+                style={{ width: `${Math.min(saldo.usoDelLimite ?? 0, 100)}%` }}
+              />
+            </div>
+          )}
+          <div className="flex items-center justify-between gap-2 text-[11px]">
+            <span className="text-slate-400">
+              {saldo.saldo > 0 ? `Debés ${money(saldo.saldo)}` : 'Al día'}
+              {card.credit_limit != null && saldo.usoDelLimite != null && (
+                <span className="text-slate-600"> · {Math.round(saldo.usoDelLimite)}% del límite</span>
+              )}
+            </span>
+            {saldo.ciclo && (
+              <span className={`flex-shrink-0 ${saldo.ciclo.daysToDue <= 3 ? 'text-amber-400' : 'text-slate-500'}`}>
+                paga {fmt.date(saldo.ciclo.nextDue)}
+              </span>
+            )}
+          </div>
+        </div>
+      ) : parte > 0 ? (
+        /* Cuánto del gasto del mes se fue por acá: comparar dos tarjetas por sus
+           montos obliga a hacer la cuenta; la barra la muestra hecha. */
         <div className="mt-3 h-1.5 bg-slate-800 rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all"
             style={{ width: `${parte}%`, background: colores.main }}
           />
         </div>
-      )}
+      ) : null}
     </Link>
   );
 }

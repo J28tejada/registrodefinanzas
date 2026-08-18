@@ -7,6 +7,10 @@
     {
       "path": "/api/chats/cron/reminder",
       "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cards/cron/avisos",
+      "schedule": "0 12 * * *"
     }
   ]
 }

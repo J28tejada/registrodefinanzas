@@ -9,11 +9,12 @@ import {
 } from 'lucide-react';
 import AddTransactionModal from '@/components/AddTransactionModal';
 import CardForm from '@/components/CardForm';
+import CardStatement from '@/components/CardStatement';
 import TransactionList from '@/components/TransactionList';
 import { useFormatters } from '@/components/SettingsContext';
 import { useLedger } from '@/components/LedgerContext';
 import {
-  CardDetail, CARD_KIND_LABEL, LEDGER_COLOR_MAP, Transaction,
+  CardDetail, CARD_KIND_LABEL, LEDGER_COLOR_MAP, Transaction, llevaSaldo,
 } from '@/lib/types';
 
 export default function CardDetailPage() {
@@ -25,6 +26,7 @@ export default function CardDetailPage() {
   const [mes, setMes] = useState<string>(() => fmt.today().slice(0, 7));
   const [detalle, setDetalle] = useState<CardDetail | null>(null);
   const [movimientos, setMovimientos] = useState<Transaction[]>([]);
+  const [mediosDePago, setMediosDePago] = useState<{ id: string; name: string }[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [editando, setEditando] = useState(false);
@@ -41,6 +43,7 @@ export default function CardDetailPage() {
       if (!res.ok) { setError(datos.error ?? 'No se pudo cargar el medio de pago'); return; }
       setDetalle(datos.detail);
       setMovimientos(datos.transactions ?? []);
+      setMediosDePago(datos.mediosDePago ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo cargar el medio de pago');
     } finally {
@@ -204,6 +207,19 @@ export default function CardDetailPage() {
         />
       )}
 
+      {/* Cuánto se debe, cuánto queda de cupo y cuándo vence. Va arriba del
+          historial: es la pregunta con la que uno entra a una tarjeta de
+          crédito, el gasto del mes viene después. */}
+      {llevaSaldo(card) && detalle.balance && (
+        <CardStatement
+          card={card}
+          balance={detalle.balance}
+          payments={detalle.payments}
+          mediosDePago={mediosDePago}
+          onCambio={cargar}
+        />
+      )}
+
       {/* Mes */}
       <div className="flex items-center justify-center gap-1">
         <button onClick={() => moverMes(-1)} className="p-1 text-slate-500 hover:text-white rounded transition-colors" aria-label="Mes anterior">
@@ -333,7 +349,7 @@ function Volver() {
       href="/cards"
       className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
     >
-      <ArrowLeft className="w-4 h-4" /> Tarjetas
+      <ArrowLeft className="w-4 h-4" /> Billetera
     </Link>
   );
 }

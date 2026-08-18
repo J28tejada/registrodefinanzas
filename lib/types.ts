@@ -214,7 +214,83 @@ export interface Card {
   issuer: string;
   color: LedgerColor;
   archived: boolean;
+  /** El cupo, para medir cuánto se lleva consumido. Null = sin configurar. */
+  credit_limit: number | null;
+  /** Día del mes en que cierra el estado de cuenta, 1–31. */
+  statement_day: number | null;
+  /** Día del mes en que vence el pago, 1–31. */
+  due_day: number | null;
+  /** Lo que ya se debía cuando la tarjeta entró a la app. */
+  opening_balance: number;
+  /** Desde cuándo cuentan los movimientos. Antes de eso ya está en el saldo. */
+  opening_date: string | null;
+  /** Avisar cuando se acercan el corte y el pago. */
+  alerts: boolean;
   created_at: string;
+}
+
+/**
+ * Lo que hace falta para dar de alta un medio de pago.
+ *
+ * El cupo y el ciclo son opcionales: el efectivo no tiene ninguno de los dos, y
+ * a una tarjeta se le pueden cargar después.
+ */
+export type NuevaCard =
+  Pick<Card, 'name' | 'kind' | 'last4' | 'issuer' | 'color'> &
+  Partial<Pick<Card,
+    'credit_limit' | 'statement_day' | 'due_day' | 'opening_balance' | 'opening_date' | 'alerts'>>;
+
+/** Una tarjeta de crédito tiene ciclo; una de débito o el efectivo, no. */
+export function llevaSaldo(card: Pick<Card, 'kind'>): boolean {
+  return card.kind === 'credit';
+}
+
+/**
+ * Las fechas del ciclo, ya resueltas contra un "hoy".
+ *
+ * Se calculan en `lib/tarjetas.ts` y viajan armadas: la pantalla, la API y el
+ * cron de avisos tienen que decir las mismas fechas, y la única forma de
+ * garantizarlo es que las cuente un solo lugar.
+ */
+export interface CardCycle {
+  /** El último corte que ya cerró. Lo comprado después todavía no está facturado. */
+  lastStatement: string;
+  /** El corte que viene. Lo que se compre hasta ese día, inclusive, entra ahí. */
+  nextStatement: string;
+  /** La próxima fecha de pago. */
+  nextDue: string;
+  /** Cuántos días faltan para el corte. 0 = es hoy. */
+  daysToStatement: number;
+  /** Cuántos días faltan para el pago. 0 = es hoy. */
+  daysToDue: number;
+}
+
+/**
+ * El estado de cuenta de una tarjeta de crédito.
+ *
+ * `saldo` es lo que se debe hoy. `aPagar` es la parte que ya está facturada:
+ * sale de restarle al saldo lo del ciclo en curso, que todavía no venció. Un
+ * pago hecho después del corte baja los dos, que es lo que corresponde.
+ */
+export interface CardBalance {
+  /** Compras cargadas a la tarjeta. */
+  charged: number;
+  /** Devoluciones y reembolsos: bajan lo que se debe. */
+  credited: number;
+  /** Pagos hechos a la tarjeta. No son gastos: saldan compras ya anotadas. */
+  paid: number;
+  /** Lo que se debe hoy, contando el saldo inicial. Puede quedar en negativo. */
+  saldo: number;
+  /** Comprado después del último corte: entra en el próximo estado de cuenta. */
+  cycleCharged: number;
+  /** Lo ya facturado que falta pagar. Nunca negativo. */
+  aPagar: number;
+  /** Cuánto queda del cupo. Null si la tarjeta no tiene límite cargado. */
+  disponible: number | null;
+  /** Qué porcentaje del cupo va consumido, 0–100+. Null sin límite. */
+  usoDelLimite: number | null;
+  /** Las fechas del ciclo, o null si no están configuradas. */
+  ciclo: CardCycle | null;
 }
 
 export interface CardWithUsage extends Card {
@@ -222,6 +298,26 @@ export interface CardWithUsage extends Card {
   usos: number;
   /** Gasto del mes en curso, para verlo sin salir de la sección. */
   gastoDelMes: number;
+  /** El estado de cuenta. Solo en las de crédito: las demás no deben nada. */
+  balance: CardBalance | null;
+}
+
+/**
+ * Un pago hecho a la tarjeta.
+ *
+ * No tiene `transaction_id` a propósito, y es la diferencia con `DebtPayment`:
+ * la compra que este pago salda YA se anotó como gasto el día que se hizo.
+ * Generar otro movimiento contaría la misma plata dos veces.
+ */
+export interface CardPayment {
+  id: string;
+  card_id: string;
+  amount: number;
+  date: string;
+  /** De dónde salió la plata: la cuenta de ahorro, el efectivo. Opcional. */
+  source_card_id: string | null;
+  notes: string;
+  created_at: string;
 }
 
 /** Un mes de la serie: cuánto se pagó con la tarjeta y en cuántos movimientos. */
@@ -241,6 +337,10 @@ export interface CardMonth {
  */
 export interface CardDetail {
   card: Card;
+  /** El estado de cuenta, solo en las de crédito. */
+  balance: CardBalance | null;
+  /** Los pagos hechos a la tarjeta, del más nuevo al más viejo. */
+  payments: CardPayment[];
   /** Gasto del período pedido. */
   spent: number;
   /** Movimientos del período. */

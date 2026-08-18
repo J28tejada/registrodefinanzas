@@ -3,9 +3,12 @@ import {
   Budget,
   BudgetProgress,
   Card,
+  CardBalance,
   CardDetail,
   CardMonth,
+  CardPayment,
   CardWithUsage,
+  NuevaCard,
   Category,
   CategoryWithUsage,
   Debt,
@@ -28,9 +31,11 @@ import {
   Summary,
   Transaction,
   TransactionFilters,
+  llevaSaldo,
   UserSettings,
   DEFAULT_SETTINGS,
 } from './types';
+import { calcularSaldo, desdeElUltimoCorte, TotalesDeTarjeta } from './tarjetas';
 
 /**
  * Contexto de datos de una petición: cliente de Supabase + dueño de los datos.
@@ -1357,8 +1362,67 @@ function rowToCard(row: Record<string, unknown>): Card {
     issuer: (row.issuer as string) ?? '',
     color: (row.color as Card['color']) ?? 'blue',
     archived: Boolean(row.archived),
+    // Sin la migración del saldo corrida, estas columnas no existen: la tarjeta
+    // tiene que poder leerse igual, sin ciclo y sin límite.
+    credit_limit: row.credit_limit != null ? Number(row.credit_limit) : null,
+    statement_day: row.statement_day != null ? Number(row.statement_day) : null,
+    due_day: row.due_day != null ? Number(row.due_day) : null,
+    opening_balance: Number(row.opening_balance ?? 0),
+    opening_date: (row.opening_date as string) ?? null,
+    alerts: row.alerts === undefined ? true : Boolean(row.alerts),
     created_at: row.created_at as string,
   };
+}
+
+/**
+ * El estado de cuenta de cada tarjeta de crédito que se le pase.
+ *
+ * Las fechas de corte se calculan acá y viajan a la función SQL en un arreglo
+ * paralelo: el recorte del día 31 a los meses cortos vive en `lib/tarjetas.ts`
+ * y no se repite en SQL, que es como las dos versiones se desincronizarían.
+ *
+ * Devuelve un mapa por id. Las que no son de crédito no entran: una tarjeta de
+ * débito o el efectivo no deben nada.
+ */
+export async function getCardBalances(
+  db: Db, cards: Card[], hoy: string,
+): Promise<Map<string, CardBalance>> {
+  const deCredito = cards.filter(llevaSaldo);
+  const saldos = new Map<string, CardBalance>();
+  if (deCredito.length === 0) return saldos;
+
+  const { data, error } = await db.supabase.rpc('card_balances', {
+    p_user: db.userId,
+    p_cards: deCredito.map(c => c.id),
+    p_cuts: deCredito.map(c => desdeElUltimoCorte(c, hoy)),
+  });
+  // Sin la migración corrida la función no existe todavía. La sección se ve
+  // igual, sin saldo, en vez de quedar en pantalla de error.
+  if (error) {
+    if (faltaLaFuncion(error, 'card_balances')) return saldos;
+    fallar('No se pudo calcular el saldo de las tarjetas', error);
+  }
+
+  const crudos = new Map<string, TotalesDeTarjeta>(
+    ((data ?? []) as Record<string, unknown>[]).map(r => [r.card_id as string, {
+      charged: Number(r.charged ?? 0),
+      credited: Number(r.credited ?? 0),
+      paid: Number(r.paid ?? 0),
+      cycleCharged: Number(r.cycle_charged ?? 0),
+    }]),
+  );
+
+  for (const card of deCredito) {
+    const totales = crudos.get(card.id) ?? { charged: 0, credited: 0, paid: 0, cycleCharged: 0 };
+    saldos.set(card.id, calcularSaldo(card, totales, hoy));
+  }
+  return saldos;
+}
+
+/** Si el error es "esa función no existe": la migración todavía no se corrió. */
+function faltaLaFuncion(error: { code?: string; message?: string }, nombre: string): boolean {
+  return (error.code === 'PGRST202' || error.code === '42883')
+    || Boolean(error.message?.includes(nombre) && error.message?.includes('does not exist'));
 }
 
 export async function getCards(db: Db, incluirArchivadas = false): Promise<Card[]> {
@@ -1380,6 +1444,13 @@ export async function getCardsWithUsage(
   startDate: string,
   endDate: string,
   incluirArchivadas = false,
+  /**
+   * El día de hoy en la zona del usuario, para el ciclo de las de crédito.
+   *
+   * Va aparte del período: el gasto es del mes que se esté mirando, pero el
+   * saldo es el de hoy. Navegar a marzo no cambia cuánto se debe ahora.
+   */
+  hoy?: string,
 ): Promise<CardWithUsage[]> {
   const [cards, gastoRes, usosRes] = await Promise.all([
     getCards(db, incluirArchivadas),
@@ -1399,10 +1470,13 @@ export async function getCardsWithUsage(
     usos.set(id, (usos.get(id) ?? 0) + 1);
   }
 
+  const saldos = hoy ? await getCardBalances(db, cards, hoy) : new Map<string, CardBalance>();
+
   return cards.map(c => ({
     ...c,
     usos: usos.get(c.id) ?? 0,
     gastoDelMes: gasto.get(c.id) ?? 0,
+    balance: saldos.get(c.id) ?? null,
   }));
 }
 
@@ -1432,6 +1506,8 @@ export async function getCardDetail(
   id: string,
   startDate: string,
   endDate: string,
+  /** Hoy en la zona del usuario, para el ciclo. Sin él no se calcula el saldo. */
+  hoy?: string,
 ): Promise<CardDetail | null> {
   const card = await getCardById(db, id);
   if (!card) return null;
@@ -1504,31 +1580,51 @@ export async function getCardDetail(
     countAllTime: usosRes.count ?? 0,
     byCategory: [...categorias.values()].sort((a, b) => b.total - a.total),
     monthly: [...meses.values()],
+    balance: hoy ? (await getCardBalances(db, [card], hoy)).get(card.id) ?? null : null,
+    payments: llevaSaldo(card) ? await getCardPayments(db, card.id) : [],
   };
 }
 
 export async function createCard(
   db: Db,
-  datos: Omit<Card, 'id' | 'created_at' | 'archived'>,
+  datos: NuevaCard,
 ): Promise<{ ok: true; card: Card } | { ok: false; error: string }> {
-  const { data, error } = await db.supabase
-    .from('cards')
-    .insert({
-      user_id: db.userId,
-      name: datos.name,
-      kind: datos.kind,
-      last4: datos.last4 ?? '',
-      issuer: datos.issuer ?? '',
-      color: datos.color ?? 'blue',
-    })
-    .select()
-    .single();
+  const fila: Record<string, unknown> = {
+    user_id: db.userId,
+    name: datos.name,
+    kind: datos.kind,
+    last4: datos.last4 ?? '',
+    issuer: datos.issuer ?? '',
+    color: datos.color ?? 'blue',
+    credit_limit: datos.credit_limit ?? null,
+    statement_day: datos.statement_day ?? null,
+    due_day: datos.due_day ?? null,
+    opening_balance: datos.opening_balance ?? 0,
+    opening_date: datos.opening_date ?? null,
+    alerts: datos.alerts ?? true,
+  };
+
+  let { data, error } = await db.supabase.from('cards').insert(fila).select().single();
+
+  // Sin la migración del saldo corrida, estas columnas no existen. Poder cargar
+  // la tarjeta importa mucho más que su ciclo: se guarda igual, y las fechas se
+  // completan después de correr la migración.
+  if (COLUMNAS_DEL_SALDO.some(c => faltaLaColumna(error, c))) {
+    for (const c of COLUMNAS_DEL_SALDO) delete fila[c];
+    ({ data, error } = await db.supabase.from('cards').insert(fila).select().single());
+  }
+
   if (error?.code === '23505') {
     return { ok: false, error: 'Ya tenés una con ese nombre.' };
   }
   if (error) fallar('No se pudo crear la tarjeta', error);
   return { ok: true, card: rowToCard(data) };
 }
+
+/** Lo que agrega la migración del saldo. Se cae sin ellas si no está corrida. */
+const COLUMNAS_DEL_SALDO = [
+  'credit_limit', 'statement_day', 'due_day', 'opening_balance', 'opening_date', 'alerts',
+] as const;
 
 /**
  * Renombrar propaga el nombre a los movimientos, igual que en categorías.
@@ -1546,12 +1642,23 @@ export async function updateCard(
   if (!anterior) return { ok: false, error: 'Esa tarjeta no existe.' };
 
   const campos: Record<string, unknown> = {};
-  for (const clave of ['name', 'kind', 'last4', 'issuer', 'color', 'archived'] as const) {
+  for (const clave of ['name', 'kind', 'last4', 'issuer', 'color', 'archived',
+                       'credit_limit', 'statement_day', 'due_day',
+                       'opening_balance', 'opening_date', 'alerts'] as const) {
     if (cambios[clave] !== undefined) campos[clave] = cambios[clave];
   }
 
-  const { data, error } = await db.supabase
+  let { data, error } = await db.supabase
     .from('cards').update(campos).eq('user_id', db.userId).eq('id', id).select().maybeSingle();
+
+  // Igual que al crearla: sin la migración corrida se guarda lo demás.
+  if (COLUMNAS_DEL_SALDO.some(c => faltaLaColumna(error, c))) {
+    for (const c of COLUMNAS_DEL_SALDO) delete campos[c];
+    if (Object.keys(campos).length === 0) return { ok: true, card: anterior };
+    ({ data, error } = await db.supabase
+      .from('cards').update(campos).eq('user_id', db.userId).eq('id', id).select().maybeSingle());
+  }
+
   if (error?.code === '23505') return { ok: false, error: 'Ya tenés una con ese nombre.' };
   if (error) fallar('No se pudo actualizar la tarjeta', error);
   if (!data) return { ok: false, error: 'Esa tarjeta no existe.' };
@@ -1597,10 +1704,120 @@ export async function deleteCard(db: Db, id: string): Promise<{ ok: boolean; err
     };
   }
 
+  // Y tampoco si tiene pagos anotados: la FK se los llevaría en silencio, y con
+  // ellos la única prueba de que ese saldo se pagó.
+  const { count: pagos, error: errPagos } = await db.supabase
+    .from('card_payments')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', db.userId)
+    .eq('card_id', id);
+  if (errPagos && !faltaLaTabla(errPagos, 'card_payments')) {
+    fallar('No se pudo verificar los pagos de la tarjeta', errPagos);
+  }
+  if ((pagos ?? 0) > 0) {
+    return {
+      ok: false,
+      error: `Tiene ${pagos} pago${pagos === 1 ? '' : 's'} anotado${pagos === 1 ? '' : 's'}. Archivala para sacarla de la lista sin perder el historial.`,
+    };
+  }
+
   const { error } = await db.supabase
     .from('cards').delete().eq('user_id', db.userId).eq('id', id);
   if (error) fallar('No se pudo eliminar la tarjeta', error);
   return { ok: true };
+}
+
+// ─── Pagos a la tarjeta ───────────────────────────────────────────────────────
+//
+// Un pago a la tarjeta NO crea un movimiento, y ahí está toda la gracia: la
+// compra que este pago salda ya se anotó como gasto el día que se hizo. Anotar
+// también el pago contaría la misma plata dos veces —consumir 5.000 y pagar
+// 5.000 daría 10.000 de gasto cuando del bolsillo salieron 5.000—.
+//
+// Es al revés que en las deudas: la plata de un préstamo nunca entró como
+// ingreso ni se anotó en qué se gastó, así que ahí la cuota SÍ es el gasto y
+// `registrarPagoDeuda` crea el movimiento.
+
+function rowToCardPayment(row: Record<string, unknown>): CardPayment {
+  return {
+    id: row.id as string,
+    card_id: row.card_id as string,
+    amount: Number(row.amount),
+    date: row.date as string,
+    source_card_id: (row.source_card_id as string) ?? null,
+    notes: (row.notes as string) ?? '',
+    created_at: row.created_at as string,
+  };
+}
+
+export async function getCardPayments(db: Db, cardId: string): Promise<CardPayment[]> {
+  const { data, error } = await db.supabase
+    .from('card_payments').select('*')
+    .eq('user_id', db.userId).eq('card_id', cardId)
+    .order('date', { ascending: false });
+  // Sin la migración corrida la tabla no existe todavía: el detalle se muestra
+  // igual, sin pagos, en vez de quedar en pantalla de error.
+  if (error) {
+    if (faltaLaTabla(error, 'card_payments')) return [];
+    fallar('No se pudieron leer los pagos de la tarjeta', error);
+  }
+  return (data ?? []).map(rowToCardPayment);
+}
+
+/** Si el error es "esa tabla no existe": la migración todavía no se corrió. */
+function faltaLaTabla(error: { code?: string; message?: string }, nombre: string): boolean {
+  return error.code === '42P01' || error.code === 'PGRST205'
+    || Boolean(error.message?.includes(nombre) && error.message?.includes('does not exist'));
+}
+
+export async function registrarPagoTarjeta(
+  db: Db,
+  cardId: string,
+  datos: { amount: number; date: string; source_card_id?: string | null; notes?: string },
+): Promise<{ ok: true; pago: CardPayment } | { ok: false; error: string }> {
+  const card = await getCardById(db, cardId);
+  if (!card) return { ok: false, error: 'Esa tarjeta no existe.' };
+  if (!llevaSaldo(card)) {
+    return { ok: false, error: 'Solo las tarjetas de crédito llevan saldo que pagar.' };
+  }
+  if (!(datos.amount > 0)) return { ok: false, error: 'El monto tiene que ser mayor que cero.' };
+
+  // De dónde salió la plata: tiene que ser un medio de pago propio, y no la
+  // misma tarjeta —pagarse a sí misma no significa nada—.
+  let origen: string | null = null;
+  if (datos.source_card_id) {
+    if (datos.source_card_id === cardId) {
+      return { ok: false, error: 'Una tarjeta no puede pagarse a sí misma.' };
+    }
+    const desde = await getCardById(db, datos.source_card_id);
+    if (!desde) return { ok: false, error: 'Ese medio de pago no existe.' };
+    origen = desde.id;
+  }
+
+  const { data, error } = await db.supabase
+    .from('card_payments')
+    .insert({
+      card_id: cardId,
+      user_id: db.userId,
+      amount: datos.amount,
+      date: datos.date,
+      source_card_id: origen,
+      notes: datos.notes?.trim() ?? '',
+    })
+    .select()
+    .single();
+  if (error) fallar('No se pudo registrar el pago de la tarjeta', error);
+
+  return { ok: true, pago: rowToCardPayment(data) };
+}
+
+/** Borra un pago. No hay movimiento que borrar con él: nunca se creó ninguno. */
+export async function borrarPagoTarjeta(db: Db, pagoId: string): Promise<boolean> {
+  const { data, error } = await db.supabase
+    .from('card_payments').delete()
+    .eq('user_id', db.userId).eq('id', pagoId).select('id');
+  if (error) fallar('No se pudo eliminar el pago', error);
+  return (data ?? []).length > 0;
 }
 
 /**

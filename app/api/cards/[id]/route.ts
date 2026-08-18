@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { deleteCard, getAllTransactions, getCardDetail, getSettings, updateCard } from '@/lib/db';
+import { deleteCard, getAllTransactions, getCardDetail, getCards, getSettings, updateCard } from '@/lib/db';
 import { conSesion } from '@/lib/supabase/session';
 import { hoyEnZona, limitesDelMes } from '@/lib/format';
 import { Card, CardKind } from '@/lib/types';
+import { leerCamposDeCiclo } from '../validacion';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,14 +21,21 @@ export async function GET(req: NextRequest, { params }: Contexto) {
       const referencia = /^\d{4}-\d{2}$/.test(mes ?? '') ? `${mes}-01` : hoyEnZona(settings.timezone);
       const { start, end } = limitesDelMes(referencia);
 
-      const detail = await getCardDetail(db, id, start, end);
-      if (!detail) return NextResponse.json({ error: 'Esa tarjeta no existe.' }, { status: 404 });
+      const detail = await getCardDetail(db, id, start, end, hoyEnZona(settings.timezone));
+      if (!detail) return NextResponse.json({ error: 'Ese medio de pago no existe.' }, { status: 404 });
 
       const transactions = await getAllTransactions(db, {
         card_id: id, startDate: start, endDate: end,
       });
 
-      return NextResponse.json({ month: start.slice(0, 7), detail, transactions });
+      // Los otros medios de pago, para decir de dónde salió la plata al
+      // registrar un pago. Van acá y no en una llamada aparte: la pantalla los
+      // necesita siempre y son cuatro filas.
+      const mediosDePago = (await getCards(db))
+        .filter(c => c.id !== id)
+        .map(c => ({ id: c.id, name: c.name }));
+
+      return NextResponse.json({ month: start.slice(0, 7), detail, transactions, mediosDePago });
     } catch (err) {
       return NextResponse.json({ error: mensaje(err) }, { status: 500 });
     }
@@ -48,7 +56,7 @@ export async function PATCH(req: NextRequest, { params }: Contexto) {
       }
       if (b.kind !== undefined) {
         if (!TIPOS.includes(b.kind)) {
-          return NextResponse.json({ error: 'Tipo de tarjeta inválido.' }, { status: 400 });
+          return NextResponse.json({ error: 'Tipo de medio de pago inválido.' }, { status: 400 });
         }
         cambios.kind = b.kind;
       }
@@ -62,6 +70,10 @@ export async function PATCH(req: NextRequest, { params }: Contexto) {
       if (b.issuer !== undefined) cambios.issuer = String(b.issuer).trim();
       if (b.color !== undefined) cambios.color = b.color;
       if (b.archived !== undefined) cambios.archived = Boolean(b.archived);
+
+      const ciclo = leerCamposDeCiclo(b);
+      if (!ciclo.ok) return NextResponse.json({ error: ciclo.error }, { status: 400 });
+      Object.assign(cambios, ciclo.campos);
 
       if (Object.keys(cambios).length === 0) {
         return NextResponse.json({ error: 'No hay nada que cambiar.' }, { status: 400 });

@@ -7,10 +7,12 @@ import SummaryCard from '@/components/SummaryCard';
 import TransactionList from '@/components/TransactionList';
 import AddTransactionModal from '@/components/AddTransactionModal';
 import BudgetBar from '@/components/BudgetBar';
+import CardAlerts from '@/components/CardAlerts';
 import { useLedger } from '@/components/LedgerContext';
 import { useFormatters } from '@/components/SettingsContext';
 import { BudgetProgress, Summary, Transaction, LEDGER_COLOR_MAP } from '@/lib/types';
 import { limitesDelMes } from '@/lib/format';
+import { AvisoDeTarjeta } from '@/lib/tarjetas';
 
 export default function DashboardPage() {
   const { currentLedger, refreshLedgers, transactionVersion } = useLedger();
@@ -51,6 +53,7 @@ export default function DashboardPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
+  const [avisos, setAvisos] = useState<AvisoDeTarjeta[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -83,6 +86,22 @@ export default function DashboardPage() {
   }, [monthStart, monthEnd, currentLedger, transactionVersion]);
 
   useEffect(() => { load(); }, [load]);
+
+  /**
+   * Los vencimientos de tarjeta se piden aparte del resto.
+   *
+   * No dependen del mes que se esté mirando —lo que vence, vence hoy— y no
+   * tienen por qué frenar al tablero si fallan: si no se pueden traer, el resto
+   * se ve igual y el aviso llega por chat.
+   */
+  useEffect(() => {
+    let vigente = true;
+    fetch('/api/cards/avisos')
+      .then(r => (r.ok ? r.json() : { avisos: [] }))
+      .then(d => { if (vigente) setAvisos(d.avisos ?? []); })
+      .catch(() => {});
+    return () => { vigente = false; };
+  }, [transactionVersion]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('¿Eliminar esta transacción?')) return;
@@ -163,6 +182,11 @@ export default function DashboardPage() {
           {error}
         </div>
       )}
+
+      {/* Lo que vence en los próximos días. Va arriba de los totales: una fecha
+          de pago que se pasa cuesta un cargo por mora, y eso urge más que saber
+          cuánto se gastó. */}
+      <CardAlerts avisos={avisos} />
 
       {/* Summary cards */}
       {loading ? (
