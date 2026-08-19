@@ -19,6 +19,7 @@ const SIN_SESION = [
   '/api/whatsapp/webhook',
   '/api/telegram/webhook',
   '/api/chats/cron',
+  '/api/cards/cron',
   '/auth/callback',
 ];
 

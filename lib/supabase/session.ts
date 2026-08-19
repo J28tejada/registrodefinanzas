@@ -45,6 +45,18 @@ export async function conSesion(
   try {
     return await fn(db);
   } catch (err) {
+    // Un desfasaje de reloj entre quien firma el token y quien lo valida no es
+    // un error: es un segundo de diferencia. Se espera y se reintenta una vez,
+    // porque al usuario no le sirve de nada enterarse de esto.
+    if (esDesfasajeDeReloj(err)) {
+      await new Promise(listo => setTimeout(listo, 1200));
+      try {
+        return await fn(await requireDb());
+      } catch (segundo) {
+        err = segundo;
+      }
+    }
+
     const ref = Math.random().toString(36).slice(2, 8).toUpperCase();
     console.error(`[api] error ${ref}:`, err);
     return NextResponse.json(
@@ -52,4 +64,17 @@ export async function conSesion(
       { status: 500 },
     );
   }
+}
+
+/**
+ * ¿El fallo es que el token todavía no "existe" o ya venció?
+ *
+ * Postgres rechaza un token cuyo `iat` está por delante de SU reloj —"JWT
+ * issued at future"—, y entre el servidor que lo firma y el que lo valida
+ * puede haber un segundo de diferencia. Es transitorio por definición: el
+ * mismo token sirve un momento después.
+ */
+function esDesfasajeDeReloj(err: unknown): boolean {
+  const mensaje = err instanceof Error ? err.message : String(err);
+  return /JWT/i.test(mensaje) && /(issued at future|expired)/i.test(mensaje);
 }

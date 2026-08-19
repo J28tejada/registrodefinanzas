@@ -5,21 +5,17 @@ import { conSesion } from '@/lib/supabase/session';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  // Sin `try` propio a propósito: `conSesion` ya traduce el fallo a JSON, y de
+  // paso reintenta los desfasajes de reloj. Atajarlo acá los daba por perdidos
+  // y le mostraba al usuario el mensaje crudo de Postgres.
   return conSesion(async db => {
-    try {
-      const { searchParams } = req.nextUrl;
-      const summary = await getSummary(
-        db,
-        searchParams.get('ledger_id') ?? undefined,
-        searchParams.get('startDate') ?? undefined,
-        searchParams.get('endDate') ?? undefined,
-      );
-      return NextResponse.json(summary);
-    } catch (err) {
-      return NextResponse.json(
-        { error: err instanceof Error ? err.message : String(err) },
-        { status: 500 },
-      );
-    }
+    const { searchParams } = req.nextUrl;
+    const summary = await getSummary(
+      db,
+      searchParams.get('ledger_id') ?? undefined,
+      searchParams.get('startDate') ?? undefined,
+      searchParams.get('endDate') ?? undefined,
+    );
+    return NextResponse.json(summary);
   });
 }

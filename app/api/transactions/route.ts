@@ -6,33 +6,31 @@ import { TransactionFilters } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  // Sin `try` propio: `conSesion` traduce el fallo a JSON y reintenta los
+  // desfasajes de reloj, que atajados acá se darían por perdidos.
   return conSesion(async db => {
-    try {
-      const { searchParams } = req.nextUrl;
-      const filters: TransactionFilters = {};
-      const ledger_id = searchParams.get('ledger_id');
-      const type = searchParams.get('type');
-      const scope = searchParams.get('scope');
-      const category = searchParams.get('category');
-      const startDate = searchParams.get('startDate');
-      const endDate = searchParams.get('endDate');
-      const search = searchParams.get('search');
-      const limit = Number(searchParams.get('limit'));
+    const { searchParams } = req.nextUrl;
+    const filters: TransactionFilters = {};
+    const ledger_id = searchParams.get('ledger_id');
+    const type = searchParams.get('type');
+    const scope = searchParams.get('scope');
+    const category = searchParams.get('category');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    const search = searchParams.get('search');
+    const limit = Number(searchParams.get('limit'));
 
-      if (ledger_id) filters.ledger_id = ledger_id;
-      if (type === 'income' || type === 'expense') filters.type = type;
-      if (scope === 'personal' || scope === 'business') filters.scope = scope;
-      if (category) filters.category = category;
-      if (startDate) filters.startDate = startDate;
-      if (endDate) filters.endDate = endDate;
-      if (search) filters.search = search;
-      if (Number.isFinite(limit) && limit > 0) filters.limit = Math.min(limit, 500);
+    if (ledger_id) filters.ledger_id = ledger_id;
+    if (type === 'income' || type === 'expense') filters.type = type;
+    if (scope === 'personal' || scope === 'business') filters.scope = scope;
+    if (category) filters.category = category;
+    if (startDate) filters.startDate = startDate;
+    if (endDate) filters.endDate = endDate;
+    if (search) filters.search = search;
+    if (Number.isFinite(limit) && limit > 0) filters.limit = Math.min(limit, 500);
 
-      const transactions = await getAllTransactions(db, filters);
-      return NextResponse.json(transactions);
-    } catch (err) {
-      return NextResponse.json({ error: mensaje(err) }, { status: 500 });
-    }
+    const transactions = await getAllTransactions(db, filters);
+    return NextResponse.json(transactions);
   });
 }
 
