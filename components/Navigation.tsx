@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail, MessageCircle, Send, Target, Settings, HandCoins, WalletCards, ShoppingCart, Menu, X, LogOut, PieChart } from 'lucide-react';
+import { LayoutDashboard, Receipt, Bot, Wallet, ChevronDown, LayoutGrid, Plus, Mail, Target, Settings, HandCoins, WalletCards, ShoppingCart, Menu, X, LogOut, PieChart } from 'lucide-react';
 import { useLedger } from './LedgerContext';
 import LedgerSelector from './LedgerSelector';
 import { createClient } from '@/lib/supabase/browser';
@@ -20,9 +20,10 @@ const navItems = [
   // `WalletCards` y no `Wallet`: ese ya es el ícono de la marca en la
   // cabecera, y repetirlo hace que el menú parezca apuntar a la app.
   { href: '/cards', icon: WalletCards, label: 'Billetera' },
-  { href: '/chat', icon: Bot, label: 'Chat IA' },
-  { href: '/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
-  { href: '/telegram', icon: Send, label: 'Telegram' },
+  // Uno solo y no tres: el asistente es el mismo, y tenerlo tres veces en el
+  // menú hacía pensar que había uno por canal. Adentro se elige por dónde
+  // hablarle.
+  { href: '/chat', icon: Bot, label: 'Asistente' },
   { href: '/email', icon: Mail, label: 'Correo' },
   { href: '/settings', icon: Settings, label: 'Configuración' },
 ];
@@ -66,6 +67,8 @@ export default function Navigation() {
     router.push('/login');
     router.refresh();
   };
+
+  const enElAsistente = pathname.startsWith('/chat');
 
   const ledgerColor = currentLedger ? LEDGER_COLOR_MAP[currentLedger.color] : null;
 
@@ -264,15 +267,16 @@ export default function Navigation() {
           </button>
         </div>
 
-        {/* Chat IA — star feature */}
+        {/* Asistente — star feature. Por prefijo: estando en la pestaña de
+            WhatsApp o de Telegram, la sección sigue siendo esta. */}
         <Link
           href="/chat"
-          className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors ${pathname === '/chat' ? 'text-emerald-400' : 'text-emerald-300/70 hover:text-emerald-300'}`}
+          className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors ${enElAsistente ? 'text-emerald-400' : 'text-emerald-300/70 hover:text-emerald-300'}`}
         >
-          <div className={`relative ${pathname !== '/chat' ? 'animate-pulse' : ''}`}>
+          <div className={`relative ${!enElAsistente ? 'animate-pulse' : ''}`}>
             <Bot className="w-5 h-5" />
           </div>
-          Chat IA
+          Asistente
         </Link>
 
         {/* Presupuestos */}

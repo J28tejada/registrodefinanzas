@@ -16,7 +16,14 @@ const SUGGESTED_QUESTIONS = [
   '¿Cuál es mi balance total?',
 ];
 
-export default function ChatInterface() {
+export default function ChatInterface({
+  /**
+   * Cómo se resuelve el alto del panel. Lo decide quien lo usa porque depende
+   * de qué más haya arriba: la conversación tiene que terminar justo donde
+   * termina la pantalla para que el campo de escribir quede siempre a la vista.
+   */
+  alto = 'h-[calc(100dvh-7rem)] md:h-[calc(100vh-4rem)]',
+}: { alto?: string } = {}) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -81,19 +88,13 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-7rem)] md:h-[calc(100vh-4rem)]">
-      {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center">
-            <Bot className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-white">Asistente IA</h2>
-            <p className="text-xs text-slate-500">Pregúntame sobre tus finanzas</p>
-          </div>
-        </div>
-        {messages.length > 0 && (
+    <div className={`flex flex-col ${alto}`}>
+      {/* Sin título ni avatar: la pestaña de arriba ya dice que este es el
+          asistente, y en un teléfono esa cabecera se comía casi setenta píxeles
+          de conversación para repetirlo. Queda solo lo que hace falta hacer, y
+          únicamente cuando hay algo que borrar. */}
+      {messages.length > 0 && (
+        <div className="flex justify-end pb-2">
           <button
             onClick={() => setMessages([])}
             className="text-slate-500 hover:text-rose-400 transition-colors flex items-center gap-1.5 text-xs"
@@ -101,8 +102,8 @@ export default function ChatInterface() {
             <Trash2 className="w-3.5 h-3.5" />
             Limpiar
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto py-4 space-y-4">
