@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { X, Loader2, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
 import { Transaction, TransactionType, TransactionScope, AIInterpretation, LEDGER_COLOR_MAP, Card, CARD_GROUPS } from '@/lib/types';
 import { useCategories } from './CategoriesContext';
+import CategoryIcon from './CategoryIcon';
 import { useLedger } from './LedgerContext';
 import { useFormatters } from './SettingsContext';
 import VoiceInput from './VoiceInput';
@@ -67,7 +68,7 @@ export default function AddTransactionModal({
   const selectedLedger = ledgers.find(l => l.id === form.ledger_id) ?? currentLedger;
   const scope: TransactionScope = selectedLedger?.type ?? 'personal';
   // Las de la cuenta elegida: cada cuenta tiene su propia lista.
-  const categories = para(form.type).map(c => c.name);
+  const categories = para(form.type);
 
   useEffect(() => {
     if (editingTransaction) {
@@ -308,17 +309,34 @@ export default function AddTransactionModal({
           {/* Category */}
           <div className="space-y-1.5">
             <label className="text-xs text-slate-400 font-medium">CATEGORÍA *</label>
-            <select
-              value={form.category}
-              onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm"
-              required
-            >
-              <option value="">Seleccionar categoría</option>
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
+
+            {/* En grilla y no en un desplegable: con treinta categorías, abrir
+                el select y bajar leyendo nombre por nombre es el paso más lento
+                de anotar un gasto. Acá se reconoce el dibujo y se toca. */}
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-3 max-h-56 overflow-y-auto pt-1 pr-1">
+              {categories.map(cat => {
+                const elegida = form.category === cat.name;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setForm(p => ({ ...p, category: cat.name }))}
+                    aria-pressed={elegida}
+                    className={`flex flex-col items-center gap-1.5 rounded-lg py-1.5 transition-colors ${
+                      elegida ? 'bg-emerald-500/10 ring-1 ring-emerald-500/40' : 'hover:bg-slate-800'
+                    }`}
+                  >
+                    <CategoryIcon icon={cat.icon} color={cat.color} type={cat.type} size="sm" />
+                    <span className={`text-[11px] leading-tight text-center line-clamp-2 w-full break-words hyphens-auto px-0.5 ${
+                      elegida ? 'text-emerald-300' : 'text-slate-300'
+                    }`}>
+                      {cat.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
             {errorCats && <p className="text-xs text-rose-400 mt-1">{errorCats}</p>}
             {!errorCats && !cargandoCats && categories.length === 0 && (
               <p className="text-xs text-amber-400 mt-1">

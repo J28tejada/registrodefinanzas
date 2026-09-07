@@ -376,6 +376,10 @@ export interface Category {
    * que sin esto no hay forma de distinguir lo que trajo la app de lo tuyo.
    */
   origen: 'app' | 'usuario';
+  /** Clave del catálogo de `lib/iconos-categoria.ts`. Null = uno genérico. */
+  icon: string | null;
+  /** Color de la paleta. Null = el que corresponda al tipo. */
+  color: string | null;
   created_at: string;
 }
 

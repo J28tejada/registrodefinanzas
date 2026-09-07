@@ -10,6 +10,15 @@ interface Contexto {
   refrescar: () => Promise<void>;
   /** Las de un tipo, en la cuenta activa: lo que va en un desplegable. */
   para: (type: TransactionType) => CategoryWithUsage[];
+  /**
+   * El dibujo de una categoría a partir de su nombre.
+   *
+   * Los movimientos guardan el nombre en texto, no una referencia, así que para
+   * dibujarles el ícono hay que volver a buscar la categoría. Devuelve el
+   * genérico cuando no aparece —una categoría de otra cuenta, o una borrada—,
+   * que es exactamente lo que hay que mostrar en ese caso.
+   */
+  dibujoDe: (nombre: string, type: TransactionType) => { icon: string | null; color: string | null };
   /** Vacío si cargaron bien. Las pantallas lo muestran en vez de callarlo. */
   error: string;
 }
@@ -20,6 +29,7 @@ const CategoriesContext = createContext<Contexto>({
   error: '',
   refrescar: async () => {},
   para: () => [],
+  dibujoDe: () => ({ icon: null, color: null }),
 });
 
 export function useCategories() {
@@ -71,8 +81,19 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
     [categorias],
   );
 
+  const dibujoDe = useCallback(
+    (nombre: string, type: TransactionType) => {
+      // Sin distinguir mayúsculas: el agente de WhatsApp anota lo que entiende
+      // y "combustible" tiene que encontrar a "Combustible".
+      const buscado = nombre.trim().toLowerCase();
+      const cat = categorias.find(c => c.type === type && c.name.toLowerCase() === buscado);
+      return { icon: cat?.icon ?? null, color: cat?.color ?? null };
+    },
+    [categorias],
+  );
+
   return (
-    <CategoriesContext.Provider value={{ categorias, cargando, error, refrescar, para }}>
+    <CategoriesContext.Provider value={{ categorias, cargando, error, refrescar, para, dibujoDe }}>
       {children}
     </CategoriesContext.Provider>
   );

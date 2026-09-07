@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { deleteCategory, renameCategory } from '@/lib/db';
+import { deleteCategory, updateCategory } from '@/lib/db';
 import { conSesion } from '@/lib/supabase/session';
+import { leerIconoYColor } from '../validacion';
 
 type Contexto = { params: Promise<{ id: string }> };
 
@@ -8,40 +9,41 @@ type Contexto = { params: Promise<{ id: string }> };
 export async function PATCH(req: NextRequest, { params }: Contexto) {
   const { id } = await params;
   return conSesion(async db => {
-    try {
-      const { name } = await req.json();
-      if (typeof name !== 'string' || !name.trim()) {
+    const b = await req.json().catch(() => ({}));
+
+    const cambios: { name?: string; icon?: string | null; color?: string | null } = {};
+    if (b.name !== undefined) {
+      if (typeof b.name !== 'string' || !b.name.trim()) {
         return NextResponse.json({ error: 'El nombre es requerido' }, { status: 400 });
       }
-
-      const resultado = await renameCategory(db, id, name);
-      if ('error' in resultado) {
-        return NextResponse.json({ error: resultado.error }, { status: 400 });
-      }
-      return NextResponse.json(resultado);
-    } catch (err) {
-      return NextResponse.json({ error: mensaje(err) }, { status: 500 });
+      cambios.name = b.name;
     }
+
+    const dibujo = leerIconoYColor(b);
+    if (!dibujo.ok) return NextResponse.json({ error: dibujo.error }, { status: 400 });
+    Object.assign(cambios, dibujo.campos);
+
+    if (Object.keys(cambios).length === 0) {
+      return NextResponse.json({ error: 'No hay nada que cambiar.' }, { status: 400 });
+    }
+
+    const resultado = await updateCategory(db, id, cambios);
+    if ('error' in resultado) {
+      return NextResponse.json({ error: resultado.error }, { status: 400 });
+    }
+    return NextResponse.json(resultado);
   });
 }
 
 export async function DELETE(_req: NextRequest, { params }: Contexto) {
   const { id } = await params;
   return conSesion(async db => {
-    try {
-      const resultado = await deleteCategory(db, id);
-      // "La usan 5 movimientos" es una respuesta esperable, no un error del
-      // sistema: el 400 deja que la pantalla la muestre tal cual.
-      if (!resultado.ok) {
-        return NextResponse.json({ error: resultado.error }, { status: 400 });
-      }
-      return NextResponse.json({ ok: true });
-    } catch (err) {
-      return NextResponse.json({ error: mensaje(err) }, { status: 500 });
+    const resultado = await deleteCategory(db, id);
+    // "La usan 5 movimientos" es una respuesta esperable, no un error del
+    // sistema: el 400 deja que la pantalla la muestre tal cual.
+    if (!resultado.ok) {
+      return NextResponse.json({ error: resultado.error }, { status: 400 });
     }
+    return NextResponse.json({ ok: true });
   });
-}
-
-function mensaje(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
 }

@@ -698,6 +698,10 @@ function rowToCategory(row: Record<string, unknown>): Category {
     name: row.name as string,
     type: row.type as Category['type'],
     origen: (row.origen as Category['origen']) ?? 'usuario',
+    // Sin la migración del ícono corrida las columnas no existen: la categoría
+    // se lee igual y se dibuja con el genérico.
+    icon: (row.icon as string) ?? null,
+    color: (row.color as string) ?? null,
     created_at: row.created_at as string,
   };
 }
@@ -748,7 +752,10 @@ export async function getCategoriesWithUsage(db: Db, ledgerId: string): Promise<
 
 export async function createCategory(
   db: Db,
-  datos: { ledger_id: string; name: string; type: Category['type'] },
+  datos: {
+    ledger_id: string; name: string; type: Category['type'];
+    icon?: string | null; color?: string | null;
+  },
 ): Promise<Category | { error: string }> {
   const name = datos.name.trim();
   if (!name) return { error: 'El nombre no puede estar vacío.' };
@@ -757,11 +764,20 @@ export async function createCategory(
     return { error: 'No tenés acceso a esa cuenta.' };
   }
 
-  const { data, error } = await db.supabase
-    .from('categories')
-    .insert({ user_id: db.userId, ledger_id: datos.ledger_id, name, type: datos.type })
-    .select()
-    .single();
+  const fila: Record<string, unknown> = {
+    user_id: db.userId, ledger_id: datos.ledger_id, name, type: datos.type,
+    icon: datos.icon ?? null, color: datos.color ?? null,
+  };
+
+  let { data, error } = await db.supabase.from('categories').insert(fila).select().single();
+
+  // Sin la migración del ícono corrida esas dos columnas no existen. Poder
+  // crear la categoría importa más que su dibujo: se guarda sin él.
+  if (faltaLaColumna(error, 'icon') || faltaLaColumna(error, 'color')) {
+    delete fila.icon;
+    delete fila.color;
+    ({ data, error } = await db.supabase.from('categories').insert(fila).select().single());
+  }
 
   // 23505: ya existe una igual en esta cuenta. Es lo esperable, no un fallo.
   if (error?.code === '23505') return { error: 'Esta cuenta ya tiene una categoría con ese nombre.' };
@@ -779,7 +795,7 @@ async function leerCategoria(db: Db, id: string) {
 }
 
 /**
- * Renombra y arrastra lo que ya estaba anotado con el nombre viejo.
+ * Cambia nombre, ícono o color, y arrastra lo anotado con el nombre viejo.
  *
  * `transactions.category` guarda el texto, no una referencia. Si solo se
  * cambiara la fila de `categories`, los movimientos anteriores quedarían con un
@@ -788,33 +804,57 @@ async function leerCategoria(db: Db, id: string) {
  *
  * El arrastre se limita a SU cuenta: otra cuenta puede tener una categoría con
  * el mismo nombre y no tiene por qué cambiar.
+ *
+ * El ícono y el color no arrastran nada: no están copiados en ningún lado, se
+ * leen de acá cada vez que se dibuja la categoría.
  */
-export async function renameCategory(
+export async function updateCategory(
   db: Db,
   id: string,
-  nuevoNombre: string,
+  cambios: { name?: string; icon?: string | null; color?: string | null },
 ): Promise<Category | { error: string }> {
-  const name = nuevoNombre.trim();
-  if (!name) return { error: 'El nombre no puede estar vacío.' };
-  if (name.length > 40) return { error: 'El nombre es demasiado largo.' };
-
   const actual = await leerCategoria(db, id);
   if (!actual) return { error: 'Esa categoría no existe.' };
 
   const anterior = actual.name as string;
   const cuenta = actual.ledger_id as string;
-  if (anterior === name) return rowToCategory(actual);
 
-  const { data, error } = await db.supabase
-    .from('categories').update({ name }).eq('id', id).select().single();
+  const campos: Record<string, unknown> = {};
+  if (cambios.name !== undefined) {
+    const name = cambios.name.trim();
+    if (!name) return { error: 'El nombre no puede estar vacío.' };
+    if (name.length > 40) return { error: 'El nombre es demasiado largo.' };
+    if (name !== anterior) campos.name = name;
+  }
+  // `null` es una elección —"sin ícono"—, distinta de no mandar la clave.
+  if (cambios.icon !== undefined) campos.icon = cambios.icon;
+  if (cambios.color !== undefined) campos.color = cambios.color;
+
+  if (Object.keys(campos).length === 0) return rowToCategory(actual);
+
+  let { data, error } = await db.supabase
+    .from('categories').update(campos).eq('id', id).select().single();
+
+  // Sin la migración del ícono corrida se guarda al menos el nombre.
+  if (faltaLaColumna(error, 'icon') || faltaLaColumna(error, 'color')) {
+    delete campos.icon;
+    delete campos.color;
+    if (Object.keys(campos).length === 0) return rowToCategory(actual);
+    ({ data, error } = await db.supabase
+      .from('categories').update(campos).eq('id', id).select().single());
+  }
+
   if (error?.code === '23505') return { error: 'Esta cuenta ya tiene una categoría con ese nombre.' };
-  if (error) fallar('No se pudo renombrar la categoría', error);
+  if (error) fallar('No se pudo actualizar la categoría', error);
+
+  const nombreNuevo = campos.name as string | undefined;
+  if (!nombreNuevo) return rowToCategory(data);
 
   // El arrastre va después de que el renombre salió bien: si fallara antes,
   // quedarían movimientos apuntando a un nombre que no llegó a existir.
   const { error: errMovs } = await db.supabase
     .from('transactions')
-    .update({ category: name })
+    .update({ category: nombreNuevo })
     .eq('ledger_id', cuenta)
     .eq('category', anterior)
     .eq('type', actual.type);
@@ -822,7 +862,7 @@ export async function renameCategory(
 
   // Los presupuestos también la referencian por nombre.
   const { error: errPres } = await db.supabase
-    .from('budgets').update({ category: name }).eq('ledger_id', cuenta).eq('category', anterior);
+    .from('budgets').update({ category: nombreNuevo }).eq('ledger_id', cuenta).eq('category', anterior);
   if (errPres) fallar('Se renombró la categoría pero no su presupuesto', errPres);
 
   return rowToCategory(data);

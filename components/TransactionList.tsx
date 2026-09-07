@@ -2,6 +2,8 @@
 
 import { Transaction, LEDGER_COLOR_MAP } from '@/lib/types';
 import { useLedger } from './LedgerContext';
+import { useCategories } from './CategoriesContext';
+import CategoryIcon from './CategoryIcon';
 import { useFormatters } from './SettingsContext';
 import { useEffect, useState } from 'react';
 import { Pencil, Trash2, Mic, Bot, Pencil as PencilIcon, MessageCircle, Send, Receipt, User } from 'lucide-react';
@@ -25,6 +27,7 @@ interface TransactionListProps {
 
 export default function TransactionList({ transactions, onEdit, onDelete, loading }: TransactionListProps) {
   const { currentLedger, ledgers } = useLedger();
+  const { dibujoDe } = useCategories();
   const fmt = useFormatters();
   // Para no repetir tu propio nombre en cada fila: solo se muestra el del otro.
   const [miId, setMiId] = useState('');
@@ -68,8 +71,15 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
             key={tx.id}
             className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-3 flex items-center gap-3 group transition-colors"
           >
-            {/* Amount indicator */}
-            <div className={`w-2 h-10 rounded-full flex-shrink-0 ${tx.type === 'income' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+            {/* El ícono de la categoría en lugar de la barrita de color: la
+                barra decía si entraba o salía, que el signo del monto ya dice.
+                El ícono deja recorrer la lista reconociendo en qué se gastó sin
+                leer una sola palabra. */}
+            <CategoryIcon
+              {...dibujoDe(tx.category, tx.type)}
+              type={tx.type}
+              size="sm"
+            />
 
             {/* Info */}
             <div className="flex-1 min-w-0">

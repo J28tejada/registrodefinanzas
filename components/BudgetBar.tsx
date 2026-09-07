@@ -2,6 +2,8 @@
 
 import { BudgetProgress } from '@/lib/types';
 import { useFormatters } from './SettingsContext';
+import { useCategories } from './CategoriesContext';
+import CategoryIcon from './CategoryIcon';
 
 /** Verde, ámbar o rojo según qué tan cerca del tope estás. */
 export function budgetTone(percent: number) {
@@ -12,13 +14,18 @@ export function budgetTone(percent: number) {
 
 export default function BudgetBar({ budget, compact }: { budget: BudgetProgress; compact?: boolean }) {
   const fmt = useFormatters();
+  // Un tope siempre es de gasto: no se le pone techo a lo que entra.
+  const { dibujoDe } = useCategories();
   const tono = budgetTone(budget.percent);
   const ancho = Math.min(budget.percent, 100);
 
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-2 text-xs">
-        <span className="text-slate-300 truncate">{budget.category}</span>
+        <span className="flex items-center gap-2 min-w-0">
+          <CategoryIcon {...dibujoDe(budget.category, 'expense')} type="expense" size="sm" />
+          <span className="text-slate-300 truncate">{budget.category}</span>
+        </span>
         <span className={`flex-shrink-0 ${tono.text}`}>
           {fmt.money(budget.spent)}
           <span className="text-slate-500"> / {fmt.money(budget.amount)}</span>

@@ -127,6 +127,7 @@ export default function BudgetsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // En la cuenta donde estás parado: las categorías son de la cuenta.
+        // Sin ícono: la API le pone el que le pegue al nombre.
         body: JSON.stringify({ name: nombre, type: 'expense', ledger_id: currentLedger?.id ?? ledgers[0]?.id }),
       });
       const datos = await res.json();
