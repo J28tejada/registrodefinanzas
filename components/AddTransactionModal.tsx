@@ -69,6 +69,8 @@ export default function AddTransactionModal({
   const scope: TransactionScope = selectedLedger?.type ?? 'personal';
   // Las de la cuenta elegida: cada cuenta tiene su propia lista.
   const categories = para(form.type);
+  const elegida = categories.find(c => c.name === form.category) ?? null;
+  const [categoriasAbiertas, setCategoriasAbiertas] = useState(false);
 
   useEffect(() => {
     if (editingTransaction) {
@@ -310,32 +312,52 @@ export default function AddTransactionModal({
           <div className="space-y-1.5">
             <label className="text-xs text-slate-400 font-medium">CATEGORÍA *</label>
 
-            {/* En grilla y no en un desplegable: con treinta categorías, abrir
-                el select y bajar leyendo nombre por nombre es el paso más lento
-                de anotar un gasto. Acá se reconoce el dibujo y se toca. */}
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-3 max-h-56 overflow-y-auto pt-1 pr-1">
-              {categories.map(cat => {
-                const elegida = form.category === cat.name;
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => setForm(p => ({ ...p, category: cat.name }))}
-                    aria-pressed={elegida}
-                    className={`flex flex-col items-center gap-1.5 rounded-lg py-1.5 transition-colors ${
-                      elegida ? 'bg-emerald-500/10 ring-1 ring-emerald-500/40' : 'hover:bg-slate-800'
-                    }`}
-                  >
-                    <CategoryIcon icon={cat.icon} color={cat.color} type={cat.type} size="sm" />
-                    <span className={`text-[11px] leading-tight text-center line-clamp-2 w-full break-words hyphens-auto px-0.5 ${
-                      elegida ? 'text-emerald-300' : 'text-slate-300'
-                    }`}>
-                      {cat.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            {/* Cerrada por defecto: la grilla se lleva media pantalla y empuja
+                fecha, descripción y medio de pago fuera de la vista. Se abre al
+                tocarla, se elige, y se vuelve a cerrar sola. */}
+            <button
+              type="button"
+              onClick={() => setCategoriasAbiertas(v => !v)}
+              aria-expanded={categoriasAbiertas}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 flex items-center gap-2.5 text-left"
+            >
+              {elegida
+                ? <CategoryIcon icon={elegida.icon} color={elegida.color} type={elegida.type} size="sm" />
+                : <span className="w-8 h-8 flex-shrink-0" />}
+              <span className={`flex-1 min-w-0 truncate ${form.category ? 'text-white' : 'text-slate-500'}`}>
+                {form.category || 'Seleccionar categoría'}
+              </span>
+              <ChevronDown className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ${categoriasAbiertas ? 'rotate-180' : ''}`} />
+            </button>
+
+            {categoriasAbiertas && (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-3 max-h-56 overflow-y-auto pt-2 pr-1">
+                {categories.map(cat => {
+                  const esta = form.category === cat.name;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        setForm(p => ({ ...p, category: cat.name }));
+                        setCategoriasAbiertas(false);
+                      }}
+                      aria-pressed={esta}
+                      className={`flex flex-col items-center gap-1.5 rounded-lg py-1.5 transition-colors ${
+                        esta ? 'bg-emerald-500/10 ring-1 ring-emerald-500/40' : 'hover:bg-slate-800'
+                      }`}
+                    >
+                      <CategoryIcon icon={cat.icon} color={cat.color} type={cat.type} size="sm" />
+                      <span className={`text-[11px] leading-tight text-center line-clamp-2 w-full break-words hyphens-auto px-0.5 ${
+                        esta ? 'text-emerald-300' : 'text-slate-300'
+                      }`}>
+                        {cat.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {errorCats && <p className="text-xs text-rose-400 mt-1">{errorCats}</p>}
             {!errorCats && !cargandoCats && categories.length === 0 && (
