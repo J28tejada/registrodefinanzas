@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   return conSesion(async db => {
     try {
       const body = await req.json();
-      const { ledger_id, type, scope, amount, category, description, date, source, payment_method, card_id } = body;
+      const { ledger_id, type, scope, amount, category, subcategory, description, date, source, payment_method, card_id } = body;
 
       // La descripción no entra: muchos gastos no tienen nada que agregarle al
       // nombre de la categoría, y obligar a escribir algo termina en "Gasto".
@@ -66,6 +66,10 @@ export async function POST(req: NextRequest) {
         scope,
         amount: Number(amount),
         category,
+        // Opcional: un gasto con categoría y sin subcategoría está completo.
+        subcategory: typeof subcategory === 'string' && subcategory.trim()
+          ? subcategory.trim()
+          : null,
         description: typeof description === 'string' ? description.trim() : '',
         date,
         source: source ?? 'manual',

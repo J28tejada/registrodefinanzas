@@ -33,7 +33,7 @@ type Edicion =
  * dato el botón de borrar falla y no se entiende por qué.
  */
 export default function CategoriesPanel() {
-  const { cargando, error: errorCarga, refrescar, para } = useCategories();
+  const { cargando, error: errorCarga, refrescar, para, subDe } = useCategories();
   const { currentLedger, ledgers } = useLedger();
   const ledgerId = currentLedger?.id ?? ledgers[0]?.id ?? null;
 
@@ -95,10 +95,19 @@ export default function CategoriesPanel() {
                   className="flex flex-col items-center gap-1.5 group"
                   title={cat.usos > 0 ? `${cat.usos} movimientos` : 'Sin movimientos todavía'}
                 >
-                  <CategoryIcon
-                    icon={cat.icon} color={cat.color} type={cat.type}
-                    className="group-hover:brightness-125 transition-all"
-                  />
+                  <span className="relative">
+                    <CategoryIcon
+                      icon={cat.icon} color={cat.color} type={cat.type}
+                      className="group-hover:brightness-125 transition-all"
+                    />
+                    {/* Cuántas cuelgan. Sin esto no hay forma de saber cuáles
+                        tienen segundo nivel sin abrirlas una por una. */}
+                    {subDe(cat.id).length > 0 && (
+                      <span className="absolute -bottom-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-slate-700 border border-slate-900 text-[9px] text-slate-300 flex items-center justify-center tabular-nums">
+                        {subDe(cat.id).length}
+                      </span>
+                    )}
+                  </span>
                   <span className="text-[11px] text-slate-300 leading-tight text-center line-clamp-2 w-full break-words hyphens-auto">
                     {cat.name}
                   </span>
@@ -136,6 +145,8 @@ export default function CategoriesPanel() {
           cat={edicion.cat}
           type={edicion.cat.type}
           ledgerId={ledgerId}
+          subcategorias={subDe(edicion.cat.id)}
+          onRefrescar={refrescar}
           onListo={async () => { setEdicion(null); await refrescar(); }}
           onCancelar={() => setEdicion(null)}
           onError={setError}
@@ -159,11 +170,14 @@ export default function CategoriesPanel() {
 
 /** El formulario de alta y de edición, que es el mismo. */
 function EditorDeCategoria({
-  cat, type, ledgerId, onListo, onCancelar, onError,
+  cat, type, ledgerId, subcategorias = [], onRefrescar, onListo, onCancelar, onError,
 }: {
   cat?: CategoryWithUsage;
   type: TransactionType;
   ledgerId: string | null;
+  /** Las que cuelgan de esta. Solo en edición: una nueva todavía no tiene id. */
+  subcategorias?: CategoryWithUsage[];
+  onRefrescar?: () => Promise<void>;
   onListo: () => void | Promise<void>;
   onCancelar: () => void;
   onError: (m: string) => void;
@@ -248,6 +262,17 @@ function EditorDeCategoria({
         onColor={setColor}
       />
 
+      {/* Solo al editar una que ya existe: una subcategoría necesita el id de su
+          padre, y una categoría que todavía no se guardó no lo tiene. */}
+      {cat && onRefrescar && (
+        <Subcategorias
+          padre={cat}
+          lista={subcategorias}
+          onCambio={onRefrescar}
+          onError={onError}
+        />
+      )}
+
       <div className="flex gap-2">
         {cat && (
           <button
@@ -272,6 +297,118 @@ function EditorDeCategoria({
         >
           {ocupado ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
           Guardar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Las subcategorías de una categoría: agregar, renombrar y borrar.
+ *
+ * Guarda de inmediato, sin esperar al "Guardar" de arriba: son filas propias en
+ * la base, no campos de esta. Mezclarlas en el mismo botón haría creer que
+ * cancelar deshace también lo que se agregó acá.
+ */
+function Subcategorias({
+  padre, lista, onCambio, onError,
+}: {
+  padre: CategoryWithUsage;
+  lista: CategoryWithUsage[];
+  onCambio: () => Promise<void>;
+  onError: (m: string) => void;
+}) {
+  const [nueva, setNueva] = useState('');
+  const [ocupado, setOcupado] = useState('');
+
+  const agregar = async () => {
+    const name = nueva.trim();
+    if (!name) return;
+    setOcupado('nueva');
+    onError('');
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name, type: padre.type, ledger_id: padre.ledger_id, parent_id: padre.id,
+        }),
+      });
+      const datos = await res.json();
+      if (!res.ok) { onError(datos.error ?? 'No se pudo crear'); return; }
+      setNueva('');
+      await onCambio();
+    } finally {
+      setOcupado('');
+    }
+  };
+
+  const borrar = async (sub: CategoryWithUsage) => {
+    if (!confirm(`¿Eliminar "${sub.name}"?`)) return;
+    setOcupado(sub.id);
+    onError('');
+    try {
+      const res = await fetch(`/api/categories/${sub.id}`, { method: 'DELETE' });
+      const datos = await res.json();
+      if (!res.ok) { onError(datos.error ?? 'No se pudo eliminar'); return; }
+      await onCambio();
+    } finally {
+      setOcupado('');
+    }
+  };
+
+  return (
+    <div className="space-y-2 pt-1 border-t border-slate-800">
+      <p className="text-[11px] text-slate-500 uppercase tracking-wider pt-2">
+        Detalle de {padre.name}
+      </p>
+
+      {lista.length === 0 && (
+        <p className="text-xs text-slate-600">
+          Sin detalle todavía. Al anotar un gasto en {padre.name} vas a poder
+          elegir entre lo que agregues acá.
+        </p>
+      )}
+
+      <div className="flex flex-wrap gap-1.5">
+        {lista.map(sub => (
+          <span
+            key={sub.id}
+            className="flex items-center gap-1 bg-slate-800 border border-slate-700 rounded-lg pl-2.5 pr-1 py-1"
+          >
+            <span className="text-xs text-slate-200">{sub.name}</span>
+            <button
+              type="button"
+              onClick={() => borrar(sub)}
+              disabled={ocupado === sub.id}
+              aria-label={`Eliminar ${sub.name}`}
+              className="p-0.5 text-slate-500 hover:text-rose-400 disabled:opacity-50 transition-colors"
+            >
+              {ocupado === sub.id
+                ? <Loader2 className="w-3 h-3 animate-spin" />
+                : <X className="w-3 h-3" />}
+            </button>
+          </span>
+        ))}
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={nueva}
+          onChange={e => setNueva(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); agregar(); } }}
+          placeholder={`Agregar a ${padre.name}`}
+          maxLength={40}
+          className="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+        />
+        <button
+          type="button"
+          onClick={agregar}
+          disabled={ocupado === 'nueva' || !nueva.trim()}
+          className="px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 rounded-lg text-sm transition-colors flex-shrink-0"
+        >
+          {ocupado === 'nueva' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
         </button>
       </div>
     </div>

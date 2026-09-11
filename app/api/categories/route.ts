@@ -44,8 +44,12 @@ export async function POST(req: NextRequest) {
     const campos = dibujo.campos;
     if (campos.icon === undefined) campos.icon = sugerirIcono(String(name));
 
+    // Colgada de otra o suelta. Que exista y sea de esta cuenta lo comprueba
+    // `createCategory` por la FK; acá solo se valida la forma.
+    const parentId = typeof b.parent_id === 'string' && b.parent_id ? b.parent_id : null;
+
     const res = await createCategory(db, {
-      ledger_id: ledgerId, name, type, ...campos,
+      ledger_id: ledgerId, name, type, parent_id: parentId, ...campos,
     });
     if ('error' in res) return NextResponse.json({ error: res.error }, { status: 400 });
     return NextResponse.json(res, { status: 201 });

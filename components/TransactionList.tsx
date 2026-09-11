@@ -102,7 +102,13 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
                 )}
               </div>
               <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 flex-wrap">
-                <span>{tx.category}</span>
+                <span>
+                  {tx.category}
+                  {/* El detalle pegado a su categoría y no como otro dato
+                      suelto: "Alimentación · Supermercado" se lee como una
+                      cosa, que es lo que es. */}
+                  {tx.subcategory && <span className="text-slate-600"> › {tx.subcategory}</span>}
+                </span>
                 <span>·</span>
                 <span>{fmt.date(tx.date)}</span>
                 {/* Solo cuando lo cargó otro: en lo propio sería ruido en cada fila. */}

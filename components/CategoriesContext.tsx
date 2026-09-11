@@ -8,8 +8,15 @@ interface Contexto {
   categorias: CategoryWithUsage[];
   cargando: boolean;
   refrescar: () => Promise<void>;
-  /** Las de un tipo, en la cuenta activa: lo que va en un desplegable. */
+  /** Las PRINCIPALES de un tipo, en la cuenta activa: lo que va en la grilla. */
   para: (type: TransactionType) => CategoryWithUsage[];
+  /**
+   * Las que cuelgan de una categoría, ordenadas por nombre.
+   *
+   * Vacío es un resultado normal y frecuente: una categoría propia recién creada
+   * no tiene ninguna, y la pantalla simplemente no muestra el segundo nivel.
+   */
+  subDe: (parentId: string) => CategoryWithUsage[];
   /**
    * El dibujo de una categoría a partir de su nombre.
    *
@@ -29,6 +36,7 @@ const CategoriesContext = createContext<Contexto>({
   error: '',
   refrescar: async () => {},
   para: () => [],
+  subDe: () => [],
   dibujoDe: () => ({ icon: null, color: null }),
 });
 
@@ -76,8 +84,18 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => { refrescar(); }, [refrescar]);
 
+  // Solo las principales: las subcategorías se piden aparte, ya sabiendo de cuál
+  // cuelgan. Mezcladas en la grilla, "Supermercado" aparecería al mismo nivel
+  // que "Alimentación" y el segundo nivel no significaría nada.
   const para = useCallback(
-    (type: TransactionType) => categorias.filter(c => c.type === type),
+    (type: TransactionType) => categorias.filter(c => c.type === type && !c.parent_id),
+    [categorias],
+  );
+
+  const subDe = useCallback(
+    (parentId: string) => categorias
+      .filter(c => c.parent_id === parentId)
+      .sort((a, b) => a.name.localeCompare(b.name, 'es')),
     [categorias],
   );
 
@@ -86,14 +104,18 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
       // Sin distinguir mayúsculas: el agente de WhatsApp anota lo que entiende
       // y "combustible" tiene que encontrar a "Combustible".
       const buscado = nombre.trim().toLowerCase();
-      const cat = categorias.find(c => c.type === type && c.name.toLowerCase() === buscado);
+      // Entre las principales: el nombre que guarda el movimiento en `category`
+      // es siempre el de una de ellas.
+      const cat = categorias.find(
+        c => c.type === type && !c.parent_id && c.name.toLowerCase() === buscado,
+      );
       return { icon: cat?.icon ?? null, color: cat?.color ?? null };
     },
     [categorias],
   );
 
   return (
-    <CategoriesContext.Provider value={{ categorias, cargando, error, refrescar, para, dibujoDe }}>
+    <CategoriesContext.Provider value={{ categorias, cargando, error, refrescar, para, subDe, dibujoDe }}>
       {children}
     </CategoriesContext.Provider>
   );

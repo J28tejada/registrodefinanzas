@@ -130,6 +130,8 @@ export interface Transaction {
   scope: TransactionScope;
   amount: number;
   category: string;
+  /** El detalle dentro de la categoría, o null. Elegirla es siempre opcional. */
+  subcategory?: string | null;
   description: string;
   date: string;
   createdAt: string;
@@ -376,6 +378,13 @@ export interface Category {
    * que sin esto no hay forma de distinguir lo que trajo la app de lo tuyo.
    */
   origen: 'app' | 'usuario';
+  /**
+   * De qué categoría cuelga. Null = es una principal.
+   *
+   * Una subcategoría es una categoría común: mismo nombre, mismo ícono, mismas
+   * reglas. Lo único que la distingue es de quién cuelga.
+   */
+  parent_id: string | null;
   /** Clave del catálogo de `lib/iconos-categoria.ts`. Null = uno genérico. */
   icon: string | null;
   /** Color de la paleta. Null = el que corresponda al tipo. */

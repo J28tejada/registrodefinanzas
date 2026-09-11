@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Loader2, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
+import { X, Loader2, CheckCircle2, AlertCircle, ChevronDown, Plus } from 'lucide-react';
 import { Transaction, TransactionType, TransactionScope, AIInterpretation, LEDGER_COLOR_MAP, Card, CARD_GROUPS } from '@/lib/types';
 import { useCategories } from './CategoriesContext';
 import CategoryIcon from './CategoryIcon';
@@ -21,6 +21,8 @@ interface FormData {
   type: TransactionType;
   amount: string;
   category: string;
+  /** Vacío = sin subcategoría. Elegirla es siempre opcional. */
+  subcategory: string;
   description: string;
   date: string;
   /** Vacío = sin especificar. No es obligatorio: muchos gastos no lo tienen. */
@@ -31,7 +33,10 @@ export default function AddTransactionModal({
   isOpen, onClose, onSave, editingTransaction,
 }: AddTransactionModalProps) {
   const { currentLedger, ledgers, setSelectorOpen } = useLedger();
-  const { para, categorias, cargando: cargandoCats, error: errorCats } = useCategories();
+  const {
+    para, subDe, categorias, refrescar: refrescarCategorias,
+    cargando: cargandoCats, error: errorCats,
+  } = useCategories();
   const fmt = useFormatters();
 
   const defaultLedgerId = currentLedger?.id ?? (ledgers[0]?.id ?? '');
@@ -41,6 +46,7 @@ export default function AddTransactionModal({
     type: 'expense',
     amount: '',
     category: '',
+    subcategory: '',
     description: '',
     // "Hoy" en la zona del usuario, no en la del navegador.
     date: fmt.today(),
@@ -70,7 +76,9 @@ export default function AddTransactionModal({
   // Las de la cuenta elegida: cada cuenta tiene su propia lista.
   const categories = para(form.type);
   const elegida = categories.find(c => c.name === form.category) ?? null;
+  const subcategorias = elegida ? subDe(elegida.id) : [];
   const [categoriasAbiertas, setCategoriasAbiertas] = useState(false);
+  const [creandoCategoria, setCreandoCategoria] = useState(false);
 
   useEffect(() => {
     if (editingTransaction) {
@@ -79,6 +87,7 @@ export default function AddTransactionModal({
         type: editingTransaction.type,
         amount: String(editingTransaction.amount),
         category: editingTransaction.category,
+        subcategory: editingTransaction.subcategory ?? '',
         description: editingTransaction.description,
         date: editingTransaction.date,
         card_id: editingTransaction.card_id ?? '',
@@ -154,6 +163,7 @@ export default function AddTransactionModal({
           scope,
           amount: parseFloat(form.amount),
           category: form.category,
+          subcategory: form.subcategory || null,
           description: form.description,
           date: form.date,
           card_id: cardId,
@@ -242,7 +252,7 @@ export default function AddTransactionModal({
               <div className="relative">
                 <select
                   value={form.ledger_id}
-                  onChange={e => setForm(p => ({ ...p, ledger_id: e.target.value, category: '' }))}
+                  onChange={e => setForm(p => ({ ...p, ledger_id: e.target.value, category: '', subcategory: '' }))}
                   className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-8 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm appearance-none"
                 >
                   {ledgers.map(l => (
@@ -274,7 +284,7 @@ export default function AddTransactionModal({
                   // Al pasar a ingreso se suelta la tarjeta: si no, la elegida
                   // como gasto se guardaría igual, con el campo ya oculto.
                   onClick={() => setForm(p => ({
-                    ...p, type: t, category: '', card_id: t === 'income' ? '' : p.card_id,
+                    ...p, type: t, category: '', subcategory: '', card_id: t === 'income' ? '' : p.card_id,
                   }))}
                   className={`py-2.5 rounded-lg text-sm font-medium transition-all ${
                     form.type === t
@@ -339,7 +349,9 @@ export default function AddTransactionModal({
                       key={cat.id}
                       type="button"
                       onClick={() => {
-                        setForm(p => ({ ...p, category: cat.name }));
+                        // Cambiar de categoría borra la subcategoría: la de
+                        // Alimentación no significa nada bajo Transporte.
+                        setForm(p => ({ ...p, category: cat.name, subcategory: '' }));
                         setCategoriasAbiertas(false);
                       }}
                       aria-pressed={esta}
@@ -356,6 +368,66 @@ export default function AddTransactionModal({
                     </button>
                   );
                 })}
+
+                {/* Crear una acá mismo. Antes había que salir a Configuración,
+                    volver y empezar de nuevo el movimiento: nadie hace eso en
+                    la caja del súper, se elige cualquier otra y queda mal. */}
+                <button
+                  type="button"
+                  onClick={() => { setCreandoCategoria(true); setCategoriasAbiertas(false); }}
+                  className="flex flex-col items-center gap-1.5 rounded-lg py-1.5 hover:bg-slate-800 transition-colors"
+                >
+                  <span className="w-8 h-8 rounded-full border border-dashed border-slate-600 flex items-center justify-center">
+                    <Plus className="w-4 h-4 text-slate-500" />
+                  </span>
+                  <span className="text-[11px] leading-tight text-center text-slate-400">Nueva</span>
+                </button>
+              </div>
+            )}
+
+            {creandoCategoria && (
+              <NuevaCategoriaEnLinea
+                type={form.type}
+                ledgerId={form.ledger_id}
+                onCreada={async nombre => {
+                  await refrescarCategorias();
+                  setForm(p => ({ ...p, category: nombre, subcategory: '' }));
+                  setCreandoCategoria(false);
+                }}
+                onCancelar={() => setCreandoCategoria(false)}
+              />
+            )}
+
+            {/* El segundo nivel, solo si la categoría elegida tiene. Chips y no
+                otra grilla: son pocas y con el nombre alcanza —el ícono ya lo
+                puso la categoría de arriba—. */}
+            {subcategorias.length > 0 && (
+              <div className="pt-1 space-y-1.5">
+                <p className="text-[11px] text-slate-500">Detalle (opcional)</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {subcategorias.map(sub => {
+                    const esta = form.subcategory === sub.name;
+                    return (
+                      <button
+                        key={sub.id}
+                        type="button"
+                        // Volver a tocar la elegida la saca: es opcional, así que
+                        // tiene que poder deshacerse sin recargar el formulario.
+                        onClick={() => setForm(p => ({
+                          ...p, subcategory: esta ? '' : sub.name,
+                        }))}
+                        aria-pressed={esta}
+                        className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
+                          esta
+                            ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                            : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600'
+                        }`}
+                      >
+                        {sub.name}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -470,6 +542,81 @@ export default function AddTransactionModal({
           </div>
         </form>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Alta de una categoría sin salir del formulario.
+ *
+ * Solo nombre: el ícono lo adivina la API del nombre y el color queda en el del
+ * tipo. Estás anotando un gasto, no configurando la app — si querés elegirle el
+ * dibujo, eso está en Configuración → Categorías.
+ */
+function NuevaCategoriaEnLinea({
+  type, ledgerId, onCreada, onCancelar,
+}: {
+  type: TransactionType;
+  ledgerId: string;
+  onCreada: (nombre: string) => void | Promise<void>;
+  onCancelar: () => void;
+}) {
+  const [nombre, setNombre] = useState('');
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState('');
+
+  const crear = async () => {
+    const name = nombre.trim();
+    if (!name) return;
+    setGuardando(true);
+    setError('');
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, type, ledger_id: ledgerId }),
+      });
+      const datos = await res.json();
+      if (!res.ok) { setError(datos.error ?? 'No se pudo crear'); return; }
+      await onCreada(name);
+    } catch {
+      setError('No se pudo crear');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  return (
+    <div className="border border-slate-800 rounded-lg p-2.5 space-y-2 bg-slate-950/40">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={nombre}
+          onChange={e => setNombre(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); crear(); } }}
+          placeholder="Nombre de la categoría"
+          autoFocus
+          maxLength={40}
+          className="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+        />
+        <button
+          type="button"
+          onClick={crear}
+          disabled={guardando || !nombre.trim()}
+          className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-sm transition-colors flex-shrink-0"
+        >
+          {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Crear'}
+        </button>
+        <button
+          type="button"
+          onClick={onCancelar}
+          className="px-2 py-2 text-slate-400 hover:text-white transition-colors flex-shrink-0"
+          aria-label="Cancelar"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+      {error && <p className="text-xs text-rose-400">{error}</p>}
     </div>
   );
 }

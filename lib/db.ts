@@ -462,6 +462,7 @@ function rowToTransaction(row: Record<string, unknown>): Transaction {
     scope: row.scope as Transaction['scope'],
     amount: Number(row.amount),
     category: row.category as string,
+    subcategory: (row.subcategory as string) ?? null,
     description: row.description as string,
     date: row.date as string,
     createdAt: row.created_at as string,
@@ -599,6 +600,7 @@ export async function createTransaction(
     scope: datos.scope,
     amount: datos.amount,
     category: datos.category,
+    subcategory: datos.subcategory ?? null,
     description: datos.description,
     date: datos.date,
     source: datos.source ?? 'manual',
@@ -617,6 +619,12 @@ export async function createTransaction(
     ({ data, error } = await db.supabase.from('transactions').insert(fila).select().single());
   }
 
+  // Igual con la subcategoría: anotar el gasto importa más que su detalle.
+  if (faltaLaColumna(error, 'subcategory')) {
+    delete fila.subcategory;
+    ({ data, error } = await db.supabase.from('transactions').insert(fila).select().single());
+  }
+
   if (error) fallar('No se pudo guardar el movimiento', error);
   return rowToTransaction(data);
 }
@@ -627,7 +635,7 @@ export async function updateTransaction(
   datos: Partial<Omit<Transaction, 'id' | 'createdAt'>>,
 ): Promise<Transaction | null> {
   const campos: Record<string, unknown> = {};
-  for (const clave of ['ledger_id', 'type', 'scope', 'amount', 'category', 'description', 'date', 'source', 'receipt_url', 'payment_method', 'card_id'] as const) {
+  for (const clave of ['ledger_id', 'type', 'scope', 'amount', 'category', 'subcategory', 'description', 'date', 'source', 'receipt_url', 'payment_method', 'card_id'] as const) {
     if (datos[clave] !== undefined) campos[clave] = datos[clave];
   }
   if (Object.keys(campos).length === 0) return getTransactionById(db, id);
@@ -698,6 +706,9 @@ function rowToCategory(row: Record<string, unknown>): Category {
     name: row.name as string,
     type: row.type as Category['type'],
     origen: (row.origen as Category['origen']) ?? 'usuario',
+    // Sin la migración de subcategorías corrida la columna no existe: todas se
+    // leen como principales, que es exactamente lo que eran.
+    parent_id: (row.parent_id as string) ?? null,
     // Sin la migración del ícono corrida las columnas no existen: la categoría
     // se lee igual y se dibuja con el genérico.
     icon: (row.icon as string) ?? null,
@@ -754,7 +765,7 @@ export async function createCategory(
   db: Db,
   datos: {
     ledger_id: string; name: string; type: Category['type'];
-    icon?: string | null; color?: string | null;
+    icon?: string | null; color?: string | null; parent_id?: string | null;
   },
 ): Promise<Category | { error: string }> {
   const name = datos.name.trim();
@@ -767,6 +778,7 @@ export async function createCategory(
   const fila: Record<string, unknown> = {
     user_id: db.userId, ledger_id: datos.ledger_id, name, type: datos.type,
     icon: datos.icon ?? null, color: datos.color ?? null,
+    parent_id: datos.parent_id ?? null,
   };
 
   let { data, error } = await db.supabase.from('categories').insert(fila).select().single();
@@ -776,6 +788,10 @@ export async function createCategory(
   if (faltaLaColumna(error, 'icon') || faltaLaColumna(error, 'color')) {
     delete fila.icon;
     delete fila.color;
+    ({ data, error } = await db.supabase.from('categories').insert(fila).select().single());
+  }
+  if (faltaLaColumna(error, 'parent_id')) {
+    delete fila.parent_id;
     ({ data, error } = await db.supabase.from('categories').insert(fila).select().single());
   }
 
@@ -850,8 +866,30 @@ export async function updateCategory(
   const nombreNuevo = campos.name as string | undefined;
   if (!nombreNuevo) return rowToCategory(data);
 
+  const padreId = (actual.parent_id as string) ?? null;
+
   // El arrastre va después de que el renombre salió bien: si fallara antes,
   // quedarían movimientos apuntando a un nombre que no llegó a existir.
+  if (padreId) {
+    // Es una subcategoría: lo que se arrastra es `subcategory`, y solo dentro de
+    // su propia categoría. "Otros" puede existir bajo dos padres distintos, y
+    // renombrar uno no tiene por qué tocar al otro.
+    const padre = await db.supabase
+      .from('categories').select('name').eq('id', padreId).maybeSingle();
+    const { error: errSub } = await db.supabase
+      .from('transactions')
+      .update({ subcategory: nombreNuevo })
+      .eq('ledger_id', cuenta)
+      .eq('category', (padre.data?.name as string) ?? '')
+      .eq('subcategory', anterior)
+      .eq('type', actual.type);
+    // Sin la migración de subcategorías corrida no hay nada que arrastrar.
+    if (errSub && !faltaLaColumna(errSub, 'subcategory')) {
+      fallar('Se renombró la subcategoría pero no sus movimientos', errSub);
+    }
+    return rowToCategory(data);
+  }
+
   const { error: errMovs } = await db.supabase
     .from('transactions')
     .update({ category: nombreNuevo })
@@ -879,13 +917,31 @@ export async function deleteCategory(db: Db, id: string): Promise<{ ok: boolean;
   if (!actual) return { ok: false, error: 'Esa categoría no existe.' };
 
   const cuenta = actual.ledger_id as string;
-  const { count, error: errUso } = await db.supabase
+  const padreId = (actual.parent_id as string) ?? null;
+
+  let consulta = db.supabase
     .from('transactions')
     .select('id', { count: 'exact', head: true })
     .eq('ledger_id', cuenta)
-    .eq('category', actual.name as string)
     .eq('type', actual.type as string);
-  if (errUso) fallar('No se pudo verificar el uso de la categoría', errUso);
+
+  if (padreId) {
+    // Una subcategoría se usa dentro de su categoría: contar solo por el nombre
+    // de la subcategoría mezclaría el "Otros" de Alimentación con el de
+    // Transporte y bloquearía borrar uno por culpa del otro.
+    const padre = await db.supabase
+      .from('categories').select('name').eq('id', padreId).maybeSingle();
+    consulta = consulta
+      .eq('category', (padre.data?.name as string) ?? '')
+      .eq('subcategory', actual.name as string);
+  } else {
+    consulta = consulta.eq('category', actual.name as string);
+  }
+
+  const { count, error: errUso } = await consulta;
+  if (errUso && !faltaLaColumna(errUso, 'subcategory')) {
+    fallar('No se pudo verificar el uso de la categoría', errUso);
+  }
 
   if ((count ?? 0) > 0) {
     return {
@@ -894,7 +950,13 @@ export async function deleteCategory(db: Db, id: string): Promise<{ ok: boolean;
     };
   }
 
-  await db.supabase.from('budgets').delete().eq('ledger_id', cuenta).eq('category', actual.name as string);
+  // Borrar una principal se lleva sus subcategorías por la FK. No hace falta
+  // comprobarlas aparte: un movimiento con subcategoría tiene SIEMPRE puesta la
+  // categoría padre, así que si alguna estuviera en uso, el conteo de arriba ya
+  // habría dado mayor que cero.
+  if (!padreId) {
+    await db.supabase.from('budgets').delete().eq('ledger_id', cuenta).eq('category', actual.name as string);
+  }
   const { error } = await db.supabase.from('categories').delete().eq('id', id);
   if (error) fallar('No se pudo eliminar la categoría', error);
   return { ok: true };
