@@ -279,13 +279,16 @@ export default function Navigation() {
           Asistente
         </Link>
 
-        {/* Presupuestos */}
+        {/* Estadísticas. Presupuestos sigue en el menú lateral: la barra de
+            abajo tiene cuatro lugares y son para lo que se abre a diario. Un
+            tope se configura una vez y después se mira de paso en el tablero,
+            que ya muestra las barras del mes. */}
         <Link
-          href="/budgets"
-          className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors ${pathname === '/budgets' ? 'text-emerald-400' : 'text-slate-400'}`}
+          href="/stats"
+          className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors ${pathname === '/stats' ? 'text-emerald-400' : 'text-slate-400'}`}
         >
-          <Target className="w-5 h-5" />
-          Presupuesto
+          <PieChart className="w-5 h-5" />
+          Estadísticas
         </Link>
       </nav>
     </>
