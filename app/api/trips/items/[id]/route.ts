@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { deleteTripItem, updateTripItem } from '@/lib/db';
 import { conSesion } from '@/lib/supabase/session';
-import { ShoppingTripItem } from '@/lib/types';
+import { leerCambiosDeArticulo } from '@/lib/compras-campos';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,39 +11,12 @@ export async function PATCH(req: NextRequest, { params }: Contexto) {
   const { id } = await params;
   return conSesion(async db => {
     try {
-      const b = await req.json().catch(() => ({}));
-      const cambios: Partial<Pick<ShoppingTripItem,
-        'name' | 'category' | 'quantity' | 'unit' | 'unit_price' | 'checked'>> = {};
+      const leido = leerCambiosDeArticulo(
+        await req.json().catch(() => ({})), { conTilde: true },
+      );
+      if (!leido.ok) return NextResponse.json({ error: leido.error }, { status: 400 });
 
-      if (b.name !== undefined) {
-        const name = String(b.name).trim();
-        if (!name) return NextResponse.json({ error: 'El nombre no puede quedar vacío.' }, { status: 400 });
-        cambios.name = name;
-      }
-      if (b.category !== undefined) cambios.category = String(b.category).trim() || 'Otros';
-      if (b.unit !== undefined) cambios.unit = String(b.unit).trim() || 'unidad';
-      if (b.checked !== undefined) cambios.checked = Boolean(b.checked);
-
-      if (b.quantity !== undefined) {
-        const n = Number(b.quantity);
-        if (!Number.isFinite(n) || n <= 0) {
-          return NextResponse.json({ error: 'La cantidad tiene que ser mayor que cero.' }, { status: 400 });
-        }
-        cambios.quantity = n;
-      }
-      if (b.unit_price !== undefined) {
-        const n = Number(b.unit_price);
-        if (!Number.isFinite(n) || n < 0) {
-          return NextResponse.json({ error: 'El precio no puede ser negativo.' }, { status: 400 });
-        }
-        cambios.unit_price = n;
-      }
-
-      if (Object.keys(cambios).length === 0) {
-        return NextResponse.json({ error: 'No hay nada que cambiar.' }, { status: 400 });
-      }
-
-      const item = await updateTripItem(db, id, cambios);
+      const item = await updateTripItem(db, id, leido.datos);
       if (!item) return NextResponse.json({ error: 'Ese artículo no existe.' }, { status: 404 });
       return NextResponse.json(item);
     } catch (err) {
