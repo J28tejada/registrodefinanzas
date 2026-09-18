@@ -21,5 +21,10 @@ export EXPO_PUBLIC_SUPABASE_ANON_KEY=galeria-sin-datos
 echo "── web ──"
 npm run build >/dev/null
 echo "── teléfono ──"
-(cd mobile && npm run export:web >/dev/null)
+# `--clear` no es por prolijidad: Metro guarda los módulos ya transformados, y
+# los valores de EXPO_PUBLIC_ se incrustan EN esa transformación. Sin limpiar,
+# un export hecho antes con otras variables se sirve tal cual y la comparación
+# mide un bundle que no es el que se acaba de pedir — o sea que puede decir
+# "idéntico" sobre código que no es el que está.
+(cd mobile && npx expo export --platform web --output-dir dist --clear >/dev/null)
 echo "listas"

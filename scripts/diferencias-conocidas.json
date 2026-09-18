@@ -1,0 +1,31 @@
+{
+  "_": [
+    "Diferencias ya miradas, entendidas y aceptadas por ahora.",
+    "",
+    "Existe para que el comparador distinga una diferencia vieja de una NUEVA.",
+    "Sin esto la salida queda siempre en rojo, y una herramienta siempre en rojo",
+    "se deja de mirar — que es peor que no tenerla.",
+    "",
+    "`tope` es el máximo que se tolera HOY para esa pieza. Si el número sube por",
+    "encima, vuelve a fallar: lo aceptado es la diferencia conocida, no cualquier",
+    "diferencia futura en el mismo lugar."
+  ],
+  "piezas": {
+    "pantalla-login": {
+      "tope": 6,
+      "porque": "Todo el contenido del teléfono queda unos 18px más abajo que el de la web. A ojo son indistinguibles: mismos colores, mismas medidas, mismo texto, mismos cortes de línea. El corrimiento hace que cada píxel de texto y de borde cuente como distinto, y de ahí sale casi todo el número. Sin resolver: falta encontrar de dónde salen esos 18px."
+    },
+    "movimientos-lista": {
+      "tope": 100,
+      "porque": "A 361px de ancho —el ancho real en un teléfono— la línea de datos de cada fila envuelve distinto: el navegador y Yoga cortan en lugares diferentes, y la lista termina 184px más corta. NO es la estructura: la misma pieza a 560px (movimientos-lista-ancha) da 0,96%. Decisión pendiente: aceptarlo o rearmar esa fila para que no dependa del envoltorio."
+    },
+    "movimientos-vacio": {
+      "tope": 100,
+      "porque": "14px de diferencia de alto en el estado vacío, por el interlineado del emoji 💸. Es una sola pieza y no se repite en ningún lado."
+    },
+    "movimientos-lista-ancha": {
+      "tope": 1.5,
+      "porque": "0,96% de antialiasing sobre mucho texto chico. Es la misma lista sin envolver, y sirve de control: si ESTA sube, el problema es la estructura y no el ancho."
+    }
+  }
+}

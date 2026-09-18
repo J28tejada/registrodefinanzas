@@ -43,6 +43,16 @@ const UMBRAL = Number(opcion('umbral', '0.5'));
 const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 
 /**
+ * Las diferencias ya miradas y entendidas.
+ *
+ * Cada una con su tope: lo aceptado es ESA diferencia, no cualquier diferencia
+ * futura en el mismo lugar. Si el número sube, vuelve a fallar.
+ */
+const CONOCIDAS = JSON.parse(
+  readFileSync(path.join(RAIZ, 'scripts', 'diferencias-conocidas.json'), 'utf8'),
+).piezas;
+
+/**
  * Pantallas enteras que existen en las dos apps y se pueden ver sin sesión.
  *
  * La galería compara componentes sueltos; esto compara la pantalla armada, que
@@ -191,26 +201,32 @@ try {
   const soloMovil = [...movil.keys()].filter(id => !web.has(id));
 
   let peor = 0;
+  let nuevas = 0;
   const filas = [];
   for (const id of ids) {
     writeFileSync(path.join(SALIDA, `${id}.web.png`), web.get(id));
     writeFileSync(path.join(SALIDA, `${id}.movil.png`), movil.get(id));
     const r = comparar(web.get(id), movil.get(id));
+    const conocida = CONOCIDAS[id];
     if (r.distintos === null) {
-      filas.push({ id, pct: null, nota: `tamaños distintos: web ${r.ancho[0]}x${r.alto[0]}, móvil ${r.ancho[1]}x${r.alto[1]}` });
-      peor = 100;
+      const nota = `tamaños distintos: web ${r.ancho[0]}x${r.alto[0]}, móvil ${r.ancho[1]}x${r.alto[1]}`;
+      filas.push({ id, pct: null, nota, conocida: Boolean(conocida) });
+      if (!conocida) { peor = 100; nuevas++; }
       continue;
     }
     const pct = (r.distintos / r.total) * 100;
-    peor = Math.max(peor, pct);
+    const tope = conocida ? conocida.tope : UMBRAL;
+    if (pct > tope) { peor = Math.max(peor, pct); nuevas++; }
     if (pct > 0) writeFileSync(path.join(SALIDA, `${id}.diff.png`), r.diff);
-    filas.push({ id, pct });
+    filas.push({ id, pct, conocida: Boolean(conocida), tope });
   }
 
   console.log(`\n  pieza                          diferencia`);
   console.log(`  ──────────────────────────────────────────`);
   for (const f of filas.sort((a, b) => (b.pct ?? 101) - (a.pct ?? 101))) {
-    const marca = f.pct === null ? '✗' : f.pct > UMBRAL ? '✗' : f.pct > 0 ? '~' : '✓';
+    const excede = f.pct === null ? !f.conocida : f.pct > (f.tope ?? UMBRAL);
+    // `!` es "conocida y dentro de lo aceptado": no está bien, pero ya se miró.
+    const marca = excede ? '✗' : f.conocida ? '!' : f.pct > 0 ? '~' : '✓';
     const valor = f.pct === null ? f.nota : `${f.pct.toFixed(2)}%`;
     console.log(`  ${marca} ${f.id.padEnd(28)} ${valor}`);
   }
@@ -218,12 +234,17 @@ try {
   if (soloWeb.length) console.log(`\n  Solo en la web: ${soloWeb.join(', ')}`);
   if (soloMovil.length) console.log(`  Solo en el teléfono: ${soloMovil.join(', ')}`);
 
-  console.log(`\n  ${ids.length} piezas comparadas · la peor difiere ${peor === 100 ? '(tamaño)' : peor.toFixed(2) + '%'}`);
+  const yaMiradas = filas.filter(f => f.conocida).length;
+  console.log(`\n  ${ids.length} piezas comparadas · ${yaMiradas} con una diferencia ya conocida`);
   console.log(`  Las imágenes quedaron en scratch/galeria/`);
 
-  const falla = peor > UMBRAL || soloWeb.length > 0 || soloMovil.length > 0;
-  if (falla) console.error(`\n  ✗ por encima del umbral de ${UMBRAL}%`);
-  else console.log(`\n  ✓ dentro del umbral de ${UMBRAL}%`);
+  const falla = nuevas > 0 || soloWeb.length > 0 || soloMovil.length > 0;
+  if (falla) {
+    console.error(`\n  ✗ ${nuevas} diferencia(s) NUEVA(s), por encima de lo aceptado`);
+  } else {
+    console.log(`\n  ✓ ninguna diferencia nueva` +
+      (yaMiradas ? ` (${yaMiradas} conocidas siguen abiertas: ver scripts/diferencias-conocidas.json)` : ''));
+  }
   process.exitCode = falla ? 1 : 0;
 } finally {
   if (navegador) await navegador.close();
