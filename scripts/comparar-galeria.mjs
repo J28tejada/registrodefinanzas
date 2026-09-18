@@ -24,7 +24,7 @@ import pixelmatch from 'pixelmatch';
 import { PNG } from 'pngjs';
 import { spawn } from 'child_process';
 import { createServer } from 'http';
-import { mkdirSync, writeFileSync, existsSync, readFileSync, statSync } from 'fs';
+import { mkdirSync, writeFileSync, existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -161,7 +161,27 @@ function comparar(aBuf, bBuf) {
 }
 
 if (!existsSync(path.join(RAIZ, 'mobile', 'dist', 'galeria.html'))) {
-  console.error('Falta el export del teléfono. Corré: cd mobile && npm run export:web');
+  console.error('Falta el export del teléfono. Corré: npm run comparar:build');
+  process.exit(1);
+}
+
+/*
+ * Que las dos apps se hayan construido apuntando al mismo backend inventado.
+ *
+ * Si una se construyó con las variables y la otra no, la comparación mide esa
+ * diferencia y no el diseño — el login de una muestra el aviso de "faltan
+ * variables" y el de la otra no, y salta como una regresión que no existe. Pasa
+ * en cuanto alguien corre el export a mano en lugar de `npm run comparar:build`.
+ */
+const bundles = readdirSync(path.join(RAIZ, 'mobile', 'dist', '_expo', 'static', 'js', 'web'));
+const bundleMovil = bundles.find(f => f.endsWith('.js'));
+const configurado = bundleMovil && readFileSync(
+  path.join(RAIZ, 'mobile', 'dist', '_expo', 'static', 'js', 'web', bundleMovil), 'utf8',
+).includes('galeria.invalid');
+if (!configurado) {
+  console.error('El export del teléfono no trae las variables de la comparación.');
+  console.error('Se construyó a mano, no con `npm run comparar:build`, y las dos apps');
+  console.error('quedarían con distinta configuración. Corré: npm run comparar:build');
   process.exit(1);
 }
 
