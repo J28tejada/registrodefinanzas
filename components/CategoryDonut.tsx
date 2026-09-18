@@ -2,42 +2,16 @@
 
 import { useId, useState } from 'react';
 
-export interface Porcion {
-  categoria: string;
-  total: number;
-  porcentaje: number;
-  color: string;
-  /** Las categorías que quedaron dentro de "Otros", para el tooltip. */
-  agrupadas?: string[];
-}
+import {
+  arcosDelAnillo, CIRCUNFERENCIA, COLOR_OTROS, COLORES_CATEGORIA, GROSOR, LADO,
+  MAXIMO_PORCIONES, Porcion, RADIO, SEPARACION,
+} from '@/lib/grafico-de-anillo';
 
-/**
- * Paleta categórica validada contra la superficie oscura (slate-900) con
- * `scripts/validate_palette.js` del método de visualización: banda de luminosidad,
- * piso de croma, separación bajo daltonismo, piso de visión normal y contraste.
- *
- * Son cinco tonos y no más a propósito. En un anillo lo que se compara son los
- * segmentos vecinos, y en esa lista los cinco pasan con holgura; sumar un sexto
- * tono hace que dos se vuelvan indistinguibles para quien tiene deuteranopía.
- * Por eso el resto se pliega en "Otros", que va en gris de de-énfasis: no es una
- * categoría, es lo que sobró.
- */
-export const COLORES_CATEGORIA = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181'];
-export const COLOR_OTROS = '#64748b';
-/** Cuántas categorías reales se muestran antes de plegar el resto. */
-export const MAXIMO_PORCIONES = COLORES_CATEGORIA.length;
-
-/**
- * El anillo es fino y el hueco grande a propósito: adentro va el total, y con un
- * trazo grueso "RD$32,085.00" no entra y termina montado sobre los segmentos.
- * Hueco = (RADIO − GROSOR/2) × 2 = 110px de ancho útil.
- */
-const LADO = 160;
-const RADIO = 64;
-const GROSOR = 18;
-const CIRCUNFERENCIA = 2 * Math.PI * RADIO;
-/** El separador va en el color de la superficie, no como borde del segmento. */
-const SEPARACION = 3;
+// Los colores, las medidas y el cálculo de los arcos viven en
+// `lib/grafico-de-anillo.ts`, compartidos con la app del teléfono: si cada uno
+// calculara los suyos, un redondeo distinto movería los segmentos.
+export { COLORES_CATEGORIA, COLOR_OTROS, MAXIMO_PORCIONES };
+export type { Porcion };
 
 export default function CategoryDonut({
   porciones, total, etiqueta, formatearMonto,
@@ -53,23 +27,7 @@ export default function CategoryDonut({
   if (porciones.length === 0 || total <= 0) return null;
 
   const enfocada = activa !== null ? porciones[activa] : null;
-  // Un solo segmento no necesita separación: sería una muesca sin nada del otro lado.
-  const separacion = porciones.length > 1 ? SEPARACION : 0;
-
-  let acumulado = 0;
-  const arcos = porciones.map(p => {
-    const largo = (p.porcentaje / 100) * CIRCUNFERENCIA;
-    const desfase = acumulado;
-    acumulado += largo;
-    return {
-      ...p,
-      // Una porción diminuta no puede quedar en negativo al restarle el hueco:
-      // se le deja un hilo visible para que exista en el anillo.
-      trazo: Math.max(largo - separacion, 1),
-      resto: CIRCUNFERENCIA - Math.max(largo - separacion, 1),
-      desfase,
-    };
-  });
+  const arcos = arcosDelAnillo(porciones);
 
   return (
     <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
