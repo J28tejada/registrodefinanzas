@@ -43,6 +43,20 @@ const UMBRAL = Number(opcion('umbral', '0.5'));
 const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 
 /**
+ * Pantallas enteras que existen en las dos apps y se pueden ver sin sesión.
+ *
+ * La galería compara componentes sueltos; esto compara la pantalla armada, que
+ * es donde aparecen las diferencias de espaciado, de orden y de alto que una
+ * pieza aislada no muestra.
+ *
+ * Solo entran las públicas: el resto necesita una sesión y datos, y compararlas
+ * pide un usuario de prueba con las mismas filas en los dos lados — otra etapa.
+ */
+const PANTALLAS = [
+  { ruta: '/login', nombre: 'login', ancho: 393, alto: 852 },
+];
+
+/**
  * Sirve el export de Expo con URLs limpias.
  *
  * No alcanza con un servidor de estáticos cualquiera: expo-router mira
@@ -160,6 +174,23 @@ try {
 
   const web = await capturarPiezas(await ctx.newPage(), 'http://127.0.0.1:8821/galeria');
   const movil = await capturarPiezas(await ctx.newPage(), 'http://127.0.0.1:8822/galeria');
+
+  // Las pantallas enteras, al mismo tamaño que un teléfono.
+  const ctxPantalla = await navegador.newContext({
+    viewport: { width: 393, height: 852 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true,
+  });
+  for (const p of PANTALLAS) {
+    const paginaWeb = await ctxPantalla.newPage();
+    const paginaMovil = await ctxPantalla.newPage();
+    await paginaWeb.goto(`http://127.0.0.1:8821${p.ruta}`, { waitUntil: 'networkidle' });
+    await paginaMovil.goto(`http://127.0.0.1:8822${p.ruta}`, { waitUntil: 'networkidle' });
+    await paginaWeb.waitForTimeout(1200);
+    await paginaMovil.waitForTimeout(1200);
+    web.set(`pantalla-${p.nombre}`, await paginaWeb.screenshot());
+    movil.set(`pantalla-${p.nombre}`, await paginaMovil.screenshot());
+    await paginaWeb.close();
+    await paginaMovil.close();
+  }
 
   const ids = [...web.keys()].filter(id => movil.has(id));
   const soloWeb = [...web.keys()].filter(id => !movil.has(id));

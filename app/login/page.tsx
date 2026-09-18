@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Wallet, Loader2, AlertCircle, Mail, CheckCircle2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/browser';
+import { traducirErrorDeAuth } from '@/lib/mensajes-de-auth';
 
 type Modo = 'entrar' | 'registrarse';
 
@@ -62,7 +63,7 @@ function LoginInner() {
         }
       }
     } catch (err) {
-      setError(traducir(err));
+      setError(traducirErrorDeAuth(err));
     } finally {
       setCargando(false);
     }
@@ -83,7 +84,7 @@ function LoginInner() {
       // Si no hubo error el navegador ya se está yendo a Google: no se apaga
       // el spinner, para que el botón no parpadee durante la redirección.
     } catch (err) {
-      setError(traducir(err));
+      setError(traducirErrorDeAuth(err));
       setCargandoGoogle(false);
     }
   };
@@ -204,15 +205,4 @@ function LoginInner() {
       </div>
     </div>
   );
-}
-
-/** Los mensajes de Supabase vienen en inglés; los importantes se traducen. */
-function traducir(err: unknown): string {
-  const msg = err instanceof Error ? err.message : String(err);
-  if (/invalid login credentials/i.test(msg)) return 'Correo o contraseña incorrectos.';
-  if (/user already registered/i.test(msg)) return 'Ese correo ya tiene una cuenta. Probá entrando.';
-  if (/email not confirmed/i.test(msg)) return 'Todavía no confirmaste el correo. Revisá tu bandeja.';
-  if (/password should be at least/i.test(msg)) return 'La contraseña tiene que tener al menos 6 caracteres.';
-  if (/rate limit|too many/i.test(msg)) return 'Demasiados intentos seguidos. Esperá un momento.';
-  return msg;
 }

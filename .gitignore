@@ -46,3 +46,6 @@ evolution/.env
 /mobile/dist
 /mobile/.expo
 /scratch
+
+# Las claves del móvil
+/mobile/.env
