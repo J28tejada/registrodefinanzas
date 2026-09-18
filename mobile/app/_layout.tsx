@@ -9,6 +9,9 @@ import {
 } from '@expo-google-fonts/inter';
 import { ProveedorDeSesion, useSesion } from '../componentes/ContextoDeSesion';
 import { ProveedorDeAjustes } from '../componentes/ContextoDeAjustes';
+import { ProveedorDeCuenta } from '../componentes/ContextoDeCuenta';
+import { ProveedorDeCategorias } from '../componentes/ContextoDeCategorias';
+import Estructura from '../componentes/Estructura';
 
 // Que la pantalla de arranque no se vaya antes de tener la tipografía: si se
 // fuera, la app se dibujaría un instante con la fuente del sistema y saltaría
@@ -16,7 +19,7 @@ import { ProveedorDeAjustes } from '../componentes/ContextoDeAjustes';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 /** Las pantallas que se pueden ver sin sesión. El gemelo de PUBLICAS en middleware.ts. */
-const PUBLICAS = ['login', 'unirse', 'galeria', 'formato'];
+const PUBLICAS = ['login', 'unirse', 'galeria', 'formato', 'vista-previa'];
 
 export default function RaizDelLayout() {
   const [listas] = useFonts({
@@ -28,9 +31,15 @@ export default function RaizDelLayout() {
 
   return (
     <SafeAreaProvider>
+      {/* El mismo orden que app/providers.tsx en la web: las categorías cuelgan
+          de la cuenta activa, así que el proveedor de cuenta va primero. */}
       <ProveedorDeSesion>
         <ProveedorDeAjustes>
-          <Guardia />
+          <ProveedorDeCuenta>
+            <ProveedorDeCategorias>
+              <Guardia />
+            </ProveedorDeCategorias>
+          </ProveedorDeCuenta>
         </ProveedorDeAjustes>
       </ProveedorDeSesion>
       <StatusBar style="light" />
@@ -59,8 +68,10 @@ function Guardia() {
   }, [session, listo, segmentos, router]);
 
   return (
-    // Sin cabecera propia: la app web dibuja la suya y hay que reproducir esa,
-    // no la de iOS. `contentStyle` pone el mismo slate-950 del <body>.
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0f172a' } }} />
+    <Estructura>
+      {/* Sin cabecera propia: la app web dibuja la suya y hay que reproducir
+          esa, no la de iOS. `contentStyle` pone el mismo slate-950 del <body>. */}
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0f172a' } }} />
+    </Estructura>
   );
 }
