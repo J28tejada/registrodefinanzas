@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createDebt, getDebtsProgress, getSettings, upsertBudget } from '@/lib/db';
 import { conSesion } from '@/lib/supabase/session';
 import { hoyEnZona, limitesDelMes } from '@/lib/format';
+import { leerDeudaNueva } from '@/lib/deudas-campos';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,47 +32,17 @@ export async function POST(req: NextRequest) {
     try {
       const b = await req.json();
 
-      const total = Number(b.total_amount);
-      const cuota = Number(b.installment_amount);
-      const cuotas = Number(b.installments);
+      const leido = leerDeudaNueva(b);
+      if (!leido.ok) return NextResponse.json({ error: leido.error }, { status: 400 });
 
-      if (typeof b.name !== 'string' || !b.name.trim()) {
-        return NextResponse.json({ error: 'Ponele un nombre a la deuda' }, { status: 400 });
-      }
-      if (!Number.isFinite(total) || total <= 0) {
-        return NextResponse.json({ error: 'El total tiene que ser mayor que cero' }, { status: 400 });
-      }
-      if (!Number.isFinite(cuota) || cuota <= 0) {
-        return NextResponse.json({ error: 'La cuota tiene que ser mayor que cero' }, { status: 400 });
-      }
-      if (!Number.isInteger(cuotas) || cuotas <= 0) {
-        return NextResponse.json({ error: 'La cantidad de cuotas tiene que ser un número entero' }, { status: 400 });
-      }
-      if (typeof b.category !== 'string' || !b.category.trim()) {
-        return NextResponse.json({ error: 'Elegí una categoría para los pagos' }, { status: 400 });
-      }
-      if (typeof b.start_date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(b.start_date)) {
-        return NextResponse.json({ error: 'Fecha de la primera cuota inválida' }, { status: 400 });
-      }
-
-      const deuda = await createDebt(db, {
-        ledger_id: typeof b.ledger_id === 'string' && b.ledger_id ? b.ledger_id : null,
-        name: b.name.trim(),
-        creditor: typeof b.creditor === 'string' ? b.creditor.trim() : '',
-        total_amount: total,
-        installment_amount: cuota,
-        installments: cuotas,
-        start_date: b.start_date,
-        category: b.category.trim(),
-        notes: typeof b.notes === 'string' ? b.notes.trim() : '',
-      });
+      const deuda = await createDebt(db, leido.datos);
 
       // "Ponerla en el presupuesto" es exactamente esto: un tope mensual en su
       // categoría por el monto de la cuota. Después el pago cae ahí solo.
       // En la misma cuenta donde se paga, o el tope quedaría en otro lado que
       // el gasto que va a generar.
       if (b.en_presupuesto === true) {
-        await upsertBudget(db, deuda.category, cuota, deuda.ledger_id);
+        await upsertBudget(db, deuda.category, deuda.installment_amount, deuda.ledger_id);
       }
 
       return NextResponse.json(deuda, { status: 201 });

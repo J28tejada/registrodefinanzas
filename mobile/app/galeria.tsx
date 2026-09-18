@@ -12,6 +12,7 @@ import {
   ESTADOS_DE_CUENTA, ICONOS, MOVIMIENTOS, MOVIMIENTOS_ANCHO, PIEZAS, PRESUPUESTOS,
   RESUMENES,
 } from '@compartido/galeria';
+import { DEFAULT_SETTINGS } from '@compartido/types';
 
 /**
  * El catálogo de componentes del teléfono: el gemelo de app/galeria/page.tsx.
@@ -22,8 +23,10 @@ import {
 const ICONO_RESUMEN = { income: TrendingUp, expense: TrendingDown, balance: Wallet } as const;
 
 export default function Galeria() {
+  // Con la configuración fija, no la del usuario: la galería tiene que dibujar
+  // los mismos montos siempre, haya sesión o no.
   return (
-    <ProveedorDeAjustes>
+    <ProveedorDeAjustes settings={DEFAULT_SETTINGS}>
       <ProveedorDeCategorias>
       <ScrollView className="flex-1 bg-slate-950" contentContainerClassName="p-6">
         <View className="max-w-3xl mx-auto w-full gap-8">
