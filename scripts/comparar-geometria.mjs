@@ -63,13 +63,17 @@ async function esperar(url, intentos = 60) {
 async function geometria(page, url) {
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1300);
-  return page.evaluate(() => {
+  const todos = process.argv.includes('--todos');
+  return page.evaluate((incluirContenedores) => {
     const salida = [];
     const visto = new Set();
     for (const el of document.querySelectorAll('*')) {
-      // Solo las hojas con texto propio: un contenedor repite el texto de sus
-      // hijos y ensuciaría el emparejamiento.
-      if (el.children.length > 0) continue;
+      // Por defecto solo las hojas: un contenedor repite el texto de sus hijos
+      // y ensuciaría el emparejamiento. Con --todos entran también, que es lo
+      // que hace falta para medir un botón con ícono adentro — su alto no está
+      // en ninguna hoja.
+      if (!incluirContenedores && el.children.length > 0) continue;
+      if (incluirContenedores && el.children.length > 3) continue;
       const texto = (el.textContent || '').trim();
       if (!texto || texto.length > 60) continue;
       const r = el.getBoundingClientRect();
@@ -84,7 +88,7 @@ async function geometria(page, url) {
       });
     }
     return salida;
-  });
+  }, todos);
 }
 
 const apagarWeb = servirNext(8851);
@@ -115,8 +119,14 @@ try {
   }
   for (const m of porClave.values()) filas.push({ texto: m.texto, falta: 'no está en la web' });
 
-  const peso = f => f.falta ? 9999 : Math.abs(f.dy) + Math.abs(f.dx) + Math.abs(f.dAlto);
-  filas.sort((a, b) => peso(b) - peso(a));
+  // Por defecto, lo que más se movió primero. Con --orden, en el orden en que
+  // aparecen en la pantalla: es lo que sirve para encontrar DÓNDE empieza a
+  // correrse todo, porque un corrimiento arriba arrastra a todo lo de abajo y
+  // ordenado por magnitud los culpables quedan mezclados con los arrastrados.
+  if (!process.argv.includes('--orden')) {
+    const peso = f => f.falta ? 9999 : Math.abs(f.dy) + Math.abs(f.dx) + Math.abs(f.dAlto);
+    filas.sort((a, b) => peso(b) - peso(a));
+  }
 
   console.log(`\n  ${RUTA} — ${filas.length} bloques de texto\n`);
   console.log('  Δy    Δx   Δancho Δalto  texto');

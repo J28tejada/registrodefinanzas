@@ -99,12 +99,12 @@ export default function Login() {
     }
   };
 
-  // Las mismas dos cajas que la web: AppShell envuelve el login en
-  // `min-h-screen p-4` y la pantalla se centra dentro de un `min-h-[80vh]`.
-  // Centrar contra la pantalla entera parece lo mismo y no lo es: la tarjeta
-  // queda casi cien píxeles más abajo.
+  // El `p-4` que envuelve esto lo pone Estructura, igual que el <main> de la
+  // web. Acá solo queda el centrado dentro del `min-h-[80vh]`, que es lo que
+  // hace la pantalla de la web: centrar contra la pantalla entera parece lo
+  // mismo y deja la tarjeta casi cien píxeles más abajo.
   return (
-    <View className="flex-1 bg-slate-950 p-4">
+    <View className="flex-1 bg-slate-950">
       <View className="min-h-[80vh] items-center justify-center px-4">
         <View className="w-full max-w-sm gap-6">
         <View className="items-center gap-3">
@@ -167,7 +167,7 @@ export default function Login() {
             </View>
 
             <View className="gap-1.5">
-              <Texto className="text-xs text-slate-400">Correo</Texto>
+              <Texto className="text-xs leading-6 text-slate-400">Correo</Texto>
               <TextInput
                 value={email}
                 onChangeText={setEmail}
@@ -182,7 +182,7 @@ export default function Login() {
             </View>
 
             <View className="gap-1.5">
-              <Texto className="text-xs text-slate-400">Contraseña</Texto>
+              <Texto className="text-xs leading-6 text-slate-400">Contraseña</Texto>
               <TextInput
                 value={password}
                 onChangeText={setPassword}

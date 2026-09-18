@@ -12,8 +12,8 @@
   ],
   "piezas": {
     "pantalla-login": {
-      "tope": 6,
-      "porque": "Todo el contenido del teléfono queda unos 18px más abajo que el de la web. A ojo son indistinguibles: mismos colores, mismas medidas, mismo texto, mismos cortes de línea. El corrimiento hace que cada píxel de texto y de borde cuente como distinto, y de ahí sale casi todo el número. Sin resolver: falta encontrar de dónde salen esos 18px."
+      "tope": 2,
+      "porque": "1,5% sobre una pantalla que a ojo es indistinguible. El corrimiento de 18px que tenía se resolvió: era la etiqueta de cada campo, 24px en la web contra 16 acá. El <label> de la web es un elemento en línea y su caja la fija el renglón, no el tamaño de la letra; un texto de React Native mide lo que mide su fuente. Lo que queda son unos 5px en la posición del texto DENTRO de esa caja de 24 —la web lo apoya arriba, React Native lo centra— más el antialiasing. Probado también con padding en vez de interlineado: da lo mismo (1,48%)."
     },
     "movimientos-lista": {
       "tope": 100,

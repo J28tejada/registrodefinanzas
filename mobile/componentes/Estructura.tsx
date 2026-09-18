@@ -20,7 +20,15 @@ export default function Estructura({ children }: { children: React.ReactNode }) 
   const ruta = usePathname();
   const desnuda = SIN_NAVEGACION.some(p => ruta.startsWith(p));
 
-  if (desnuda) return <View className="flex-1 bg-slate-950">{children}</View>;
+  /*
+   * `p-4` también en las desnudas: la web las envuelve en
+   * `<main className="min-h-screen p-4">` y sin reproducirlo todo el contenido
+   * queda 16px a la izquierda y 16px más arriba que en la web. Lo encontró la
+   * comparación de geometría, que mostraba un Δx de -16 constante en TODOS los
+   * bloques de la galería — un corrimiento parejo es siempre un contenedor de
+   * más o de menos, no un problema de la pantalla.
+   */
+  if (desnuda) return <View className="flex-1 bg-slate-950 p-4">{children}</View>;
 
   return (
     <View className="flex-1 bg-slate-950">
