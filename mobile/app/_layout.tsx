@@ -9,8 +9,9 @@ import {
 } from '@expo-google-fonts/inter';
 import { ProveedorDeSesion, useSesion } from '../componentes/ContextoDeSesion';
 import { ProveedorDeAjustes } from '../componentes/ContextoDeAjustes';
-import { ProveedorDeCuenta } from '../componentes/ContextoDeCuenta';
+import { ProveedorDeCuenta, useCuenta } from '../componentes/ContextoDeCuenta';
 import { ProveedorDeCategorias } from '../componentes/ContextoDeCategorias';
+import ModalDeMovimiento from '../componentes/ModalDeMovimiento';
 import Estructura from '../componentes/Estructura';
 
 // Que la pantalla de arranque no se vaya antes de tener la tipografía: si se
@@ -38,12 +39,40 @@ export default function RaizDelLayout() {
           <ProveedorDeCuenta>
             <ProveedorDeCategorias>
               <Guardia />
+              <ModalGlobalDeMovimiento />
             </ProveedorDeCategorias>
           </ProveedorDeCuenta>
         </ProveedorDeAjustes>
       </ProveedorDeSesion>
       <StatusBar style="light" />
     </SafeAreaProvider>
+  );
+}
+
+/**
+ * El modal de registrar un movimiento, uno solo para toda la app.
+ *
+ * El gemelo de `GlobalAddModal` en app/providers.tsx, y por la misma razón que
+ * allá: el botón + de la barra de abajo vive en la navegación, que está en
+ * todas las pantallas, así que el modal que abre no puede colgar de ninguna.
+ *
+ * Acá hay además un motivo que la web no tiene: un `Modal` de React Native se
+ * dibuja sobre la pantalla entera, y dos abiertos a la vez —el de una pantalla
+ * y el del botón +— se tapan entre ellos. Uno solo, en la raíz.
+ */
+function ModalGlobalDeMovimiento() {
+  const {
+    globalAddOpen, setGlobalAddOpen, movimientoEnEdicion,
+    notifyTransactionSaved, refreshLedgers,
+  } = useCuenta();
+  if (!globalAddOpen) return null;
+  return (
+    <ModalDeMovimiento
+      visible={globalAddOpen}
+      onClose={() => setGlobalAddOpen(false)}
+      onGuardado={() => { notifyTransactionSaved(); refreshLedgers(); }}
+      editando={movimientoEnEdicion}
+    />
   );
 }
 

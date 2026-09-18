@@ -48,7 +48,7 @@ function LedgerCard({ ledger, isActive, onSelect, onEdit, onDelete, onManageMemb
         {compartida && (
           <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/40 rounded-full px-1.5 py-0.5">
             <Users className="w-2.5 h-2.5 text-white" />
-            <span className="text-[10px] text-white font-medium">{ledger.memberCount}</span>
+            <span className="text-3xs text-white font-medium">{ledger.memberCount}</span>
           </div>
         )}
 

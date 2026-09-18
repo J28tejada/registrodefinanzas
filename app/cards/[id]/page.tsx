@@ -237,15 +237,15 @@ export default function CardDetailPage() {
           pantalla los montos salen cortados. */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] sm:text-xs text-slate-400 uppercase tracking-wider">Gastado</p>
+          <p className="text-2xs sm:text-xs text-slate-400 uppercase tracking-wider">Gastado</p>
           <p className="text-lg sm:text-xl font-bold text-white mt-1 truncate">{fmt.money(detalle.spent)}</p>
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] sm:text-xs text-slate-400 uppercase tracking-wider">Movimientos</p>
+          <p className="text-2xs sm:text-xs text-slate-400 uppercase tracking-wider">Movimientos</p>
           <p className="text-lg sm:text-xl font-bold text-white mt-1">{detalle.count}</p>
         </div>
         <div className="min-w-0 col-span-2 sm:col-span-1">
-          <p className="text-[11px] sm:text-xs text-slate-400 uppercase tracking-wider">Promedio</p>
+          <p className="text-2xs sm:text-xs text-slate-400 uppercase tracking-wider">Promedio</p>
           <p className="text-lg sm:text-xl font-bold text-white mt-1 truncate">{fmt.money(detalle.average)}</p>
         </div>
       </div>
@@ -261,7 +261,7 @@ export default function CardDetailPage() {
           <div className="flex items-end gap-2 h-28">
             {detalle.monthly.map(m => (
               <div key={m.month} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
-                <span className="text-[10px] text-slate-500 tabular-nums">
+                <span className="text-3xs text-slate-500 tabular-nums">
                   {m.total > 0 ? Math.round(m.total).toLocaleString(fmt.config.locale) : ''}
                 </span>
                 <div
@@ -274,7 +274,7 @@ export default function CardDetailPage() {
                   }}
                   title={`${m.month}: ${fmt.money(m.total)} en ${m.count} mov.`}
                 />
-                <span className={`text-[10px] truncate w-full text-center ${m.month === mes ? 'text-slate-300' : 'text-slate-500'}`}>
+                <span className={`text-3xs truncate w-full text-center ${m.month === mes ? 'text-slate-300' : 'text-slate-500'}`}>
                   {fmt.monthLabel(`${m.month}-01`).slice(0, 3)}
                 </span>
               </div>

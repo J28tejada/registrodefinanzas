@@ -5,9 +5,13 @@ import TarjetaDeResumen from '../componentes/TarjetaDeResumen';
 import BarraDePresupuesto from '../componentes/BarraDePresupuesto';
 import IconoDeCategoria from '../componentes/IconoDeCategoria';
 import ListaDeMovimientos from '../componentes/ListaDeMovimientos';
+import EstadoDeCuenta from '../componentes/EstadoDeCuenta';
 import { ProveedorDeAjustes } from '../componentes/ContextoDeAjustes';
 import { ProveedorDeCategorias } from '../componentes/ContextoDeCategorias';
-import { ICONOS, MOVIMIENTOS, MOVIMIENTOS_ANCHO, PIEZAS, PRESUPUESTOS, RESUMENES } from '@compartido/galeria';
+import {
+  ESTADOS_DE_CUENTA, ICONOS, MOVIMIENTOS, MOVIMIENTOS_ANCHO, PIEZAS, PRESUPUESTOS,
+  RESUMENES,
+} from '@compartido/galeria';
 
 /**
  * El catálogo de componentes del teléfono: el gemelo de app/galeria/page.tsx.
@@ -46,6 +50,18 @@ export default function Galeria() {
           {[...MOVIMIENTOS, ...MOVIMIENTOS_ANCHO].map(p => (
             <Pieza key={p.id} id={p.id} titulo={p.titulo} ancho={p.ancho}>
               <ListaDeMovimientos transactions={p.transactions} onEdit={() => {}} onDelete={() => {}} />
+            </Pieza>
+          ))}
+
+          {ESTADOS_DE_CUENTA.map(p => (
+            <Pieza key={p.id} id={p.id} titulo={p.titulo} ancho={p.ancho}>
+              {/* `usuario` vacío a propósito: la galería no tiene sesión, y esta
+                  pieza solo toca la base cuando alguien abre el formulario de
+                  pago, que acá nunca se abre. */}
+              <EstadoDeCuenta
+                card={p.card} balance={p.balance} payments={p.payments}
+                mediosDePago={p.mediosDePago} usuario="" onCambio={() => {}}
+              />
             </Pieza>
           ))}
 

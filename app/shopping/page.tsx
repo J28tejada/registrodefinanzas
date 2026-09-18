@@ -361,12 +361,12 @@ function TarjetaCompra({
           {/* Cerrada: lo pagado contra lo que decía la lista. Es el dato que
               se viene a buscar después. */}
           {compra.closed && Math.abs(desvio) >= 0.01 && compra.plannedTotal > 0 && (
-            <p className={`text-[11px] tabular-nums ${desvio > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+            <p className={`text-2xs tabular-nums ${desvio > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
               {desvio > 0 ? '+' : '−'}{fmt.money(Math.abs(desvio))} vs lista
             </p>
           )}
           {!compra.closed && compra.total !== compra.checkedTotal && (
-            <p className="text-[11px] text-slate-500 tabular-nums">de {fmt.money(compra.total)}</p>
+            <p className="text-2xs text-slate-500 tabular-nums">de {fmt.money(compra.total)}</p>
           )}
         </div>
         <ChevronRight className="w-4 h-4 text-slate-600 flex-shrink-0" />

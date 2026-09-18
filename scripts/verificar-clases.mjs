@@ -55,6 +55,20 @@ const SILENCIOSAS = [
   [/\[[^\]]*\bmin\(/, 'min() no se resuelve, sin warning: poné el valor y un max-w-[%]'],
   [/\[[^\]]*\bmax\(/, 'max() no se resuelve, sin warning'],
   [/\[[^\]]*dvh/, 'dvh no existe (vh sí): usá flex-1'],
+  /*
+   * Un tamaño de letra arbitrario SÍ se dibuja, pero con otro interlineado.
+   *
+   * En el navegador `text-[11px]` sale con `line-height: 16.5px` —Tailwind le
+   * pone 1.5— y en NativeWind sale `normal`, que a 11px son 14. Nada falla:
+   * simplemente cada renglón queda 2,5px más bajo del lado del teléfono, y como
+   * los tamaños chicos son los de las etiquetas —dos o tres por tarjeta— una
+   * pieza entera termina 30 o 40px más corta. Medido: el estado de cuenta daba
+   * 697px en la web y 652 en el teléfono.
+   *
+   * Los tres tamaños que la app usa están nombrados en los dos
+   * `tailwind.config`, con el interlineado escrito: text-2xs, text-3xs, text-4xs.
+   */
+  [/^text-\[\d+px\]$/, 'el interlineado no viaja: usá text-2xs (11), text-3xs (10) o text-4xs (9)'],
 ];
 
 function archivos(dir) {

@@ -5,7 +5,11 @@ import SummaryCard from '@/components/SummaryCard';
 import BudgetBar from '@/components/BudgetBar';
 import CategoryIcon from '@/components/CategoryIcon';
 import TransactionList from '@/components/TransactionList';
-import { ICONOS, MOVIMIENTOS, MOVIMIENTOS_ANCHO, PIEZAS, PRESUPUESTOS, RESUMENES } from '@/lib/galeria';
+import CardStatement from '@/components/CardStatement';
+import {
+  ESTADOS_DE_CUENTA, ICONOS, MOVIMIENTOS, MOVIMIENTOS_ANCHO, PIEZAS, PRESUPUESTOS,
+  RESUMENES,
+} from '@/lib/galeria';
 
 /**
  * El catálogo de componentes de la web, para compararlo con el del teléfono.
@@ -47,6 +51,15 @@ export default function GaleriaPage() {
         {[...MOVIMIENTOS, ...MOVIMIENTOS_ANCHO].map(p => (
           <Pieza key={p.id} id={p.id} titulo={p.titulo} ancho={p.ancho}>
             <TransactionList transactions={p.transactions} onEdit={() => {}} onDelete={() => {}} />
+          </Pieza>
+        ))}
+
+        {ESTADOS_DE_CUENTA.map(p => (
+          <Pieza key={p.id} id={p.id} titulo={p.titulo} ancho={p.ancho}>
+            <CardStatement
+              card={p.card} balance={p.balance} payments={p.payments}
+              mediosDePago={p.mediosDePago} onCambio={() => {}}
+            />
           </Pieza>
         ))}
 

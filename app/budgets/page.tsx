@@ -466,7 +466,7 @@ function FilaPresupuesto({
         {/* Solo en "todas las cuentas": mirando una, decirlo en cada fila es
             repetir lo que ya dice el encabezado. */}
         {mostrarCuenta && (
-          <p className="text-[11px] text-slate-500 mt-1">
+          <p className="text-2xs text-slate-500 mt-1">
             {budget.ledger_name ?? 'Todas las cuentas'}
           </p>
         )}

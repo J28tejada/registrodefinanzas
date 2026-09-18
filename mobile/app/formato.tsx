@@ -44,7 +44,7 @@ export default function Formato() {
             const obtuvo = fallo.get(`${caso.que}|${caso.entrada}`);
             return (
               <View key={`${caso.que}-${caso.entrada}`} className="gap-0.5">
-                <Texto className="text-[11px] text-slate-500">
+                <Texto className="text-2xs text-slate-500">
                   {caso.que}({JSON.stringify(caso.entrada)}) — {caso.porque}
                 </Texto>
                 {obtuvo === undefined ? (

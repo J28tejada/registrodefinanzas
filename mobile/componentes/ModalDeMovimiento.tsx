@@ -269,7 +269,7 @@ export default function ModalDeMovimiento({
                           }`}
                         >
                           <IconoDeCategoria icon={cat.icon} color={cat.color} type={cat.type} size="sm" />
-                          <Texto className={`text-[11px] leading-tight text-center px-0.5 ${
+                          <Texto className={`text-2xs leading-tight text-center px-0.5 ${
                             esta ? 'text-emerald-300' : 'text-slate-300'
                           }`} numberOfLines={2}>
                             {cat.name}
@@ -287,7 +287,7 @@ export default function ModalDeMovimiento({
                       <View className="w-8 h-8 rounded-full border border-dashed border-slate-600 items-center justify-center">
                         <Plus size={16} color="#64748b" />
                       </View>
-                      <Texto className="text-[11px] leading-tight text-center text-slate-400">Nueva</Texto>
+                      <Texto className="text-2xs leading-tight text-center text-slate-400">Nueva</Texto>
                     </Pressable>
                   </View>
                 </ScrollView>
@@ -309,7 +309,7 @@ export default function ModalDeMovimiento({
               {/* El segundo nivel, solo si la categoría elegida tiene. */}
               {subcategorias.length > 0 ? (
                 <View className="pt-1 gap-1.5">
-                  <Texto className="text-[11px] text-slate-500">Detalle (opcional)</Texto>
+                  <Texto className="text-2xs text-slate-500">Detalle (opcional)</Texto>
                   <View className="flex-row flex-wrap gap-1.5">
                     {subcategorias.map(sub => {
                       const esta = form.subcategory === sub.name;

@@ -105,15 +105,15 @@ export default function CardsPage() {
         // tercio y el número —que es a lo que se viene— sale cortado.
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="min-w-0">
-            <p className="text-[11px] sm:text-xs text-slate-400 uppercase tracking-wider">Gastado</p>
+            <p className="text-2xs sm:text-xs text-slate-400 uppercase tracking-wider">Gastado</p>
             <p className="text-lg sm:text-xl font-bold text-white mt-1 truncate">{fmt.money(total)}</p>
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] sm:text-xs text-slate-400 uppercase tracking-wider">En uso</p>
+            <p className="text-2xs sm:text-xs text-slate-400 uppercase tracking-wider">En uso</p>
             <p className="text-lg sm:text-xl font-bold text-white mt-1">{activas.length}</p>
           </div>
           <div className="min-w-0 col-span-2 sm:col-span-1">
-            <p className="text-[11px] sm:text-xs text-slate-400 uppercase tracking-wider">La que más</p>
+            <p className="text-2xs sm:text-xs text-slate-400 uppercase tracking-wider">La que más</p>
             <p className="text-sm sm:text-base font-semibold text-emerald-400 mt-1.5 truncate">
               {lider && lider.gastoDelMes > 0 ? lider.name : '—'}
             </p>
@@ -211,7 +211,7 @@ function FilaTarjeta({
         </div>
         <div className="text-right flex-shrink-0">
           <p className="text-sm font-semibold text-white tabular-nums">{money(card.gastoDelMes)}</p>
-          <p className="text-[11px] text-slate-500">{card.usos} mov.</p>
+          <p className="text-2xs text-slate-500">{card.usos} mov.</p>
         </div>
         <Flecha className="w-4 h-4 text-slate-600 flex-shrink-0" />
       </div>
@@ -229,7 +229,7 @@ function FilaTarjeta({
               />
             </div>
           )}
-          <div className="flex items-center justify-between gap-2 text-[11px]">
+          <div className="flex items-center justify-between gap-2 text-2xs">
             <span className="text-slate-400">
               {saldo.saldo > 0 ? `Debés ${money(saldo.saldo)}` : 'Al día'}
               {card.credit_limit != null && saldo.usoDelLimite != null && (

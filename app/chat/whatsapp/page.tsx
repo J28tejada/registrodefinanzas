@@ -251,7 +251,7 @@ export default function WhatsappPage() {
                   {av.webhookUrl && (
                     <>
                       <dt className="text-slate-500">URL</dt>
-                      <dd className="text-slate-400 font-mono text-[10px] break-all">{av.webhookUrl}</dd>
+                      <dd className="text-slate-400 font-mono text-3xs break-all">{av.webhookUrl}</dd>
                     </>
                   )}
                 </dl>

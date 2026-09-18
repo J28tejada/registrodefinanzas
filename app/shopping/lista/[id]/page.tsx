@@ -101,7 +101,7 @@ export default function ListaPage() {
 
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-baseline justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-wider text-slate-500">Costaría</p>
+          <p className="text-2xs uppercase tracking-wider text-slate-500">Costaría</p>
           <p className="text-xl font-bold text-white tabular-nums">{fmt.money(lista.total)}</p>
         </div>
         <p className="text-xs text-slate-500 text-right">
@@ -204,7 +204,7 @@ function FilaPlantilla({
         <div className="px-3 pb-3 space-y-2 border-t border-slate-800 pt-3">
           <div className="grid grid-cols-3 gap-2">
             <div className="space-y-1 min-w-0">
-              <label className="text-[11px] text-slate-500">Cantidad</label>
+              <label className="text-2xs text-slate-500">Cantidad</label>
               <input
                 type="number" min="0" step="0.001" inputMode="decimal"
                 value={cantidad} onChange={e => setCantidad(e.target.value)}
@@ -212,7 +212,7 @@ function FilaPlantilla({
               />
             </div>
             <div className="space-y-1 min-w-0">
-              <label className="text-[11px] text-slate-500">Unidad</label>
+              <label className="text-2xs text-slate-500">Unidad</label>
               <div className="relative">
                 <select
                   value={unidad} onChange={e => setUnidad(e.target.value)}
@@ -224,7 +224,7 @@ function FilaPlantilla({
               </div>
             </div>
             <div className="space-y-1 min-w-0">
-              <label className="text-[11px] text-slate-500">Precio c/u</label>
+              <label className="text-2xs text-slate-500">Precio c/u</label>
               <input
                 type="number" min="0" step="0.01" inputMode="decimal"
                 value={precio} onChange={e => setPrecio(e.target.value)}

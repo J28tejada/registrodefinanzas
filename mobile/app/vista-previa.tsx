@@ -1,6 +1,7 @@
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { TrendingDown, TrendingUp, Wallet } from 'lucide-react-native';
 import Texto from '../componentes/Texto';
+import Pantalla from '../componentes/Pantalla';
 import TarjetaDeResumen from '../componentes/TarjetaDeResumen';
 import BarraDePresupuesto from '../componentes/BarraDePresupuesto';
 import { PRESUPUESTOS, RESUMENES } from '@compartido/galeria';
@@ -17,7 +18,7 @@ import { PRESUPUESTOS, RESUMENES } from '@compartido/galeria';
  */
 export default function VistaPrevia() {
   return (
-    <ScrollView className="flex-1" contentContainerClassName="p-4 pt-14 pb-32 gap-6">
+    <Pantalla className="gap-6">
       <View>
         <Texto className="text-xl font-bold text-white">Vista previa</Texto>
         <Texto className="text-slate-400 text-sm">La navegación, sin datos de verdad</Texto>
@@ -54,6 +55,6 @@ export default function VistaPrevia() {
           Si ves este bloque entero, el espacio de abajo alcanza.
         </Texto>
       </View>
-    </ScrollView>
+    </Pantalla>
   );
 }

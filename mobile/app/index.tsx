@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 import { Link } from 'expo-router';
 import {
   ChevronLeft, ChevronRight, Plus, RefreshCw, TrendingDown, TrendingUp, Wallet,
 } from 'lucide-react-native';
 import Texto from '../componentes/Texto';
+import Pantalla from '../componentes/Pantalla';
 import TarjetaDeResumen from '../componentes/TarjetaDeResumen';
 import BarraDePresupuesto from '../componentes/BarraDePresupuesto';
 import ListaDeMovimientos from '../componentes/ListaDeMovimientos';
@@ -126,7 +127,7 @@ export default function Tablero() {
   const visibles = filtro === 'all' ? recientes : recientes.filter(t => t.type === filtro);
 
   return (
-    <ScrollView className="flex-1" contentContainerClassName="pt-14 pb-32 gap-6">
+    <Pantalla className="gap-6">
       {/* Cabecera */}
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3 flex-1">
@@ -275,6 +276,6 @@ export default function Tablero() {
           onDelete={borrar}
         />
       </View>
-    </ScrollView>
+    </Pantalla>
   );
 }

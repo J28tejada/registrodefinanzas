@@ -360,7 +360,7 @@ export default function AddTransactionModal({
                       }`}
                     >
                       <CategoryIcon icon={cat.icon} color={cat.color} type={cat.type} size="sm" />
-                      <span className={`text-[11px] leading-tight text-center line-clamp-2 w-full break-words hyphens-auto px-0.5 ${
+                      <span className={`text-2xs leading-tight text-center line-clamp-2 w-full break-words hyphens-auto px-0.5 ${
                         esta ? 'text-emerald-300' : 'text-slate-300'
                       }`}>
                         {cat.name}
@@ -380,7 +380,7 @@ export default function AddTransactionModal({
                   <span className="w-8 h-8 rounded-full border border-dashed border-slate-600 flex items-center justify-center">
                     <Plus className="w-4 h-4 text-slate-500" />
                   </span>
-                  <span className="text-[11px] leading-tight text-center text-slate-400">Nueva</span>
+                  <span className="text-2xs leading-tight text-center text-slate-400">Nueva</span>
                 </button>
               </div>
             )}
@@ -403,7 +403,7 @@ export default function AddTransactionModal({
                 puso la categoría de arriba—. */}
             {subcategorias.length > 0 && (
               <div className="pt-1 space-y-1.5">
-                <p className="text-[11px] text-slate-500">Detalle (opcional)</p>
+                <p className="text-2xs text-slate-500">Detalle (opcional)</p>
                 <div className="flex flex-wrap gap-1.5">
                   {subcategorias.map(sub => {
                     const esta = form.subcategory === sub.name;

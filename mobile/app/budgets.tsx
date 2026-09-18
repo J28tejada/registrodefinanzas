@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, TextInput, View } from 'react-native';
 import {
   AlertCircle, Check, ChevronLeft, ChevronRight, Pencil, Plus, Target, Trash2, X,
 } from 'lucide-react-native';
 import Texto from '../componentes/Texto';
+import Pantalla from '../componentes/Pantalla';
 import BarraDePresupuesto, { budgetTone } from '../componentes/BarraDePresupuesto';
 import Selector from '../componentes/Selector';
 import { useCuenta } from '../componentes/ContextoDeCuenta';
@@ -152,8 +153,7 @@ export default function Presupuestos() {
   const excedidos = budgets.filter(b => b.percent >= 100);
 
   return (
-    <ScrollView className="flex-1" contentContainerClassName="pt-14 pb-32 gap-6"
-      keyboardShouldPersistTaps="handled">
+    <Pantalla className="gap-6" keyboardShouldPersistTaps="handled">
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
           <Texto className="text-xl font-bold text-white">Presupuestos</Texto>
@@ -350,7 +350,7 @@ export default function Presupuestos() {
           : 'Cada tope se compara contra los gastos del mes de su cuenta. Los que no tienen cuenta miden todas juntas.'}
         {' '}Si vinculaste WhatsApp, te aviso ahí mismo al anotar un gasto que te pase del tope.
       </Texto>
-    </ScrollView>
+    </Pantalla>
   );
 }
 
@@ -458,7 +458,7 @@ function Fila({ budget, ledgers, mostrarCuenta, onEditar, onEliminar }: {
         {/* Solo en "todas las cuentas": mirando una, decirlo en cada fila es
             repetir lo que ya dice el encabezado. */}
         {mostrarCuenta ? (
-          <Texto className="text-[11px] text-slate-500 mt-1">
+          <Texto className="text-2xs text-slate-500 mt-1">
             {budget.ledger_name ?? 'Todas las cuentas'}
           </Texto>
         ) : null}

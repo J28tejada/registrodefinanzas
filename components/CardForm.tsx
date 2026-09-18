@@ -206,7 +206,7 @@ export default function CardForm({
               />
             </div>
           </div>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-2xs text-slate-500">
             Si el día de pago es anterior al de corte, se entiende que vence el mes
             siguiente. En los meses cortos se corre al último día.
           </p>
@@ -232,7 +232,7 @@ export default function CardForm({
               />
             </div>
           </div>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-2xs text-slate-500">
             Lo que ya debías cuando empezaste a seguirla acá. Los movimientos
             anteriores a esa fecha no se suman: ya están adentro de ese monto.
           </p>

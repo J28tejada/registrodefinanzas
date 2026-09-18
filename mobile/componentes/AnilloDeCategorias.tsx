@@ -52,7 +52,7 @@ export default function AnilloDeCategorias({
         {/* El total al centro: es el número que se lee primero, y el hueco del
             anillo ya está ahí. */}
         <View className="absolute inset-0 items-center justify-center px-7" pointerEvents="none">
-          <Texto className="text-[10px] uppercase tracking-wider text-slate-500 text-center" numberOfLines={1}>
+          <Texto className="text-3xs uppercase tracking-wider text-slate-500 text-center" numberOfLines={1}>
             {enfocada ? enfocada.categoria : etiqueta}
           </Texto>
           <Texto className="text-xs font-bold text-white leading-tight text-center"
@@ -60,7 +60,7 @@ export default function AnilloDeCategorias({
             {formatearMonto(enfocada ? enfocada.total : total)}
           </Texto>
           {enfocada ? (
-            <Texto className="text-[10px] text-slate-400" style={{ fontVariant: ['tabular-nums'] }}>
+            <Texto className="text-3xs text-slate-400" style={{ fontVariant: ['tabular-nums'] }}>
               {enfocada.porcentaje.toFixed(1)}%
             </Texto>
           ) : null}

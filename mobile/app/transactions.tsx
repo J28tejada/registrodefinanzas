@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Alert, Pressable, TextInput, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Filter, Plus, Search, X } from 'lucide-react-native';
 import Texto from '../componentes/Texto';
+import Pantalla from '../componentes/Pantalla';
 import ListaDeMovimientos from '../componentes/ListaDeMovimientos';
 import CampoDeFecha from '../componentes/CampoDeFecha';
 import { useCuenta } from '../componentes/ContextoDeCuenta';
@@ -86,7 +87,7 @@ export default function Movimientos() {
   const hayFiltroDeFecha = Boolean(desde || hasta);
 
   return (
-    <ScrollView className="flex-1" contentContainerClassName="pt-14 pb-32 gap-5">
+    <Pantalla className="gap-5">
       <View className="flex-row items-center justify-between">
         <View className="flex-1">
           <Texto className="text-xl font-bold text-white" numberOfLines={1}>
@@ -205,7 +206,7 @@ export default function Movimientos() {
         onEdit={() => setGlobalAddOpen(true)}
         onDelete={borrar}
       />
-    </ScrollView>
+    </Pantalla>
   );
 }
 

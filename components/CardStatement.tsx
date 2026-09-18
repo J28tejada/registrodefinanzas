@@ -41,7 +41,7 @@ export default function CardStatement({
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-medium text-white">Estado de cuenta</p>
         {card.alerts && ciclo && (
-          <span className="flex items-center gap-1 text-[11px] text-slate-500 flex-shrink-0">
+          <span className="flex items-center gap-1 text-2xs text-slate-500 flex-shrink-0">
             <Bell className="w-3 h-3" /> avisos activos
           </span>
         )}
@@ -49,7 +49,7 @@ export default function CardStatement({
 
       {/* El saldo, que es a lo que se viene. */}
       <div>
-        <p className="text-[11px] sm:text-xs text-slate-400 uppercase tracking-wider">
+        <p className="text-2xs sm:text-xs text-slate-400 uppercase tracking-wider">
           {balance.saldo < 0 ? 'A favor' : 'Debés'}
         </p>
         <p className={`text-2xl sm:text-3xl font-bold mt-1 ${balance.saldo > 0 ? 'text-white' : 'text-emerald-400'}`}>
@@ -112,18 +112,18 @@ export default function CardStatement({
       {ciclo && (
         <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800">
           <div className="min-w-0 pt-3">
-            <p className="text-[11px] text-slate-400 uppercase tracking-wider">A pagar</p>
+            <p className="text-2xs text-slate-400 uppercase tracking-wider">A pagar</p>
             <p className="text-base font-semibold text-white mt-0.5 truncate">
               {fmt.money(balance.aPagar)}
             </p>
-            <p className="text-[11px] text-slate-500">ya facturado</p>
+            <p className="text-2xs text-slate-500">ya facturado</p>
           </div>
           <div className="min-w-0 pt-3">
-            <p className="text-[11px] text-slate-400 uppercase tracking-wider">Este ciclo</p>
+            <p className="text-2xs text-slate-400 uppercase tracking-wider">Este ciclo</p>
             <p className="text-base font-semibold text-slate-300 mt-0.5 truncate">
               {fmt.money(balance.cycleCharged)}
             </p>
-            <p className="text-[11px] text-slate-500">entra en el próximo corte</p>
+            <p className="text-2xs text-slate-500">entra en el próximo corte</p>
           </div>
         </div>
       )}
@@ -154,7 +154,7 @@ export default function CardStatement({
         </button>
       )}
 
-      <p className="text-[11px] text-slate-500 leading-relaxed">
+      <p className="text-2xs text-slate-500 leading-relaxed">
         Pagarle a la tarjeta no es un gasto nuevo: la compra ya se anotó el día que
         la hiciste. Por eso el pago baja este saldo y no aparece en los movimientos
         del mes — si no, la misma plata contaría dos veces.
@@ -184,11 +184,11 @@ function Fecha({
 }) {
   return (
     <div className={`rounded-xl px-3 py-2.5 border min-w-0 ${urgente ? 'bg-amber-500/10 border-amber-500/30' : 'bg-slate-800/50 border-slate-800'}`}>
-      <p className="flex items-center gap-1.5 text-[11px] text-slate-400 uppercase tracking-wider">
+      <p className="flex items-center gap-1.5 text-2xs text-slate-400 uppercase tracking-wider">
         {icono} {titulo}
       </p>
       <p className="text-sm font-semibold text-white mt-1 truncate">{fecha}</p>
-      <p className={`text-[11px] ${urgente ? 'text-amber-400' : 'text-slate-500'}`}>
+      <p className={`text-2xs ${urgente ? 'text-amber-400' : 'text-slate-500'}`}>
         {dias === 0 ? 'es hoy' : dias === 1 ? 'mañana' : `en ${dias} días`}
       </p>
     </div>
@@ -325,7 +325,7 @@ function ListaDePagos({
         <div key={p.id} className="flex items-center gap-3 bg-slate-800/40 rounded-lg px-3 py-2">
           <div className="flex-1 min-w-0">
             <p className="text-sm text-white tabular-nums">{fmt.money(p.amount)}</p>
-            <p className="text-[11px] text-slate-500 truncate">
+            <p className="text-2xs text-slate-500 truncate">
               {fmt.date(p.date)}
               {p.source_card_id && nombres.has(p.source_card_id) && ` · desde ${nombres.get(p.source_card_id)}`}
             </p>

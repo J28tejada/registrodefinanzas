@@ -1,8 +1,6 @@
 import { View } from 'react-native';
 import { usePathname } from 'expo-router';
 import Navegacion from './Navegacion';
-import ModalDeMovimiento from './ModalDeMovimiento';
-import { useCuenta } from './ContextoDeCuenta';
 
 /**
  * El gemelo de components/AppShell.tsx.

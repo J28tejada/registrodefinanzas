@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAllLedgersWithStats } from '@compartido/db';
-import { Ledger, LedgerWithStats } from '@compartido/types';
+import { Ledger, LedgerWithStats, Transaction } from '@compartido/types';
 import { db } from '../lib/datos';
 import { useSesion } from './ContextoDeSesion';
 
@@ -14,6 +14,18 @@ interface Contexto {
   setSelectorOpen: (v: boolean) => void;
   globalAddOpen: boolean;
   setGlobalAddOpen: (v: boolean) => void;
+  /**
+   * El movimiento que está abierto en el modal, o null si es uno nuevo.
+   *
+   * En la web cada pantalla dibuja su propio `AddTransactionModal` y se guarda
+   * en un estado local cuál está editando. Acá el modal es uno solo, colgado de
+   * la raíz —un `Modal` de React Native tapa la pantalla entera y dos abiertos a
+   * la vez se pelean—, así que cuál se está editando tiene que vivir donde el
+   * modal lo pueda leer: acá.
+   */
+  movimientoEnEdicion: Transaction | null;
+  /** Abre el modal sobre un movimiento existente. */
+  abrirMovimiento: (tx: Transaction) => void;
   /** Sube cada vez que se guarda un movimiento, en cualquier pantalla. */
   transactionVersion: number;
   notifyTransactionSaved: () => void;
@@ -28,6 +40,8 @@ const ContextoDeCuenta = createContext<Contexto>({
   setSelectorOpen: () => {},
   globalAddOpen: false,
   setGlobalAddOpen: () => {},
+  movimientoEnEdicion: null,
+  abrirMovimiento: () => {},
   transactionVersion: 0,
   notifyTransactionSaved: () => {},
 });
@@ -57,11 +71,30 @@ export function ProveedorDeCuenta({ children }: { children: React.ReactNode }) {
   const [currentLedger, setCurrentLedgerState] = useState<Ledger | null>(null);
   const [ledgers, setLedgers] = useState<LedgerWithStats[]>([]);
   const [selectorOpen, setSelectorOpen] = useState(false);
-  const [globalAddOpen, setGlobalAddOpen] = useState(false);
+  const [globalAddOpen, setGlobalAddOpenState] = useState(false);
+  const [movimientoEnEdicion, setMovimientoEnEdicion] = useState<Transaction | null>(null);
   const [transactionVersion, setTransactionVersion] = useState(0);
   const restaurada = useRef(false);
 
   const notifyTransactionSaved = useCallback(() => setTransactionVersion(v => v + 1), []);
+
+  /*
+   * Abrir el modal "en blanco" tiene que olvidar lo anterior.
+   *
+   * Sin esto, después de editar un gasto el botón + del medio volvía a abrir
+   * ESE gasto: el modal se cierra pero el movimiento se queda guardado, y la
+   * próxima vez que alguien toca + lo encuentra ahí. Guardar entonces pisa un
+   * movimiento viejo en vez de crear uno nuevo, sin que nada lo advierta.
+   */
+  const setGlobalAddOpen = useCallback((v: boolean) => {
+    if (!v) setMovimientoEnEdicion(null);
+    setGlobalAddOpenState(v);
+  }, []);
+
+  const abrirMovimiento = useCallback((tx: Transaction) => {
+    setMovimientoEnEdicion(tx);
+    setGlobalAddOpenState(true);
+  }, []);
 
   const refreshLedgers = useCallback(async () => {
     if (!session?.user?.id) { setLedgers([]); return; }
@@ -108,6 +141,7 @@ export function ProveedorDeCuenta({ children }: { children: React.ReactNode }) {
     <ContextoDeCuenta.Provider value={{
       currentLedger, setCurrentLedger, ledgers, refreshLedgers,
       selectorOpen, setSelectorOpen, globalAddOpen, setGlobalAddOpen,
+      movimientoEnEdicion, abrirMovimiento,
       transactionVersion, notifyTransactionSaved,
     }}>
       {children}

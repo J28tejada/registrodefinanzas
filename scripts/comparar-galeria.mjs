@@ -29,6 +29,21 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+/*
+ * El ancho de ventana con el que se fotografía, que es el de un teléfono.
+ *
+ * Estuvo en 900 para que entrara la pieza ancha de 560, y eso hacía trampa: a
+ * 900px el navegador activa los `sm:` de Tailwind, así que la web se dibujaba
+ * con su versión de tablet —`p-4 sm:p-5` da 20px de relleno en vez de 16—
+ * contra un teléfono que nunca tiene esa versión. El estado de cuenta salía
+ * 12px más alto del lado de la web y la culpa parecía del componente.
+ *
+ * Sin `isMobile`: esa bandera prende el agrandado automático de texto de
+ * Chromium, que toca a la web y no al export de Expo, y hace saltar todas las
+ * piezas a dos dígitos de diferencia.
+ */
+const VENTANA = 393;
+
 const SALIDA = path.join(RAIZ, 'scratch', 'galeria');
 
 const args = process.argv.slice(2);
@@ -126,7 +141,7 @@ async function esperar(url, intentos = 60) {
   throw new Error(`${url} no contestó a tiempo`);
 }
 
-async function capturarPiezas(page, url) {
+async function capturarPiezas(page, url, soloEstas) {
   await page.goto(url, { waitUntil: 'networkidle' });
   // El export de Expo hidrata después de pintar; sin esta espera se fotografía
   // el HTML estático sin estilos aplicados.
@@ -138,6 +153,7 @@ async function capturarPiezas(page, url) {
 
   const capturas = new Map();
   for (const id of new Set(ids)) {
+    if (soloEstas && !soloEstas.has(id)) continue;
     // Los ids son claves de la galería: minúsculas y guiones, así que no hace
     // falta escaparlos para el selector.
     const el = page.locator(`[data-pieza="${id}"], [id="${id}"]`).first();
@@ -194,18 +210,58 @@ try {
   await esperar('http://127.0.0.1:8822/galeria');
   navegador = await chromium.launch({ executablePath: CHROME, args: ['--no-sandbox'] });
   mkdirSync(SALIDA, { recursive: true });
-  const ctx = await navegador.newContext({ viewport: { width: 900, height: 1400 }, deviceScaleFactor: 2 });
-
-  const web = await capturarPiezas(await ctx.newPage(), 'http://127.0.0.1:8821/galeria');
-  const movil = await capturarPiezas(await ctx.newPage(), 'http://127.0.0.1:8822/galeria');
-
-  // Las pantallas enteras, al mismo tamaño que un teléfono.
-  const ctxPantalla = await navegador.newContext({
-    viewport: { width: 393, height: 852 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true,
+  const ctx = await navegador.newContext({
+    viewport: { width: VENTANA, height: 852 }, deviceScaleFactor: 2,
   });
+
+  // El ancho de cada pieza, para saber en qué ventana entra. Se lee del DOM y no
+  // de `lib/galeria.ts` porque esto es un .mjs y aquello TypeScript; y de paso,
+  // una pieza nueva no necesita que nadie se acuerde de anotarla acá.
+  const anchos = await (async () => {
+    const pagina = await ctx.newPage();
+    await pagina.goto('http://127.0.0.1:8821/galeria', { waitUntil: 'networkidle' });
+    const medidos = await pagina.evaluate(() => Object.fromEntries(
+      [...document.querySelectorAll('[data-pieza]')]
+        .map(e => [e.getAttribute('data-pieza'), e.getBoundingClientRect().width]),
+    ));
+    await pagina.close();
+    return medidos;
+  })();
+
+  const web = new Map();
+  const movil = new Map();
+
+  // Una ventana por cada tamaño que haga falta. Casi todas las piezas entran en
+  // la de teléfono; la lista ancha de 560 pide una más grande, pero igual por
+  // debajo de 640 —donde empiezan los `sm:`—, así que la web se sigue dibujando
+  // con su versión de teléfono, que es contra lo que se compara.
+  const porVentana = new Map();
+  for (const [id, ancho] of Object.entries(anchos)) {
+    const ventana = Math.max(VENTANA, Math.ceil(ancho) + 64);
+    if (ventana >= 640) throw new Error(
+      `La pieza «${id}» mide ${ancho}px y no entra debajo del corte sm: de Tailwind. ` +
+      'Comparada en una ventana más ancha, la web se dibujaría con su versión de tablet.',
+    );
+    if (!porVentana.has(ventana)) porVentana.set(ventana, new Set());
+    porVentana.get(ventana).add(id);
+  }
+
+  for (const [ventana, ids] of porVentana) {
+    const contexto = ventana === VENTANA ? ctx : await navegador.newContext({
+      viewport: { width: ventana, height: 1400 }, deviceScaleFactor: 2,
+    });
+    for (const [destino, puerto] of [[web, 8821], [movil, 8822]]) {
+      const capturas = await capturarPiezas(
+        await contexto.newPage(), `http://127.0.0.1:${puerto}/galeria`, ids,
+      );
+      for (const [id, foto] of capturas) destino.set(id, foto);
+    }
+  }
+
+  // Las pantallas enteras van en la misma ventana que las piezas.
   for (const p of PANTALLAS) {
-    const paginaWeb = await ctxPantalla.newPage();
-    const paginaMovil = await ctxPantalla.newPage();
+    const paginaWeb = await ctx.newPage();
+    const paginaMovil = await ctx.newPage();
     await paginaWeb.goto(`http://127.0.0.1:8821${p.ruta}`, { waitUntil: 'networkidle' });
     await paginaMovil.goto(`http://127.0.0.1:8822${p.ruta}`, { waitUntil: 'networkidle' });
     await paginaWeb.waitForTimeout(1200);

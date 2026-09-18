@@ -50,7 +50,7 @@ export default function IconPicker({
       <div className="max-h-56 overflow-y-auto space-y-3 pr-1">
         {GRUPOS_DE_ICONOS.map(({ titulo, claves }) => (
           <div key={titulo} className="space-y-1.5">
-            <p className="text-[11px] text-slate-500 uppercase tracking-wider">{titulo}</p>
+            <p className="text-2xs text-slate-500 uppercase tracking-wider">{titulo}</p>
             <div className="grid grid-cols-6 sm:grid-cols-8 gap-1.5">
               {claves.map(clave => {
                 const Icono = ICONOS_CATEGORIA[clave];

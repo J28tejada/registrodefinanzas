@@ -103,12 +103,12 @@ export default function CategoriesPanel() {
                     {/* Cuántas cuelgan. Sin esto no hay forma de saber cuáles
                         tienen segundo nivel sin abrirlas una por una. */}
                     {subDe(cat.id).length > 0 && (
-                      <span className="absolute -bottom-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-slate-700 border border-slate-900 text-[9px] text-slate-300 flex items-center justify-center tabular-nums">
+                      <span className="absolute -bottom-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-slate-700 border border-slate-900 text-4xs text-slate-300 flex items-center justify-center tabular-nums">
                         {subDe(cat.id).length}
                       </span>
                     )}
                   </span>
-                  <span className="text-[11px] text-slate-300 leading-tight text-center line-clamp-2 w-full break-words hyphens-auto">
+                  <span className="text-2xs text-slate-300 leading-tight text-center line-clamp-2 w-full break-words hyphens-auto">
                     {cat.name}
                   </span>
                 </button>
@@ -123,7 +123,7 @@ export default function CategoriesPanel() {
                 <span className="w-11 h-11 rounded-full border border-dashed border-slate-600 group-hover:border-emerald-500 flex items-center justify-center transition-colors">
                   <Plus className="w-5 h-5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
                 </span>
-                <span className="text-[11px] text-slate-400 leading-tight">Agregar</span>
+                <span className="text-2xs text-slate-400 leading-tight">Agregar</span>
               </button>
             </div>
 
@@ -359,7 +359,7 @@ function Subcategorias({
 
   return (
     <div className="space-y-2 pt-1 border-t border-slate-800">
-      <p className="text-[11px] text-slate-500 uppercase tracking-wider pt-2">
+      <p className="text-2xs text-slate-500 uppercase tracking-wider pt-2">
         Detalle de {padre.name}
       </p>
 

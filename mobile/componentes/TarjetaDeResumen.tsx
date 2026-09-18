@@ -61,7 +61,7 @@ export default function TarjetaDeResumen({
     <View className={`rounded-xl border p-4 sm:p-5 ${BORDE[variant]}`}>
       <View className="flex-row items-start justify-between">
         <View>
-          <Texto className="text-[11px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">
+          <Texto className="text-2xs sm:text-xs text-slate-400 font-medium uppercase tracking-wider">
             {title}
           </Texto>
           {subtitle ? <Texto className="text-xs text-slate-500 mt-0.5">{subtitle}</Texto> : null}

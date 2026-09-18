@@ -91,15 +91,15 @@ export default function DebtsPage() {
       {activas.length > 0 && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 grid grid-cols-3 gap-3">
           <div>
-            <p className="text-[11px] sm:text-xs text-slate-400 uppercase tracking-wider">Falta en total</p>
+            <p className="text-2xs sm:text-xs text-slate-400 uppercase tracking-wider">Falta en total</p>
             <p className="text-lg sm:text-xl font-bold text-rose-400 mt-1">{fmt.money(totalRestante)}</p>
           </div>
           <div>
-            <p className="text-[11px] sm:text-xs text-slate-400 uppercase tracking-wider">Cuotas del mes</p>
+            <p className="text-2xs sm:text-xs text-slate-400 uppercase tracking-wider">Cuotas del mes</p>
             <p className="text-lg sm:text-xl font-bold text-white mt-1">{fmt.money(cuotaDelMes)}</p>
           </div>
           <div>
-            <p className="text-[11px] sm:text-xs text-slate-400 uppercase tracking-wider">Pagado</p>
+            <p className="text-2xs sm:text-xs text-slate-400 uppercase tracking-wider">Pagado</p>
             <p className="text-lg sm:text-xl font-bold text-emerald-400 mt-1">{fmt.money(pagadoDelMes)}</p>
           </div>
         </div>
@@ -236,7 +236,7 @@ function TarjetaDeuda({
         </div>
         <div className="text-right flex-shrink-0">
           <p className="text-sm font-semibold text-rose-400">{fmt.money(deuda.remaining)}</p>
-          <p className="text-[11px] text-slate-500">de {fmt.money(deuda.total_amount)}</p>
+          <p className="text-2xs text-slate-500">de {fmt.money(deuda.total_amount)}</p>
         </div>
       </div>
 
@@ -245,7 +245,7 @@ function TarjetaDeuda({
         <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
           <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${deuda.percent}%` }} />
         </div>
-        <p className="text-[11px] text-slate-500">{deuda.percent}% pagado</p>
+        <p className="text-2xs text-slate-500">{deuda.percent}% pagado</p>
       </div>
 
       {/* Avance del mes: es lo que dice si vas al día */}
@@ -259,7 +259,7 @@ function TarjetaDeuda({
         <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
           <div className={`h-full rounded-full transition-all ${tono}`} style={{ width: `${deuda.monthPercent}%` }} />
         </div>
-        <p className="text-[11px] text-slate-500">
+        <p className="text-2xs text-slate-500">
           {deuda.monthCovered
             ? '✅ Cuota cubierta'
             : `Faltan ${fmt.money(deuda.dueThisMonth)} para completarla`}
@@ -321,7 +321,7 @@ function TarjetaDeuda({
             {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
             Guardar pago
           </button>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-2xs text-slate-500">
             Se anota como gasto en <span className="text-slate-400">{deuda.category}</span>, así que
             cuenta para tu presupuesto.
           </p>
@@ -435,7 +435,7 @@ function FormularioDeuda({
           value={cuota} onChange={e => setCuota(e.target.value)}
           className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
         />
-        <p className="text-[11px] text-slate-500">
+        <p className="text-2xs text-slate-500">
           Se calcula sola, pero podés cambiarla si el préstamo tiene interés.
         </p>
       </div>

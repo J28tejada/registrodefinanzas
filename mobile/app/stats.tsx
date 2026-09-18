@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Link } from 'expo-router';
 import { AlertCircle, ChevronLeft, ChevronRight, PieChart } from 'lucide-react-native';
 import Texto from '../componentes/Texto';
+import Pantalla from '../componentes/Pantalla';
 import AnilloDeCategorias from '../componentes/AnilloDeCategorias';
 import { useCuenta } from '../componentes/ContextoDeCuenta';
 import { useSesion } from '../componentes/ContextoDeSesion';
@@ -90,7 +91,7 @@ export default function Estadisticas() {
   const etiqueta = tipo === 'expense' ? 'Gastos' : 'Ingresos';
 
   return (
-    <ScrollView className="flex-1" contentContainerClassName="pt-14 pb-32 gap-5">
+    <Pantalla className="gap-5">
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
           <Texto className="text-xl font-bold text-white">Estadísticas</Texto>
@@ -192,6 +193,6 @@ export default function Estadisticas() {
           </Texto>
         </>
       )}
-    </ScrollView>
+    </Pantalla>
   );
 }

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Link } from 'expo-router';
 import {
   AlertCircle, ChevronLeft, ChevronRight, CreditCard, Plus,
 } from 'lucide-react-native';
 import Texto from '../../componentes/Texto';
+import Pantalla from '../../componentes/Pantalla';
 import AvisosDeTarjeta from '../../componentes/AvisosDeTarjeta';
 import { budgetTone } from '../../componentes/BarraDePresupuesto';
 import { useCuenta } from '../../componentes/ContextoDeCuenta';
@@ -66,7 +67,7 @@ export default function Billetera() {
   );
 
   return (
-    <ScrollView className="flex-1" contentContainerClassName="pt-14 pb-32 gap-6">
+    <Pantalla className="gap-6">
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
           <Texto className="text-xl font-bold text-white">Billetera</Texto>
@@ -106,16 +107,16 @@ export default function Billetera() {
         <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-3">
           <View className="flex-row gap-3">
             <View className="flex-1">
-              <Texto className="text-[11px] text-slate-400 uppercase tracking-wider">Gastado</Texto>
+              <Texto className="text-2xs text-slate-400 uppercase tracking-wider">Gastado</Texto>
               <Texto className="text-lg font-bold text-white mt-1" numberOfLines={1}>{fmt.money(total)}</Texto>
             </View>
             <View className="flex-1">
-              <Texto className="text-[11px] text-slate-400 uppercase tracking-wider">En uso</Texto>
+              <Texto className="text-2xs text-slate-400 uppercase tracking-wider">En uso</Texto>
               <Texto className="text-lg font-bold text-white mt-1">{activas.length}</Texto>
             </View>
           </View>
           <View>
-            <Texto className="text-[11px] text-slate-400 uppercase tracking-wider">La que más</Texto>
+            <Texto className="text-2xs text-slate-400 uppercase tracking-wider">La que más</Texto>
             <Texto className="text-sm font-semibold text-emerald-400 mt-1.5" numberOfLines={1}>
               {lider && lider.gastoDelMes > 0 ? lider.name : '—'}
             </Texto>
@@ -163,7 +164,7 @@ export default function Billetera() {
           {verArchivadas ? 'Ver solo las activas' : 'Ver también las archivadas'}
         </Texto>
       </Pressable>
-    </ScrollView>
+    </Pantalla>
   );
 }
 
@@ -198,7 +199,7 @@ function Fila({ card, total, fmt }: {
           </View>
           <View className="items-end">
             <Texto className="text-sm font-semibold text-white">{fmt.money(card.gastoDelMes)}</Texto>
-            <Texto className="text-[11px] text-slate-500">{card.usos} mov.</Texto>
+            <Texto className="text-2xs text-slate-500">{card.usos} mov.</Texto>
           </View>
           <ChevronRight size={16} color="#475569" />
         </View>
@@ -214,13 +215,13 @@ function Fila({ card, total, fmt }: {
               </View>
             ) : null}
             <View className="flex-row items-center justify-between gap-2">
-              <Texto className="text-[11px] text-slate-400 flex-1" numberOfLines={1}>
+              <Texto className="text-2xs text-slate-400 flex-1" numberOfLines={1}>
                 {saldo.saldo > 0 ? `Debés ${fmt.money(saldo.saldo)}` : 'Al día'}
                 {card.credit_limit != null && saldo.usoDelLimite != null
                   ? ` · ${Math.round(saldo.usoDelLimite)}% del límite` : ''}
               </Texto>
               {saldo.ciclo ? (
-                <Texto className={`text-[11px] ${saldo.ciclo.daysToDue <= 3 ? 'text-amber-400' : 'text-slate-500'}`}>
+                <Texto className={`text-2xs ${saldo.ciclo.daysToDue <= 3 ? 'text-amber-400' : 'text-slate-500'}`}>
                   paga {fmt.date(saldo.ciclo.nextDue)}
                 </Texto>
               ) : null}

@@ -17,7 +17,7 @@
     },
     "movimientos-lista": {
       "tope": 100,
-      "porque": "A 361px de ancho —el ancho real en un teléfono— la línea de datos de cada fila envuelve distinto: el navegador y Yoga cortan en lugares diferentes, y la lista termina 184px más corta. NO es la estructura: la misma pieza a 560px (movimientos-lista-ancha) da 0,96%. Decisión pendiente: aceptarlo o rearmar esa fila para que no dependa del envoltorio."
+      "porque": "A 361px de ancho —el ancho real en un teléfono— la línea de datos de cada fila envuelve distinto: el navegador y Yoga cortan en lugares diferentes, y la lista termina 184px más corta. NO es la estructura: la misma pieza a 560px (movimientos-lista-ancha) da 0,81%. Decisión pendiente: aceptarlo o rearmar esa fila para que no dependa del envoltorio."
     },
     "movimientos-vacio": {
       "tope": 100,
@@ -25,7 +25,7 @@
     },
     "movimientos-lista-ancha": {
       "tope": 1.5,
-      "porque": "0,96% de antialiasing sobre mucho texto chico. Es la misma lista sin envolver, y sirve de control: si ESTA sube, el problema es la estructura y no el ancho."
+      "porque": "0,81% de antialiasing sobre mucho texto chico. Es la misma lista sin envolver, y sirve de control: si ESTA sube, el problema es la estructura y no el ancho."
     }
   }
 }

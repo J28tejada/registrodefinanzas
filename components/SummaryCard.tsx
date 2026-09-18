@@ -43,7 +43,7 @@ function CardContent({ title, subtitle, amount, variant, icon: Icon }: Omit<Summ
     <>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-[11px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">{title}</p>
+          <p className="text-2xs sm:text-xs text-slate-400 font-medium uppercase tracking-wider">{title}</p>
           {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
         </div>
         <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center ${iconStyles[variant]}`}>

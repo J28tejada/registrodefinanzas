@@ -12,14 +12,22 @@
  * Cada pieza se envuelve del otro lado en un contenedor con su `id`, que es lo
  * que el comparador busca para recortar la captura.
  */
-import { BudgetProgress, Transaction, TransactionType } from './types';
+import {
+  BudgetProgress, Card, CardBalance, CardPayment, Transaction, TransactionType,
+} from './types';
 
 export interface Pieza {
   /** El identificador que busca el comparador. Sin espacios ni acentos. */
   id: string;
   /** Lo que se lee arriba de la pieza en la galería. */
   titulo: string;
-  /** Ancho fijo en píxeles: las dos capturas tienen que medir lo mismo. */
+  /**
+   * Ancho fijo en píxeles: las dos capturas tienen que medir lo mismo.
+   *
+   * De acá sale también el tamaño de ventana con el que el comparador la
+   * fotografía, que nunca llega a los 640 donde Tailwind activa los `sm:`. Ver
+   * `scripts/comparar-galeria.mjs`.
+   */
   ancho: number;
 }
 
@@ -126,8 +134,85 @@ export const MOVIMIENTOS: (Pieza & { transactions: Transaction[] })[] = [
  * diseño y se arreglaría en el lugar equivocado.
  */
 export const MOVIMIENTOS_ANCHO = MOVIMIENTOS.slice(0, 1).map(p => ({
-  ...p, id: 'movimientos-lista-ancha', titulo: 'Movimientos · la lista (sin envolver)', ancho: 560,
+  ...p, id: 'movimientos-lista-ancha', titulo: 'Movimientos · la lista (sin envolver)',
+  ancho: 560,
 }));
 
+/**
+ * El estado de cuenta de una tarjeta de crédito, en sus tres estados.
+ *
+ * Es la pieza más grande de la app —barra de cupo, las dos fechas del ciclo, lo
+ * facturado contra lo del ciclo, el historial de pagos— y la que más formas
+ * distintas toma según lo que esté configurado. Los tres especímenes son
+ * justamente esas ramas: la tarjeta completa, la que todavía no tiene límite ni
+ * ciclo cargados, y la que está a dos días del vencimiento —que pinta las dos
+ * fechas de ámbar—.
+ */
+const tarjeta = (campos: Partial<Card>): Card => ({
+  id: 'tarjeta-1', name: 'Visa Popular', kind: 'credit', last4: '4821',
+  issuer: 'Banco Popular', color: 'blue', archived: false,
+  credit_limit: 80000, statement_day: 25, due_day: 10,
+  opening_balance: 0, opening_date: null, alerts: true,
+  created_at: '2026-01-01T00:00:00Z', ...campos,
+});
+
+const saldo = (campos: Partial<CardBalance>): CardBalance => ({
+  charged: 42350, credited: 0, paid: 12000, saldo: 30350,
+  cycleCharged: 8420, aPagar: 21930,
+  disponible: 49650, usoDelLimite: 37.9375,
+  ciclo: {
+    lastStatement: '2026-08-25', nextStatement: '2026-09-25',
+    nextDue: '2026-10-10', daysToStatement: 7, daysToDue: 22,
+  },
+  ...campos,
+});
+
+const PAGOS: CardPayment[] = [
+  { id: 'p1', card_id: 'tarjeta-1', amount: 12000, date: '2026-09-08',
+    source_card_id: 'ahorros', notes: '', created_at: '2026-09-08T12:00:00Z' },
+  { id: 'p2', card_id: 'tarjeta-1', amount: 9500, date: '2026-08-11',
+    source_card_id: null, notes: '', created_at: '2026-08-11T12:00:00Z' },
+];
+
+export const ESTADOS_DE_CUENTA: (Pieza & {
+  card: Card; balance: CardBalance; payments: CardPayment[];
+  mediosDePago: { id: string; name: string }[];
+})[] = [
+  {
+    id: 'tarjeta-estado', titulo: 'Tarjeta · estado de cuenta', ancho: 361,
+    card: tarjeta({}), balance: saldo({}), payments: PAGOS,
+    mediosDePago: [{ id: 'ahorros', name: 'Ahorros BHD' }, { id: 'efectivo', name: 'Efectivo' }],
+  },
+  {
+    // Sin límite ni ciclo: donde van la barra y las fechas quedan los dos
+    // textos que explican cómo cargarlos, más el recuadro del saldo automático.
+    id: 'tarjeta-sin-configurar', titulo: 'Tarjeta · recién cargada', ancho: 361,
+    card: tarjeta({ credit_limit: null, statement_day: null, due_day: null }),
+    balance: saldo({
+      charged: 3400, paid: 0, saldo: 3400, cycleCharged: 0, aPagar: 3400,
+      disponible: null, usoDelLimite: null, ciclo: null,
+    }),
+    payments: [], mediosDePago: [],
+  },
+  {
+    // Pasada de cupo y a dos días del pago: la barra en rojo y la fecha en
+    // ámbar, que son los dos avisos que la pieza sabe dar.
+    id: 'tarjeta-vencida', titulo: 'Tarjeta · pasada de cupo', ancho: 361,
+    card: tarjeta({ name: 'Mastercard BHD', alerts: false, credit_limit: 25000 }),
+    balance: saldo({
+      charged: 31200, paid: 0, saldo: 31200, cycleCharged: 1100, aPagar: 30100,
+      disponible: -6200, usoDelLimite: 124.8,
+      ciclo: {
+        lastStatement: '2026-08-25', nextStatement: '2026-09-25',
+        nextDue: '2026-09-20', daysToStatement: 7, daysToDue: 2,
+      },
+    }),
+    payments: [], mediosDePago: [],
+  },
+];
+
 /** Todas las piezas, para que el comparador sepa qué recortar. */
-export const PIEZAS: Pieza[] = [...RESUMENES, ...PRESUPUESTOS, ...ICONOS, ...MOVIMIENTOS, ...MOVIMIENTOS_ANCHO];
+export const PIEZAS: Pieza[] = [
+  ...RESUMENES, ...PRESUPUESTOS, ...ICONOS, ...MOVIMIENTOS, ...MOVIMIENTOS_ANCHO,
+  ...ESTADOS_DE_CUENTA,
+];

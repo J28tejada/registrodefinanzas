@@ -60,14 +60,14 @@ export default function CategoryDonut({
         {/* El total al centro: es el número que se lee primero, y el hueco del
             anillo ya está ahí. */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-7 text-center">
-          <p className="text-[10px] uppercase tracking-wider text-slate-500 truncate max-w-full">
+          <p className="text-3xs uppercase tracking-wider text-slate-500 truncate max-w-full">
             {enfocada ? enfocada.categoria : etiqueta}
           </p>
           <p className="text-xs font-bold text-white leading-tight tabular-nums truncate max-w-full">
             {formatearMonto(enfocada ? enfocada.total : total)}
           </p>
           {enfocada && (
-            <p className="text-[10px] text-slate-400 tabular-nums">{enfocada.porcentaje.toFixed(1)}%</p>
+            <p className="text-3xs text-slate-400 tabular-nums">{enfocada.porcentaje.toFixed(1)}%</p>
           )}
         </div>
       </div>

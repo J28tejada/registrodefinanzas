@@ -148,14 +148,14 @@ export default function CompraPage() {
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-2">
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[11px] uppercase tracking-wider text-slate-500">
+            <p className="text-2xs uppercase tracking-wider text-slate-500">
               {compra.closed ? 'Pagado' : 'En el carrito'}
             </p>
             <p className="text-2xl font-bold text-emerald-400 tabular-nums">{fmt.money(pagado)}</p>
           </div>
           {!compra.closed && falta > 0 && (
             <div className="text-right flex-shrink-0">
-              <p className="text-[11px] uppercase tracking-wider text-slate-500">Falta</p>
+              <p className="text-2xs uppercase tracking-wider text-slate-500">Falta</p>
               <p className="text-sm text-slate-300 tabular-nums">{fmt.money(falta)}</p>
             </div>
           )}
@@ -340,7 +340,7 @@ function FilaCompra({
           <p className={`text-sm truncate ${item.checked ? 'text-slate-500 line-through' : 'text-white'}`}>
             {item.name}
             {item.planned_unit_price == null && (
-              <span className="text-[10px] text-sky-400 ml-1.5">nuevo</span>
+              <span className="text-3xs text-sky-400 ml-1.5">nuevo</span>
             )}
           </p>
           <p className="text-xs text-slate-500 tabular-nums">
@@ -363,7 +363,7 @@ function FilaCompra({
         <div className="px-3 pb-3 space-y-2 border-t border-slate-800 pt-3">
           <div className="grid grid-cols-3 gap-2">
             <div className="space-y-1 min-w-0">
-              <label className="text-[11px] text-slate-500">Cantidad</label>
+              <label className="text-2xs text-slate-500">Cantidad</label>
               <input
                 type="number" min="0" step="0.001" inputMode="decimal"
                 value={cantidad} onChange={e => setCantidad(e.target.value)}
@@ -371,7 +371,7 @@ function FilaCompra({
               />
             </div>
             <div className="space-y-1 min-w-0">
-              <label className="text-[11px] text-slate-500">Unidad</label>
+              <label className="text-2xs text-slate-500">Unidad</label>
               <div className="relative">
                 <select
                   value={unidad} onChange={e => setUnidad(e.target.value)}
@@ -383,7 +383,7 @@ function FilaCompra({
               </div>
             </div>
             <div className="space-y-1 min-w-0">
-              <label className="text-[11px] text-slate-500">Precio c/u</label>
+              <label className="text-2xs text-slate-500">Precio c/u</label>
               <input
                 type="number" min="0" step="0.01" inputMode="decimal"
                 value={precio} onChange={e => setPrecio(e.target.value)}
@@ -391,7 +391,7 @@ function FilaCompra({
               />
             </div>
           </div>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-2xs text-slate-500">
             Esto cambia solo esta compra. La lista queda como está.
           </p>
           <div className="flex gap-2">
