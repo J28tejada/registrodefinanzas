@@ -7,10 +7,11 @@
     "build": "next build",
     "start": "next start",
     "test": "sucrase-node scripts/pruebas/correr.ts",
-    "verificar": "npm run typecheck && node scripts/verificar-iconos.mjs && npm test",
+    "verificar": "npm run typecheck && node scripts/verificar-iconos.mjs && npm run textos && npm test",
     "typecheck": "tsc --noEmit",
     "comparar": "node scripts/comparar-galeria.mjs",
-    "comparar:build": "npm run build && cd mobile && npm run export:web && cd .. && npm run comparar"
+    "comparar:build": "npm run build && cd mobile && npm run export:web && cd .. && npm run comparar",
+    "textos": "node scripts/verificar-textos.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
