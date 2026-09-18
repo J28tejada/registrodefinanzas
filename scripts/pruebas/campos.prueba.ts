@@ -11,6 +11,7 @@ import { leerCamposDeCiclo } from '@/lib/tarjetas-campos';
 import { leerDeudaNueva } from '@/lib/deudas-campos';
 import { leerIconoYColor } from '@/lib/categorias-campos';
 import { leerArticuloNuevo, leerCambiosDeArticulo } from '@/lib/compras-campos';
+import { leerCambiosDeCuenta, leerCuentaNueva } from '@/lib/cuentas-campos';
 
 const t = crear('campos');
 
@@ -112,5 +113,32 @@ t.cierto('sin conTilde, `checked` no entra —y solo, no es un cambio—',
   !leerCambiosDeArticulo({ checked: true }).ok);
 t.igual('con conTilde sí', leerCambiosDeArticulo({ checked: true }, { conTilde: true }),
   { ok: true, datos: { checked: true } });
+
+// ── Una cuenta ───────────────────────────────────────────────────────────────
+
+const cuenta = { name: 'Hogar', color: 'blue', type: 'personal', description: 'La casa' };
+
+t.igual('una cuenta completa entra', leerCuentaNueva(cuenta),
+  { ok: true, campos: cuenta });
+t.igual('la descripción es opcional y queda vacía',
+  leerCuentaNueva({ name: 'Hogar', color: 'blue', type: 'personal' }),
+  { ok: true, campos: { name: 'Hogar', color: 'blue', type: 'personal', description: '' } });
+t.cierto('sin nombre no', !leerCuentaNueva({ ...cuenta, name: '  ' }).ok);
+t.cierto('con un color inventado no', !leerCuentaNueva({ ...cuenta, color: 'fucsia' }).ok);
+t.cierto('sin color tampoco: en el alta los tres son obligatorios',
+  !leerCuentaNueva({ name: 'Hogar', type: 'personal' }).ok);
+t.cierto('con un tipo inventado no', !leerCuentaNueva({ ...cuenta, type: 'familiar' }).ok);
+
+// Los ocho colores salen del mapa y no de una lista aparte: el día que se
+// agregue uno al mapa tiene que entrar solo, sin tocar la validación.
+for (const c of ['green', 'blue', 'purple', 'orange', 'red', 'teal', 'indigo', 'pink']) {
+  t.cierto(`color del mapa: ${c}`, leerCuentaNueva({ ...cuenta, color: c }).ok);
+}
+
+t.igual('editar sin mandar nada no rompe: no hay nada que cambiar',
+  leerCambiosDeCuenta({}), { ok: true, campos: {} });
+t.igual('solo lo que viene', leerCambiosDeCuenta({ color: 'teal' }),
+  { ok: true, campos: { color: 'teal' } });
+t.cierto('el nombre no se puede vaciar al editar', !leerCambiosDeCuenta({ name: '' }).ok);
 
 t.resumen();

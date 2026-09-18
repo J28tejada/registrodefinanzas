@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "test": "sucrase-node scripts/pruebas/correr.ts",
-    "verificar": "npm run typecheck && node scripts/verificar-iconos.mjs && node scripts/verificar-clases.mjs && npm test",
+    "verificar": "npm run typecheck && node scripts/verificar-iconos.mjs && node scripts/verificar-clases.mjs && node scripts/verificar-toques.mjs && npm test",
     "typecheck": "tsc --noEmit",
     "comparar": "node scripts/comparar-galeria.mjs",
     "comparar:build": "bash scripts/construir-para-comparar.sh && npm run comparar",

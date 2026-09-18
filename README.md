@@ -73,7 +73,9 @@ npm install && npx expo start
 `scripts/verificar-iconos.mjs` falla si los íconos de la web y los del teléfono
 dejan de decir lo mismo. `scripts/verificar-clases.mjs` falla si el código del
 teléfono usa una clase de Tailwind que NativeWind descarta —varias se descartan
-en silencio, sin un solo error en consola—. Y `scripts/comparar-galeria.mjs`
+en silencio, sin un solo error en consola—. `scripts/verificar-toques.mjs` falla
+si algo se puede tocar y no hace nada: un botón sin manejador, o un valor de
+contexto que se prende y nadie lee. Y `scripts/comparar-galeria.mjs`
 fotografía las mismas piezas en las dos apps y las compara; lo que ya se miró y
 se aceptó está en `scripts/diferencias-conocidas.json`, para que la herramienta
 no quede siempre en rojo.

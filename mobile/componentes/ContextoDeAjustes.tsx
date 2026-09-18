@@ -13,7 +13,6 @@ interface Contexto {
   loaded: boolean;
   fmt: Formatters;
   save: (cambios: Partial<Config>) => Promise<void>;
-  refresh: () => Promise<void>;
 }
 
 /**
@@ -34,7 +33,6 @@ const ContextoDeAjustes = createContext<Contexto>({
   loaded: false,
   fmt: makeFormatters(DEFAULT_SETTINGS),
   save: async () => {},
-  refresh: async () => {},
 });
 
 export function useAjustes() {
@@ -86,7 +84,7 @@ export function ProveedorDeAjustes({
 
   return (
     <ContextoDeAjustes.Provider
-      value={{ settings, loaded: Boolean(fijos) || loaded, fmt, save, refresh }}
+      value={{ settings, loaded: Boolean(fijos) || loaded, fmt, save }}
     >
       {children}
     </ContextoDeAjustes.Provider>

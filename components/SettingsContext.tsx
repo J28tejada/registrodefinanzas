@@ -12,7 +12,6 @@ interface SettingsContextType {
   loaded: boolean;
   fmt: Formatters;
   save: (cambios: Partial<Config>) => Promise<void>;
-  refresh: () => Promise<void>;
 }
 
 const SettingsContext = createContext<SettingsContextType>({
@@ -20,7 +19,6 @@ const SettingsContext = createContext<SettingsContextType>({
   loaded: false,
   fmt: makeFormatters(DEFAULT_SETTINGS),
   save: async () => {},
-  refresh: async () => {},
 });
 
 export function useSettings() {
@@ -68,7 +66,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const fmt = useMemo(() => makeFormatters(settings), [settings]);
 
   return (
-    <SettingsContext.Provider value={{ settings, loaded, fmt, save, refresh }}>
+    <SettingsContext.Provider value={{ settings, loaded, fmt, save }}>
       {children}
     </SettingsContext.Provider>
   );

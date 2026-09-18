@@ -7,6 +7,7 @@ import {
 import Texto from '../../componentes/Texto';
 import Pantalla from '../../componentes/Pantalla';
 import AvisosDeTarjeta from '../../componentes/AvisosDeTarjeta';
+import FormularioDeTarjeta from '../../componentes/FormularioDeTarjeta';
 import { budgetTone } from '../../componentes/BarraDePresupuesto';
 import { useCuenta } from '../../componentes/ContextoDeCuenta';
 import { useSesion } from '../../componentes/ContextoDeSesion';
@@ -27,6 +28,7 @@ export default function Billetera() {
   const [mes, setMes] = useState<string>(() => fmt.today().slice(0, 7));
   const [cards, setCards] = useState<CardWithUsage[]>([]);
   const [verArchivadas, setVerArchivadas] = useState(false);
+  const [creando, setCreando] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
@@ -75,7 +77,11 @@ export default function Billetera() {
             Tus tarjetas, cuentas y efectivo, con cuánto va por cada uno
           </Texto>
         </View>
-        <Pressable className="px-3 py-2 bg-emerald-600 active:bg-emerald-500 rounded-xl flex-row items-center gap-1.5">
+        <Pressable
+          onPress={() => setCreando(v => !v)}
+          accessibilityLabel="Nuevo medio de pago"
+          className="px-3 py-2 bg-emerald-600 active:bg-emerald-500 rounded-xl flex-row items-center gap-1.5"
+        >
           <Plus size={16} color="#ffffff" />
         </Pressable>
       </View>
@@ -100,6 +106,14 @@ export default function Billetera() {
       ) : null}
 
       <AvisosDeTarjeta avisos={avisos} />
+
+      {creando && usuario ? (
+        <FormularioDeTarjeta
+          usuario={usuario}
+          onListo={async () => { setCreando(false); await cargar(); }}
+          onCancelar={() => setCreando(false)}
+        />
+      ) : null}
 
       {cards.length > 0 ? (
         // Dos columnas en el teléfono: con tres, "RD$2,250.00" no entra en su

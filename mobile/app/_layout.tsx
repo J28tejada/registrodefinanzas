@@ -12,6 +12,7 @@ import { ProveedorDeAjustes } from '../componentes/ContextoDeAjustes';
 import { ProveedorDeCuenta, useCuenta } from '../componentes/ContextoDeCuenta';
 import { ProveedorDeCategorias } from '../componentes/ContextoDeCategorias';
 import ModalDeMovimiento from '../componentes/ModalDeMovimiento';
+import SelectorDeCuenta from '../componentes/SelectorDeCuenta';
 import Estructura from '../componentes/Estructura';
 
 // Que la pantalla de arranque no se vaya antes de tener la tipografía: si se
@@ -40,6 +41,7 @@ export default function RaizDelLayout() {
             <ProveedorDeCategorias>
               <Guardia />
               <ModalGlobalDeMovimiento />
+              <SelectorDeCuenta />
             </ProveedorDeCategorias>
           </ProveedorDeCuenta>
         </ProveedorDeAjustes>
