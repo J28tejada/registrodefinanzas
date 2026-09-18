@@ -12,7 +12,7 @@
  * Cada pieza se envuelve del otro lado en un contenedor con su `id`, que es lo
  * que el comparador busca para recortar la captura.
  */
-import { BudgetProgress, TransactionType } from './types';
+import { BudgetProgress, Transaction, TransactionType } from './types';
 
 export interface Pieza {
   /** El identificador que busca el comparador. Sin espacios ni acentos. */
@@ -73,5 +73,61 @@ export const ICONOS: (Pieza & {
   { id: 'icono-invalido', titulo: 'Ícono · clave inventada', ancho: 64, icon: 'dragon', color: null, type: 'income', size: 'md' },
 ];
 
+const mov = (
+  id: string, campos: Partial<Transaction> & Pick<Transaction, 'type' | 'amount' | 'category'>,
+): Transaction => ({
+  id, ledger_id: null, scope: 'personal', description: '', date: '2026-09-18',
+  createdAt: '2026-09-18T12:00:00Z', source: 'manual', receipt_url: null,
+  payment_method: null, card_id: null, author_id: null, author_name: null,
+  subcategory: null, ...campos,
+});
+
+/**
+ * Los movimientos de la galería.
+ *
+ * Cada uno existe por una fila distinta de la lista: uno sin descripción, uno
+ * con subcategoría, uno cargado por otra persona, uno con recibo. Puestos todos
+ * juntos en una sola pieza, una diferencia de alto en cualquiera se lee en el
+ * total.
+ */
+export const MOVIMIENTOS: (Pieza & { transactions: Transaction[] })[] = [
+  {
+    id: 'movimientos-lista', titulo: 'Movimientos · la lista (ancho de teléfono)', ancho: 361,
+    transactions: [
+      mov('m1', { type: 'expense', amount: 1250, category: 'Alimentación',
+        subcategory: 'Supermercado', description: 'Compra del mes' }),
+      // Sin descripción: el título lo pone la categoría.
+      mov('m2', { type: 'expense', amount: 600, category: 'Combustible' }),
+      mov('m3', { type: 'income', amount: 24700, category: 'Salario',
+        subcategory: 'Sueldo', description: 'Quincena' }),
+      // Cargado por otra persona de una cuenta compartida.
+      mov('m4', { type: 'expense', amount: 3200, category: 'Hogar',
+        description: 'Pago Rosaura', author_id: 'otra', author_name: 'Rosaura' }),
+      // Con medio de pago y llegado por WhatsApp.
+      mov('m5', { type: 'expense', amount: 450, category: 'Transporte',
+        description: 'Uber', payment_method: 'Visa Popular', source: 'whatsapp' }),
+      // Con recibo adjunto, dictado por voz.
+      mov('m6', { type: 'expense', amount: 890, category: 'Salud',
+        description: 'Farmacia', receipt_url: 'r/1.jpg', source: 'voice' }),
+    ],
+  },
+  { id: 'movimientos-vacio', titulo: 'Movimientos · sin ninguno', ancho: 361, transactions: [] },
+];
+
+/**
+ * La misma lista, más ancha.
+ *
+ * Está para separar dos causas que se confunden. A 361px —el ancho real de la
+ * lista en un teléfono— la fila difiere bastante, pero a 560 baja a menos del
+ * 1%: o sea que lo que falla no es la estructura sino CÓMO ENVUELVE la línea de
+ * datos cuando no entra. El navegador y Yoga cortan en lugares distintos.
+ *
+ * Sin esta segunda medida, el número de la primera parecería un problema de
+ * diseño y se arreglaría en el lugar equivocado.
+ */
+export const MOVIMIENTOS_ANCHO = MOVIMIENTOS.slice(0, 1).map(p => ({
+  ...p, id: 'movimientos-lista-ancha', titulo: 'Movimientos · la lista (sin envolver)', ancho: 560,
+}));
+
 /** Todas las piezas, para que el comparador sepa qué recortar. */
-export const PIEZAS: Pieza[] = [...RESUMENES, ...PRESUPUESTOS, ...ICONOS];
+export const PIEZAS: Pieza[] = [...RESUMENES, ...PRESUPUESTOS, ...ICONOS, ...MOVIMIENTOS, ...MOVIMIENTOS_ANCHO];

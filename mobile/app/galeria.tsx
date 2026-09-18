@@ -4,9 +4,10 @@ import { TrendingDown, TrendingUp, Wallet } from 'lucide-react-native';
 import TarjetaDeResumen from '../componentes/TarjetaDeResumen';
 import BarraDePresupuesto from '../componentes/BarraDePresupuesto';
 import IconoDeCategoria from '../componentes/IconoDeCategoria';
+import ListaDeMovimientos from '../componentes/ListaDeMovimientos';
 import { ProveedorDeAjustes } from '../componentes/ContextoDeAjustes';
 import { ProveedorDeCategorias } from '../componentes/ContextoDeCategorias';
-import { ICONOS, PIEZAS, PRESUPUESTOS, RESUMENES } from '@compartido/galeria';
+import { ICONOS, MOVIMIENTOS, MOVIMIENTOS_ANCHO, PIEZAS, PRESUPUESTOS, RESUMENES } from '@compartido/galeria';
 
 /**
  * El catálogo de componentes del teléfono: el gemelo de app/galeria/page.tsx.
@@ -39,6 +40,12 @@ export default function Galeria() {
           {PRESUPUESTOS.map(p => (
             <Pieza key={p.id} id={p.id} titulo={p.titulo} ancho={p.ancho}>
               <BarraDePresupuesto budget={p.budget} />
+            </Pieza>
+          ))}
+
+          {[...MOVIMIENTOS, ...MOVIMIENTOS_ANCHO].map(p => (
+            <Pieza key={p.id} id={p.id} titulo={p.titulo} ancho={p.ancho}>
+              <ListaDeMovimientos transactions={p.transactions} onEdit={() => {}} onDelete={() => {}} />
             </Pieza>
           ))}
 

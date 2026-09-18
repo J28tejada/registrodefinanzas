@@ -97,15 +97,9 @@ function servirExport(dir, puerto) {
 function servirNext(puerto) {
   const p = spawn('npx', ['next', 'start', '-p', String(puerto)], {
     cwd: RAIZ, stdio: 'ignore', detached: true,
-    env: {
-      ...process.env,
-      // La galería no consulta nada, pero varios componentes construyen el
-      // cliente de Supabase al montarse y sin estas dos revientan. Valores de
-      // mentira a propósito: si alguna pieza llegara a pedir datos de verdad,
-      // tiene que fallar ruidosamente y no mostrar algo distinto en silencio.
-      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:1/galeria',
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'galeria-sin-datos',
-    },
+    // Las variables públicas van incrustadas desde la construcción, no desde
+    // acá: ver scripts/construir-para-comparar.sh.
+    env: { ...process.env },
   });
   return () => { try { process.kill(-p.pid); } catch {} };
 }

@@ -10,7 +10,7 @@
     "verificar": "npm run typecheck && node scripts/verificar-iconos.mjs && node scripts/verificar-clases.mjs && npm test",
     "typecheck": "tsc --noEmit",
     "comparar": "node scripts/comparar-galeria.mjs",
-    "comparar:build": "npm run build && cd mobile && npm run export:web && cd .. && npm run comparar",
+    "comparar:build": "bash scripts/construir-para-comparar.sh && npm run comparar",
     "textos": "node scripts/verificar-textos.mjs"
   },
   "dependencies": {

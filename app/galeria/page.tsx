@@ -4,7 +4,8 @@ import { TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 import SummaryCard from '@/components/SummaryCard';
 import BudgetBar from '@/components/BudgetBar';
 import CategoryIcon from '@/components/CategoryIcon';
-import { ICONOS, PIEZAS, PRESUPUESTOS, RESUMENES } from '@/lib/galeria';
+import TransactionList from '@/components/TransactionList';
+import { ICONOS, MOVIMIENTOS, MOVIMIENTOS_ANCHO, PIEZAS, PRESUPUESTOS, RESUMENES } from '@/lib/galeria';
 
 /**
  * El catálogo de componentes de la web, para compararlo con el del teléfono.
@@ -40,6 +41,12 @@ export default function GaleriaPage() {
         {PRESUPUESTOS.map(p => (
           <Pieza key={p.id} id={p.id} titulo={p.titulo} ancho={p.ancho}>
             <BudgetBar budget={p.budget} />
+          </Pieza>
+        ))}
+
+        {[...MOVIMIENTOS, ...MOVIMIENTOS_ANCHO].map(p => (
+          <Pieza key={p.id} id={p.id} titulo={p.titulo} ancho={p.ancho}>
+            <TransactionList transactions={p.transactions} onEdit={() => {}} onDelete={() => {}} />
           </Pieza>
         ))}
 
