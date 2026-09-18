@@ -45,3 +45,4 @@ evolution/.env
 /mobile/node_modules
 /mobile/dist
 /mobile/.expo
+/scratch

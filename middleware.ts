@@ -2,7 +2,9 @@ import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 
 /** Rutas que se pueden ver sin sesión. */
-const PUBLICAS = ['/login', '/auth/callback', '/auth/error'];
+// `/galeria` es el catálogo de componentes que se compara contra el de Expo:
+// dibuja piezas fijas, no lee un solo dato del usuario.
+const PUBLICAS = ['/login', '/auth/callback', '/auth/error', '/galeria'];
 /**
  * Rutas donde el middleware no toca nada.
  *

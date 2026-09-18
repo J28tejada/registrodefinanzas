@@ -3,8 +3,15 @@
 import { usePathname } from 'next/navigation';
 import Navigation from './Navigation';
 
-/** El login no lleva navegación: todavía no hay sesión que navegar. */
-const SIN_NAVEGACION = ['/login', '/auth'];
+/**
+ * El login no lleva navegación: todavía no hay sesión que navegar.
+ *
+ * `/galeria` tampoco, por otro motivo: es el catálogo de componentes que se
+ * compara contra el de Expo, y el menú alrededor solo agregaría ruido a esa
+ * comparación. De paso evita que monte el cliente de Supabase, que sin las
+ * variables de entorno revienta.
+ */
+const SIN_NAVEGACION = ['/login', '/auth', '/galeria'];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

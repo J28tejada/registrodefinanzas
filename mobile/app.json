@@ -25,7 +25,9 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-asset"
+      "expo-asset",
+      "expo-font",
+      "expo-splash-screen"
     ]
   }
 }
