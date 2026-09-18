@@ -8,6 +8,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export const ALTO_DE_LA_BARRA = 56;
 
 /**
+ * El alto de la barra de abajo, sin contar el área segura.
+ *
+ * `py-3` más el ícono y su etiqueta. Es el mismo número que la web explica en
+ * su `pb-32`: "la barra inferior mide ~77px y flota sobre el contenido". Acá
+ * hace falta escrito para las pantallas que NO scrollean —la conversación del
+ * asistente—, donde el campo de escribir tiene que apoyarse justo encima.
+ */
+export const ALTO_DE_LA_BARRA_DE_ABAJO = 77;
+
+/**
  * El contenedor de una pantalla con navegación. El gemelo del `<main>` de
  * components/AppShell.tsx, que allá lleva `p-4 pb-32`.
  *

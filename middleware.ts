@@ -30,6 +30,20 @@ export async function middleware(request: NextRequest) {
 
   if (SIN_SESION.some(p => pathname.startsWith(p))) return NextResponse.next();
 
+  /*
+   * Una petición de la app del teléfono trae su token en `Authorization` y no
+   * en una cookie, así que acá no hay sesión que encontrar y la respuesta sería
+   * un 401 antes de llegar a la ruta.
+   *
+   * Pasa de largo y la ruta decide: `requireDb` valida ese mismo token contra
+   * Supabase, y si no sirve devuelve el mismo 401. Lo que NO se hace es
+   * comprobarlo dos veces en dos lugares distintos — ahí es donde uno se
+   * queda viejo y deja pasar lo que el otro rechaza.
+   */
+  if (pathname.startsWith('/api/') && /^bearer /i.test(request.headers.get('authorization') ?? '')) {
+    return NextResponse.next();
+  }
+
   let response = NextResponse.next({ request });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

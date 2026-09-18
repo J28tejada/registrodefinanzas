@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { createClient } from './server';
+import { createClient, tokenDeCabecera } from './server';
 import { Db } from '@/lib/db';
 
 export class NoAutenticadoError extends Error {
@@ -16,7 +16,16 @@ export class NoAutenticadoError extends Error {
  */
 export async function requireDb(): Promise<Db> {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getUser();
+  /*
+   * El token va explícito cuando vino por cabecera.
+   *
+   * `getUser()` sin argumento busca la sesión en el almacenamiento del cliente,
+   * y una petición del teléfono no tiene ninguna: guarda su sesión en el
+   * llavero, del otro lado. Pasándole el token se valida ESE, contra el mismo
+   * Supabase y con las mismas reglas.
+   */
+  const token = await tokenDeCabecera();
+  const { data, error } = await supabase.auth.getUser(token ?? undefined);
   if (error || !data.user) throw new NoAutenticadoError();
   return { supabase: supabase as SupabaseClient, userId: data.user.id };
 }
