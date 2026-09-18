@@ -33,4 +33,17 @@ config.resolver.extraNodeModules = {
   '@supabase/supabase-js': fijarA('@supabase/supabase-js'),
 };
 
-module.exports = withNativeWind(config, { input: './global.css' });
+/*
+ * `inlineRem: 16` no es un detalle: es lo que hace que una clase signifique lo
+ * mismo en los dos lados.
+ *
+ * En la web, `p-4` es `1rem` y el navegador lo resuelve contra los 16px del
+ * documento. En nativo no hay documento, y NativeWind cae en 14 si nadie le
+ * dice. Sin esta línea `p-4` mide 14 en el teléfono y 16 en la web, y lo mismo
+ * TODA la escala de medidas: la app entera queda 12,5% más chica.
+ *
+ * Y es invisible para el comparador de la galería, que corre sobre el export
+ * web: ahí manda el CSS del navegador y el valor sale bien igual. Este es el
+ * agujero de esa verificación, y por eso el número va acá escrito a mano.
+ */
+module.exports = withNativeWind(config, { input: './global.css', inlineRem: 16 });
