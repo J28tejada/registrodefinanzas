@@ -1,26 +1,26 @@
 import {
-  Baby, Banknote, Bike, BookOpen, Briefcase, Building2, Bus, Cake, Camera, Car,
-  Church, Clapperboard, Cloud, Coffee, Coins, CreditCard, Dog, Droplet, Dumbbell,
-  FolderOpen, Footprints, Fuel, Gamepad2, Gift, Globe, GraduationCap, Hammer,
-  Heart, HeartPulse, Home, Key, Landmark, Lightbulb, LucideIcon, Megaphone,
-  Monitor, Music, Package, Palmtree, PawPrint, Percent, Pill, Pizza, Plane, Printer,
-  PiggyBank, RefreshCw, Receipt, Scale, Scissors, Shield, Shirt, ShoppingBag,
-  ShoppingCart, Smartphone, Sofa, Sparkles, Sprout, Star, Stethoscope, Tag,
-  Ticket, TrendingUp, Truck, UtensilsCrossed, Users, Watch, Wifi, Wine, Wrench,
-  Zap,
-} from 'lucide-react';
+  Baby, Banknote, Bike, BookOpen, Briefcase, Building2, Bus, Cake, Camera,
+  Car, Church, Clapperboard, Cloud, Coffee, Coins, CreditCard, Dog, Droplet,
+  Dumbbell, FolderOpen, Footprints, Fuel, Gamepad2, Gift, Globe,
+  GraduationCap, Hammer, Heart, HeartPulse, Home, Key, Landmark, Lightbulb,
+  Megaphone, Monitor, Music, Package, Palmtree, PawPrint, Percent, PiggyBank,
+  Pill, Pizza, Plane, Printer, Receipt, RefreshCw, Scale, Scissors, Shield,
+  Shirt, ShoppingBag, ShoppingCart, Smartphone, Sofa, Sparkles, Sprout, Star,
+  Stethoscope, Tag, Ticket, TrendingUp, Truck, Users, UtensilsCrossed, Watch,
+  Wifi, Wine, Wrench, Zap,
+} from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
+
 /**
- * El mapa de íconos de la WEB: clave -> componente de `lucide-react`.
+ * El mapa de íconos del TELÉFONO: clave -> componente de `lucide-react-native`.
  *
- * Qué claves existen, en qué grupo va cada una y con qué ícono se dibuja está
- * en `categorias-catalogo.ts`, que no depende de la plataforma y que el
- * teléfono también usa. Acá solo se resuelven esos nombres contra el paquete
- * de la web; `mobile/lib/iconos-categoria.ts` hace lo mismo contra
- * `lucide-react-native`.
+ * El gemelo de `lib/iconos-categoria.ts` de la web. Las claves, los grupos y
+ * qué ícono le toca a cada una salen de `categorias-catalogo.ts`, que es
+ * compartido; acá solo se resuelven contra el paquete nativo.
  *
- * Los imports van nombrados uno por uno y no con `import *`: así el empaquetador
- * deja afuera los mil y pico de íconos que no se usan. El precio es que hay dos
- * listas que mantener iguales, y por eso existe `scripts/verificar-iconos.mjs`.
+ * Las dos listas tienen que decir lo mismo. Que lo digan no lo garantiza la
+ * buena voluntad: lo comprueba `scripts/verificar-iconos.mjs`, que falla si una
+ * clave falta, sobra o apunta a otro dibujo.
  */
 export const ICONOS_CATEGORIA: Record<string, LucideIcon> = {
   // Día a día
@@ -102,20 +102,15 @@ export const ICONOS_CATEGORIA: Record<string, LucideIcon> = {
   bebe: Baby,
   escudo: Shield,
 };
+
 /** El ícono genérico: el que le toca a una categoría que no eligió ninguno. */
 export const ICONO_POR_DEFECTO = Tag;
-/**
- * El componente de una clave.
- *
- * Nunca devuelve null: una clave vieja o mal escrita cae en el genérico. Si
- * devolviera null, cada lugar que dibuja una categoría tendría que acordarse de
- * contemplarlo, y el que se olvide rompe la pantalla entera.
- */
+
+/** El componente de una clave. Nunca null: una clave rara cae en el genérico. */
 export function iconoDeCategoria(clave: string | null | undefined): LucideIcon {
   return (clave && ICONOS_CATEGORIA[clave]) || ICONO_POR_DEFECTO;
 }
-// Lo que no depende de la plataforma se re-exporta desde acá para que nada de
-// la web tenga que cambiar de import.
+
 export {
   GRUPOS_DE_ICONOS,
   COLORES_CATEGORIA,
@@ -123,4 +118,4 @@ export {
   NOMBRE_ICONO_POR_DEFECTO,
   colorDeCategoria,
   sugerirIcono,
-} from './categorias-catalogo';
+} from '@compartido/categorias-catalogo';

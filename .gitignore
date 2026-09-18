@@ -40,3 +40,8 @@ finances.db-shm
 
 # Claves de Evolution (docker compose)
 evolution/.env
+
+# El proyecto Expo
+/mobile/node_modules
+/mobile/dist
+/mobile/.expo
