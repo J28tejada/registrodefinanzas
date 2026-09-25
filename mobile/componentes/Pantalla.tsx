@@ -54,6 +54,8 @@ export default function Pantalla({
        */
       contentContainerStyle={{ paddingTop: insets.top + ALTO_DE_LA_BARRA + 16 }}
       contentContainerClassName={`px-4 pb-32 ${className}`}
+      // Arrastrar la pantalla hacia abajo cierra el teclado, como en iOS.
+      keyboardDismissMode="interactive"
       {...resto}
     >
       {children}

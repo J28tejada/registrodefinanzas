@@ -18,6 +18,7 @@ import {
 import { limitesDelMes } from '@compartido/format';
 import { BudgetProgress } from '@compartido/types';
 import { useColores } from '../lib/colores';
+import { TECLADO_CON_LISTO } from '../componentes/BarraDelTeclado';
 
 /** El gemelo de app/budgets/page.tsx. */
 export default function Presupuestos() {
@@ -268,6 +269,7 @@ export default function Presupuestos() {
             value={monto}
             onChangeText={setMonto}
             keyboardType="decimal-pad"
+            inputAccessoryViewID={TECLADO_CON_LISTO}
             placeholder="Tope mensual"
             className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta placeholder:text-tinta-3 focus:border-tinta-3"
             style={{ fontFamily: 'Inter_400Regular' }}
@@ -410,6 +412,7 @@ function Fila({ budget, ledgers, mostrarCuenta, onEditar, onEliminar }: {
             value={monto}
             onChangeText={setMonto}
             keyboardType="decimal-pad"
+            inputAccessoryViewID={TECLADO_CON_LISTO}
             autoFocus
             className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta focus:border-tinta-3"
             style={{ fontFamily: 'Inter_400Regular' }}

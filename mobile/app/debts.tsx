@@ -19,6 +19,7 @@ import { fechaValida, limitesDelMes } from '@compartido/format';
 import { leerDeudaNueva } from '@compartido/deudas-campos';
 import { DebtProgress } from '@compartido/types';
 import { useColores } from '../lib/colores';
+import { TECLADO_CON_LISTO } from '../componentes/BarraDelTeclado';
 
 /** El gemelo de app/debts/page.tsx. */
 export default function Deudas() {
@@ -316,6 +317,7 @@ function TarjetaDeuda({
               van uno arriba del otro, que es la rama que se ve acá. */}
           <TextInput
             keyboardType="decimal-pad"
+            inputAccessoryViewID={TECLADO_CON_LISTO}
             value={monto} onChangeText={setMonto}
             placeholder="Monto pagado" placeholderTextColor={paleta.tinta2} autoFocus
             className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2 text-sm text-tinta"
@@ -444,6 +446,7 @@ function FormularioDeuda({
           <Texto className="text-xs text-tinta-2 leading-6">Total</Texto>
           <TextInput
             keyboardType="decimal-pad"
+            inputAccessoryViewID={TECLADO_CON_LISTO}
             value={total}
             onChangeText={t => { setTotal(t); sugerirCuota(t, cuotas); }}
             className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
@@ -453,6 +456,7 @@ function FormularioDeuda({
           <Texto className="text-xs text-tinta-2 leading-6">Cuotas</Texto>
           <TextInput
             keyboardType="number-pad"
+            inputAccessoryViewID={TECLADO_CON_LISTO}
             value={cuotas}
             onChangeText={t => { setCuotas(t); sugerirCuota(total, t); }}
             className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
@@ -464,6 +468,7 @@ function FormularioDeuda({
         <Texto className="text-xs text-tinta-2 leading-6">Cuota mensual</Texto>
         <TextInput
           keyboardType="decimal-pad"
+          inputAccessoryViewID={TECLADO_CON_LISTO}
           value={cuota} onChangeText={setCuota}
           className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
         />

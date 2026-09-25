@@ -23,6 +23,7 @@ import {
   Card, CARD_GROUPS, PASILLOS, ShoppingTripDetail, ShoppingTripItem, UNIDADES,
 } from '@compartido/types';
 import { useColores } from '../../../lib/colores';
+import { TECLADO_CON_LISTO } from '../../../componentes/BarraDelTeclado';
 
 /**
  * El gemelo de app/shopping/compra/[id]/page.tsx.
@@ -413,6 +414,7 @@ function FilaCompra({
               <Texto className="text-2xs text-tinta-2">Cantidad</Texto>
               <TextInput
                 keyboardType="decimal-pad"
+                inputAccessoryViewID={TECLADO_CON_LISTO}
                 value={cantidad} onChangeText={setCantidad}
                 className="w-full bg-hundido border border-linea-fuerte rounded-lg px-2 py-2 text-sm text-tinta"
               />
@@ -430,6 +432,7 @@ function FilaCompra({
               <Texto className="text-2xs text-tinta-2">Precio c/u</Texto>
               <TextInput
                 keyboardType="decimal-pad"
+                inputAccessoryViewID={TECLADO_CON_LISTO}
                 value={precio} onChangeText={setPrecio}
                 className="w-full bg-hundido border border-linea-fuerte rounded-lg px-2 py-2 text-sm text-tinta"
               />
@@ -604,6 +607,7 @@ function CerrarCompra({
         <Texto className="text-xs text-tinta-2 leading-6">Monto pagado</Texto>
         <TextInput
           keyboardType="decimal-pad"
+          inputAccessoryViewID={TECLADO_CON_LISTO}
           value={monto} onChangeText={setMonto}
           className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
         />

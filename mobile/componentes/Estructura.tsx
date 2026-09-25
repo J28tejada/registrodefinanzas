@@ -5,6 +5,7 @@ import { GestureDetector } from 'react-native-gesture-handler';
 import { useColores } from '../lib/colores';
 import Navegacion from './Navegacion';
 import { useMenuLateral } from './MenuLateral';
+import BarraDelTeclado from './BarraDelTeclado';
 
 /**
  * El gemelo de components/AppShell.tsx.
@@ -54,6 +55,7 @@ export default function Estructura({ children }: { children: React.ReactNode }) 
       <View className="flex-1 bg-fondo">
         <Fondo />
         <View className="flex-1 p-4">{children}</View>
+        <BarraDelTeclado />
       </View>
     );
   }
@@ -66,6 +68,7 @@ export default function Estructura({ children }: { children: React.ReactNode }) 
         <View className="flex-1">{children}</View>
       </GestureDetector>
       <Navegacion menu={menu} />
+      <BarraDelTeclado />
     </View>
   );
 }

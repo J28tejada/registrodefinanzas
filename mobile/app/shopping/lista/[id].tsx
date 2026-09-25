@@ -18,6 +18,7 @@ import { leerArticuloNuevo, leerCambiosDeArticulo } from '@compartido/compras-ca
 import { agruparPorPasillo } from '@compartido/compras';
 import { PASILLOS, ShoppingItem, ShoppingListDetail, UNIDADES } from '@compartido/types';
 import { useColores } from '../../../lib/colores';
+import { TECLADO_CON_LISTO } from '../../../componentes/BarraDelTeclado';
 
 /**
  * El gemelo de app/shopping/lista/[id]/page.tsx.
@@ -246,6 +247,7 @@ function FilaPlantilla({
               <Texto className="text-2xs text-tinta-2">Cantidad</Texto>
               <TextInput
                 keyboardType="decimal-pad"
+                inputAccessoryViewID={TECLADO_CON_LISTO}
                 value={cantidad} onChangeText={setCantidad}
                 className="w-full bg-hundido border border-linea-fuerte rounded-lg px-2 py-2 text-sm text-tinta"
               />
@@ -263,6 +265,7 @@ function FilaPlantilla({
               <Texto className="text-2xs text-tinta-2">Precio c/u</Texto>
               <TextInput
                 keyboardType="decimal-pad"
+                inputAccessoryViewID={TECLADO_CON_LISTO}
                 value={precio} onChangeText={setPrecio}
                 className="w-full bg-hundido border border-linea-fuerte rounded-lg px-2 py-2 text-sm text-tinta"
               />

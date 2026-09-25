@@ -12,6 +12,7 @@ import {
   etiquetaUltimosDigitos, llevaSaldo,
 } from '@compartido/types';
 import { useColores } from '../lib/colores';
+import { TECLADO_CON_LISTO } from './BarraDelTeclado';
 
 const COLORES = Object.keys(LEDGER_COLOR_MAP) as LedgerColor[];
 
@@ -154,6 +155,7 @@ export default function FormularioDeTarjeta({
         </View>
         <TextInput
           keyboardType="number-pad"
+          inputAccessoryViewID={TECLADO_CON_LISTO}
           value={borrador.last4}
           onChangeText={t => setBorrador(b => ({ ...b, last4: t.replace(/\D/g, '').slice(0, 4) }))}
           placeholder={etiquetaUltimosDigitos(borrador.kind)}
@@ -187,6 +189,7 @@ export default function FormularioDeTarjeta({
             <Texto className="text-xs text-tinta-2 leading-6">Límite de crédito</Texto>
             <TextInput
               keyboardType="decimal-pad"
+              inputAccessoryViewID={TECLADO_CON_LISTO}
               value={borrador.credit_limit}
               onChangeText={t => setBorrador(b => ({ ...b, credit_limit: t }))}
               placeholder="Opcional — para ver cuánto llevás consumido"
@@ -200,6 +203,7 @@ export default function FormularioDeTarjeta({
               <Texto className="text-xs text-tinta-2 leading-6">Día de corte</Texto>
               <TextInput
                 keyboardType="number-pad"
+                inputAccessoryViewID={TECLADO_CON_LISTO}
                 value={borrador.statement_day}
                 onChangeText={t => setBorrador(b => ({ ...b, statement_day: t.replace(/\D/g, '').slice(0, 2) }))}
                 placeholder="25"
@@ -211,6 +215,7 @@ export default function FormularioDeTarjeta({
               <Texto className="text-xs text-tinta-2 leading-6">Día de pago</Texto>
               <TextInput
                 keyboardType="number-pad"
+                inputAccessoryViewID={TECLADO_CON_LISTO}
                 value={borrador.due_day}
                 onChangeText={t => setBorrador(b => ({ ...b, due_day: t.replace(/\D/g, '').slice(0, 2) }))}
                 placeholder="10"
@@ -229,6 +234,7 @@ export default function FormularioDeTarjeta({
               <Texto className="text-xs text-tinta-2 leading-6">Ya debías</Texto>
               <TextInput
                 keyboardType="decimal-pad"
+                inputAccessoryViewID={TECLADO_CON_LISTO}
                 value={borrador.opening_balance}
                 onChangeText={t => setBorrador(b => ({ ...b, opening_balance: t }))}
                 placeholder="0"

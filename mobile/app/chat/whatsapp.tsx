@@ -8,6 +8,7 @@ import Texto from '../../componentes/Texto';
 import PanelDeVinculo, { FilaDeChat, Flecha } from '../../componentes/PanelDeVinculo';
 import { llamarApi } from '../../lib/api';
 import { useColores } from '../../lib/colores';
+import { TECLADO_CON_LISTO } from '../../componentes/BarraDelTeclado';
 
 /** Lo técnico: solo llega si sos admin. */
 interface Avanzado {
@@ -301,6 +302,7 @@ export default function Whatsapp() {
                       placeholder="Número del bot con código de país"
                       placeholderTextColor={paleta.tinta2}
                       keyboardType="phone-pad"
+                      inputAccessoryViewID={TECLADO_CON_LISTO}
                       className="flex-1 bg-hundido border border-linea-fuerte rounded-lg px-3 py-2 text-sm text-tinta"
                     />
                     <Pressable

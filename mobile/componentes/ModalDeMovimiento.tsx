@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View,
+} from 'react-native';
 import { AlertCircle, ChevronDown, Plus, X } from 'lucide-react-native';
 import Texto from './Texto';
 import Selector from './Selector';
@@ -16,6 +18,7 @@ import {
 } from '@compartido/types';
 import { useColores } from '../lib/colores';
 import Vidrio from './Vidrio';
+import BarraDelTeclado, { TECLADO_CON_LISTO } from './BarraDelTeclado';
 
 interface Borrador {
   ledger_id: string;
@@ -147,7 +150,12 @@ export default function ModalDeMovimiento({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View className="flex-1 bg-black/40 justify-end">
+      {/* La hoja sube con el teclado: si no, el teclado tapaba el monto que se
+          estaba escribiendo y el botón de guardar. */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        className="flex-1 bg-black/40 justify-end"
+      >
         <Vidrio className="border-t border-t-borde-luz border-linea rounded-t-2xl max-h-[92%]">
           {/* La cabecera se queda arriba mientras el formulario scrollea. */}
           <View className="border-b border-linea px-5 py-4 flex-row items-center justify-between rounded-t-2xl">
@@ -157,7 +165,11 @@ export default function ModalDeMovimiento({
             <Pressable onPress={onClose}><X size={20} color={paleta.tinta2} /></Pressable>
           </View>
 
-          <ScrollView contentContainerClassName="p-4 pb-8 gap-4" keyboardShouldPersistTaps="handled">
+          <ScrollView
+            contentContainerClassName="p-4 pb-8 gap-4"
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+          >
             {/* Cada usuario arranca con una cuenta personal, así que esto casi
                 nunca aparece: queda por si la borró y se quedó sin ninguna. */}
             {ledgers.length === 0 ? (
@@ -226,6 +238,7 @@ export default function ModalDeMovimiento({
                   value={form.amount}
                   onChangeText={v => setForm(p => ({ ...p, amount: v }))}
                   keyboardType="decimal-pad"
+                  inputAccessoryViewID={TECLADO_CON_LISTO}
                   placeholder="0.00"
                   className="w-full bg-hundido border border-linea-fuerte rounded-lg pl-7 pr-4 py-2.5 text-sm text-tinta placeholder:text-tinta-3 focus:border-tinta-3"
                   style={{ fontFamily: 'Inter_400Regular' }}
@@ -416,7 +429,9 @@ export default function ModalDeMovimiento({
             </View>
           </ScrollView>
         </Vidrio>
-      </View>
+      </KeyboardAvoidingView>
+      {/* El Modal es otra ventana: la barra del teclado tiene que estar adentro. */}
+      <BarraDelTeclado />
     </Modal>
   );
 }

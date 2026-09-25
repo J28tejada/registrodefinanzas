@@ -11,6 +11,7 @@ import { borrarPagoTarjeta, registrarPagoTarjeta } from '@compartido/db';
 import { fechaValida } from '@compartido/format';
 import { Card, CardBalance, CardPayment } from '@compartido/types';
 import { useColores } from '../lib/colores';
+import { TECLADO_CON_LISTO } from './BarraDelTeclado';
 
 /**
  * El gemelo de components/CardStatement.tsx.
@@ -266,6 +267,7 @@ function FormularioDePago({
           <Texto className="text-xs text-tinta-2 leading-6">Monto</Texto>
           <TextInput
             keyboardType="decimal-pad"
+            inputAccessoryViewID={TECLADO_CON_LISTO}
             value={monto} onChangeText={setMonto} autoFocus
             className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
           />
