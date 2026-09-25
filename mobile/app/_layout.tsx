@@ -1,6 +1,6 @@
 import '../global.css';
 import { useEffect } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
@@ -86,6 +86,19 @@ function ModalGlobalDeMovimiento() {
  * esto sino RLS, que corre en la base y no se puede esquivar borrando una
  * condición de JavaScript.
  */
+/**
+ * El tema de React Navigation, con el fondo transparente.
+ *
+ * Cada pantalla de la pila nativa pinta debajo el fondo de su tema, y el de por
+ * defecto es un gris claro (#F2F2F2) que no sabe nada de claro u oscuro: con el
+ * teléfono en oscuro, los textos claros quedaban sobre ese gris y no se leían.
+ * Transparente, se ve el `bg-fondo` de Estructura, que sí cambia con el tema.
+ */
+const TEMA_DE_NAVEGACION = {
+  ...DefaultTheme,
+  colors: { ...DefaultTheme.colors, background: 'transparent', card: 'transparent' },
+};
+
 function Guardia() {
   const { session, listo } = useSesion();
   const segmentos = useSegments();
@@ -105,7 +118,9 @@ function Guardia() {
           Estructura: con un color puesto acá desde JavaScript, al pasar el
           teléfono de claro a oscuro con la app abierta el fondo se quedaba en
           el tema anterior mientras todo lo demás cambiaba. */}
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }} />
+      <ThemeProvider value={TEMA_DE_NAVEGACION}>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }} />
+      </ThemeProvider>
     </Estructura>
   );
 }
