@@ -9,8 +9,10 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      // Los de `lib/tema.json`, que cambian solos entre claro y oscuro.
-      colors: colores,
+      // Los de `lib/tema.json`, que cambian solos entre claro y oscuro. Son
+      // funciones (ver lib/tema-tailwind.js) y los tipos de Tailwind solo
+      // declaran strings, aunque en ejecución acepta las dos cosas.
+      colors: colores as unknown as Record<string, string>,
       /*
        * Los tres tamaños chicos que la app usa debajo de `text-xs`.
        *

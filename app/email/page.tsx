@@ -181,7 +181,7 @@ function EmailPageInner() {
 
       {/* Not connected */}
       {!connected && (
-        <div className="bg-panel border border-linea rounded-xl p-5 sm:p-6 space-y-5">
+        <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-5 sm:p-6 space-y-5">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-hundido rounded-xl flex items-center justify-center">
               <Mail className="w-6 h-6 text-tinta-2" />
@@ -251,7 +251,7 @@ function EmailPageInner() {
       {connected && (
         <>
           {/* Account card */}
-          <div className="bg-panel border border-linea rounded-xl p-4 flex items-center gap-3">
+          <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 flex items-center gap-3">
             <div className="w-10 h-10 bg-hundido rounded-lg flex items-center justify-center">
               <Mail className="w-5 h-5 text-tinta-2" />
             </div>

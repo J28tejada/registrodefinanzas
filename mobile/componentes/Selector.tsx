@@ -3,6 +3,7 @@ import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { Check, ChevronDown } from 'lucide-react-native';
 import Texto from './Texto';
 import { useColores } from '../lib/colores';
+import Vidrio from './Vidrio';
 
 export interface OpcionDeSelector {
   valor: string;
@@ -60,8 +61,8 @@ export default function Selector({
       </Pressable>
 
       <Modal visible={abierto} transparent animationType="slide" onRequestClose={() => setAbierto(false)}>
-        <Pressable className="flex-1 bg-black/60" onPress={() => setAbierto(false)} />
-        <View className="bg-panel border-t border-linea rounded-t-2xl max-h-[70%]">
+        <Pressable className="flex-1 bg-black/40" onPress={() => setAbierto(false)} />
+        <Vidrio className="border-t border-t-borde-luz border-linea rounded-t-2xl max-h-[70%]">
           {titulo ? (
             <Texto className="text-sm font-medium text-tinta px-5 pt-4 pb-2">{titulo}</Texto>
           ) : null}
@@ -96,7 +97,7 @@ export default function Selector({
               </View>
             ))}
           </ScrollView>
-        </View>
+        </Vidrio>
       </Modal>
     </>
   );

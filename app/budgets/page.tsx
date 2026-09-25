@@ -238,7 +238,7 @@ export default function BudgetsPage() {
       )}
 
       {/* Alta */}
-      <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 space-y-3">
+      <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5 space-y-3">
         <p className="text-sm font-medium text-tinta flex items-center gap-2">
           <Target className="w-4 h-4 text-tinta-2" /> Nuevo presupuesto
         </p>

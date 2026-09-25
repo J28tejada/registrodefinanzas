@@ -130,7 +130,7 @@ export default function ShoppingPage() {
         {cargando ? (
           <div className="h-20 bg-hundido rounded-xl animate-pulse" />
         ) : enCurso.length === 0 && cerradas.length === 0 ? (
-          <p className="text-xs text-tinta-2 bg-panel border border-linea rounded-xl px-4 py-6 text-center">
+          <p className="text-xs text-tinta-2 bg-panel border border-t-borde-luz border-linea rounded-2xl px-4 py-6 text-center">
             Ninguna compra todavía. Cuando vayas al súper, arrancá una desde una lista.
           </p>
         ) : (
@@ -174,7 +174,7 @@ export default function ShoppingPage() {
         </p>
 
         {creandoLista && (
-          <div className="bg-panel border border-linea rounded-xl p-3 space-y-2">
+          <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-3 space-y-2">
             <input
               type="text"
               value={nombreLista}
@@ -205,7 +205,7 @@ export default function ShoppingPage() {
         )}
 
         {!cargando && lists.length === 0 && !creandoLista && (
-          <p className="text-xs text-tinta-2 bg-panel border border-linea rounded-xl px-4 py-6 text-center">
+          <p className="text-xs text-tinta-2 bg-panel border border-t-borde-luz border-linea rounded-2xl px-4 py-6 text-center">
             Todavía no tenés ninguna lista.
           </p>
         )}
@@ -214,7 +214,7 @@ export default function ShoppingPage() {
           <Link
             key={l.id}
             href={`/shopping/lista/${l.id}`}
-            className="block bg-panel border border-linea hover:border-linea-fuerte rounded-xl px-4 py-3 transition-colors"
+            className="block bg-panel border border-t-borde-luz border-linea hover:border-linea-fuerte rounded-2xl px-4 py-3 transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className="flex-1 min-w-0">
@@ -273,7 +273,7 @@ function IniciarCompra({
   };
 
   return (
-    <div className="bg-panel border border-acento/30 rounded-xl p-4 space-y-3">
+    <div className="bg-panel border border-t-borde-luz border-acento/30 rounded-2xl p-4 space-y-3">
       <p className="text-sm font-medium text-tinta">Empezar una compra</p>
 
       <div className="space-y-1">
@@ -340,7 +340,7 @@ function TarjetaCompra({
   return (
     <Link
       href={`/shopping/compra/${compra.id}`}
-      className="block bg-panel border border-linea hover:border-linea-fuerte rounded-xl px-4 py-3.5 transition-colors"
+      className="block bg-panel border border-t-borde-luz border-linea hover:border-linea-fuerte rounded-2xl px-4 py-3.5 transition-colors"
     >
       <div className="flex items-center gap-3">
         <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${

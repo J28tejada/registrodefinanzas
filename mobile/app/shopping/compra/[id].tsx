@@ -155,7 +155,7 @@ export default function Compra() {
       ) : null}
 
       {/* El número por el que se abre esta pantalla en el súper. */}
-      <View className="bg-panel border border-linea rounded-xl p-4 gap-2">
+      <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-2">
         <View className="flex-row items-end justify-between gap-3">
           <View className="flex-1">
             <Texto className="text-2xs text-tinta-2">
@@ -205,7 +205,7 @@ export default function Compra() {
       ) : null}
 
       {compra.articulos.length === 0 ? (
-        <View className="items-center py-10 bg-panel border border-linea rounded-xl">
+        <View className="items-center py-10 bg-panel border border-t-borde-luz border-linea rounded-2xl">
           <ShoppingCart size={32} color={paleta.tinta3} />
           <Texto className="text-sm text-tinta-2 mt-3">Esta compra está vacía.</Texto>
         </View>
@@ -492,7 +492,7 @@ function AgregarArticulo({
   };
 
   return (
-    <View className="bg-panel border border-linea rounded-xl p-3 gap-2">
+    <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-3 gap-2">
       <View className="flex-row gap-2">
         <TextInput
           value={nombre}
@@ -589,7 +589,7 @@ function CerrarCompra({
   }
 
   return (
-    <View className="bg-panel border border-acento/30 rounded-xl p-4 gap-3">
+    <View className="bg-panel border border-t-borde-luz border-acento/30 rounded-2xl p-4 gap-3">
       <View>
         <Texto className="text-sm font-medium text-tinta">Anotar la compra</Texto>
         <Texto className="text-xs text-tinta-2 mt-0.5">

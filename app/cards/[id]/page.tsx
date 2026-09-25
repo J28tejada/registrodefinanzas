@@ -235,7 +235,7 @@ export default function CardDetailPage() {
 
       {/* Dos columnas en el teléfono, igual que en la lista: en un tercio de
           pantalla los montos salen cortados. */}
-      <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div className="min-w-0">
           <p className="text-2xs sm:text-xs text-tinta-2">Gastado</p>
           <p className="text-lg sm:text-xl font-semibold text-tinta mt-1 truncate">{fmt.money(detalle.spent)}</p>
@@ -251,7 +251,7 @@ export default function CardDetailPage() {
       </div>
 
       {/* Los últimos meses: un mes suelto no dice si la estás usando más. */}
-      <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 space-y-3">
+      <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5 space-y-3">
         <p className="text-sm font-medium text-tinta">Últimos meses</p>
         {maxMes === 0 ? (
           <p className="text-xs text-tinta-2 py-4 text-center">
@@ -285,7 +285,7 @@ export default function CardDetailPage() {
 
       {/* En qué se fue: la pregunta que sigue a "gasté tanto con esta tarjeta". */}
       {detalle.byCategory.length > 0 && (
-        <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 space-y-3">
+        <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5 space-y-3">
           <p className="text-sm font-medium text-tinta">En qué se fue</p>
           <div className="space-y-2.5">
             {detalle.byCategory.map(c => (
@@ -318,7 +318,7 @@ export default function CardDetailPage() {
           {movimientos.length > 0 && <span className="text-tinta-2"> · {movimientos.length}</span>}
         </p>
         {movimientos.length === 0 ? (
-          <p className="text-xs text-tinta-2 py-6 text-center bg-panel border border-linea rounded-xl">
+          <p className="text-xs text-tinta-2 py-6 text-center bg-panel border border-t-borde-luz border-linea rounded-2xl">
             Nada pagado por acá en {fmt.monthLabel(`${mes}-01`)}.
           </p>
         ) : (

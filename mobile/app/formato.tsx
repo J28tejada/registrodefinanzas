@@ -39,7 +39,7 @@ export default function Formato() {
           </Texto>
         </View>
 
-        <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
+        <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-3">
           {CASOS.map(caso => {
             const obtuvo = fallo.get(`${caso.que}|${caso.entrada}`);
             return (

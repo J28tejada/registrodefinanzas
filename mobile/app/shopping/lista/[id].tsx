@@ -108,7 +108,7 @@ export default function Lista() {
         </View>
       ) : null}
 
-      <View className="bg-panel border border-linea rounded-xl p-4 flex-row items-end justify-between gap-3">
+      <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 flex-row items-end justify-between gap-3">
         <View className="flex-1">
           <Texto className="text-2xs text-tinta-2">Costaría</Texto>
           <Texto className="text-xl font-semibold text-tinta" numberOfLines={1}>{fmt.money(lista.total)}</Texto>
@@ -124,7 +124,7 @@ export default function Lista() {
       ) : null}
 
       {lista.articulos.length === 0 ? (
-        <View className="items-center py-10 bg-panel border border-linea rounded-xl">
+        <View className="items-center py-10 bg-panel border border-t-borde-luz border-linea rounded-2xl">
           <ClipboardList size={32} color={paleta.tinta3} />
           <Texto className="text-sm text-tinta-2 mt-3">La lista está vacía.</Texto>
         </View>
@@ -222,7 +222,7 @@ function FilaPlantilla({
   };
 
   return (
-    <View className="bg-panel border border-linea rounded-xl">
+    <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl">
       <Pressable
         onPress={() => abierta ? setAbierta(false) : abrir()}
         className="w-full flex-row items-center gap-3 px-3 py-2.5"
@@ -325,7 +325,7 @@ function AgregarArticulo({
   };
 
   return (
-    <View className="bg-panel border border-linea rounded-xl p-3 gap-2">
+    <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-3 gap-2">
       <View className="flex-row gap-2">
         <TextInput
           value={nombre}

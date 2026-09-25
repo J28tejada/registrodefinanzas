@@ -95,7 +95,7 @@ export default function PanelDeVinculo({
 
   return (
     <>
-      <View className="bg-panel border border-linea rounded-xl p-4 gap-4">
+      <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-4">
         <View>
           <Texto className="font-semibold text-tinta text-sm">{titulo}</Texto>
           <View className="mt-0.5">{instrucciones}</View>
@@ -165,14 +165,14 @@ export default function PanelDeVinculo({
       <View className="gap-2">
         <Texto className="text-sm font-medium text-tinta">Chats autorizados</Texto>
         {chats.length === 0 ? (
-          <Texto className="text-tinta-2 text-sm text-center py-8 bg-panel border border-linea rounded-xl">
+          <Texto className="text-tinta-2 text-sm text-center py-8 bg-panel border border-t-borde-luz border-linea rounded-2xl">
             Todavía no hay ninguno.
           </Texto>
         ) : null}
         {chats.map(c => {
           const etiqueta = formatearId(c.external_id);
           return (
-            <View key={c.id} className="bg-panel border border-linea rounded-xl px-4 py-3 flex-row items-center gap-3">
+            <View key={c.id} className="bg-panel border border-t-borde-luz border-linea rounded-2xl px-4 py-3 flex-row items-center gap-3">
               <View className="flex-1">
                 <Texto className="text-sm text-tinta font-medium" numberOfLines={1}>{etiqueta}</Texto>
                 <View className="mt-1">

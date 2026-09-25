@@ -178,7 +178,7 @@ export default function Whatsapp() {
       />
 
       {/* Cómo se usa */}
-      <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
+      <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-3">
         <Texto className="font-semibold text-tinta text-sm">Cómo se usa</Texto>
         <View className="gap-2">
           {COMO_SE_USA.map(t => (
@@ -223,7 +223,7 @@ export default function Whatsapp() {
                 </View>
               ) : null}
 
-              <View className="bg-panel border border-linea rounded-xl p-4 gap-4">
+              <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-4">
                 <View className="flex-row items-center gap-3">
                   <View className="w-10 h-10 bg-hundido rounded-lg items-center justify-center">
                     <MessageCircle size={20} color={paleta.tinta2} />
@@ -286,7 +286,7 @@ export default function Whatsapp() {
 
               {/* Emparejar el teléfono del bot con Evolution */}
               {av.configurado && av.state !== 'open' ? (
-                <View className="bg-panel border border-linea rounded-xl p-4 gap-4">
+                <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-4">
                   <View>
                     <Texto className="font-semibold text-tinta text-sm">Vincular el teléfono del asistente</Texto>
                     <Texto className="text-xs text-tinta-2 mt-0.5">

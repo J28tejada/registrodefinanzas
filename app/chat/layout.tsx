@@ -45,7 +45,7 @@ export default function AsistenteLayout({ children }: { children: React.ReactNod
     <div className={`max-w-3xl mx-auto pt-14 md:pt-0 ${encuadre}`}>
       {/* `flex-shrink-0` para que el encuadre de la conversación no aplaste
           esta barra en vez de achicar la conversación. */}
-      <div className="flex gap-1 bg-panel border border-linea rounded-xl p-1 mb-4 flex-shrink-0">
+      <div className="flex gap-1 bg-panel border border-t-borde-luz border-linea rounded-2xl p-1 mb-4 flex-shrink-0">
         {CANALES.map(({ href, icon: Icon, label }) => {
           // Exacto y no por prefijo: `/chat` es prefijo de los otros dos, y por
           // prefijo quedarían las tres marcadas a la vez.

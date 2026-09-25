@@ -13,6 +13,7 @@ import {
 } from '@compartido/cuentas-campos';
 import { Ledger, LedgerColor, LedgerWithStats, LEDGER_COLOR_MAP } from '@compartido/types';
 import { useColores } from '../lib/colores';
+import Vidrio from './Vidrio';
 
 /**
  * El gemelo de components/LedgerSelector.tsx.
@@ -99,8 +100,8 @@ export default function SelectorDeCuenta() {
   return (
     <Modal visible transparent animationType="slide" onRequestClose={cerrar}>
       {/* La hoja sube desde abajo, como en la web debajo de 768px. */}
-      <Pressable className="flex-1 bg-black/70" onPress={cerrar} />
-      <View className="bg-panel border-t border-linea-fuerte rounded-t-2xl max-h-[90%]">
+      <Pressable className="flex-1 bg-black/40" onPress={cerrar} />
+      <Vidrio className="border-t border-t-borde-luz border-linea rounded-t-2xl max-h-[90%]">
         <View className="flex-row items-center justify-between px-5 py-4 border-b border-linea">
           <Texto className="font-semibold text-tinta flex-1" numberOfLines={1}>{titulo}</Texto>
           <Pressable onPress={cerrar} accessibilityLabel="Cerrar">
@@ -198,7 +199,7 @@ export default function SelectorDeCuenta() {
             </View>
           ) : null}
         </ScrollView>
-      </View>
+      </Vidrio>
     </Modal>
   );
 }

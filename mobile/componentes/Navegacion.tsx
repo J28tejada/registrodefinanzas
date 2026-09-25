@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, View } from 'react-native';
+import { useEffect } from 'react';
+import { Animated, BackHandler, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Link, usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -12,6 +12,8 @@ import { useSesion } from './ContextoDeSesion';
 import { supabase } from '../lib/supabase';
 import { LEDGER_COLOR_MAP } from '@compartido/types';
 import { useColores } from '../lib/colores';
+import type { MenuLateral } from './MenuLateral';
+import Vidrio from './Vidrio';
 
 /** Las mismas pantallas y en el mismo orden que components/Navigation.tsx. */
 const navItems = [
@@ -49,18 +51,26 @@ function esActiva(ruta: string, href: string): boolean {
  * de ser las mismas que las de la web, que es justamente lo que se quiere
  * conservar.
  */
-export default function Navegacion() {
+export default function Navegacion({ menu }: { menu: MenuLateral }) {
   const paleta = useColores();
   const ruta = usePathname();
   const router = useRouter();
   const { currentLedger, setSelectorOpen, setGlobalAddOpen } = useCuenta();
   const { session } = useSesion();
-  const [menuAbierto, setMenuAbierto] = useState(false);
   const insets = useSafeAreaInsets();
+  const { cerrarYa, cerrar, visible } = menu;
 
   // Al navegar el menú tiene que irse solo: si no, tapa la pantalla recién
   // abierta y hay que cerrarlo a mano.
-  useEffect(() => { setMenuAbierto(false); }, [ruta]);
+  useEffect(() => { cerrarYa(); }, [ruta, cerrarYa]);
+
+  // El botón de atrás de Android cierra el menú antes que la pantalla. Con el
+  // `Modal` lo hacía `onRequestClose`; la capa animada tiene que pedirlo.
+  useEffect(() => {
+    if (!visible) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => { cerrar(); return true; });
+    return () => sub.remove();
+  }, [visible, cerrar]);
 
   const email = session?.user?.email ?? '';
   const colorDeCuenta = currentLedger ? LEDGER_COLOR_MAP[currentLedger.color] : null;
@@ -73,12 +83,12 @@ export default function Navegacion() {
   return (
     <>
       {/* Barra de arriba, con el selector de cuenta. */}
-      <View
-        className="absolute top-0 left-0 right-0 bg-fondo border-b border-linea z-20 px-3 py-2.5 flex-row items-center gap-1"
+      <Vidrio
+        className="absolute top-0 left-0 right-0 border-b border-linea z-20 px-3 py-2.5 flex-row items-center gap-1"
         style={{ paddingTop: insets.top + 10 }}
       >
         <Pressable
-          onPress={() => setMenuAbierto(true)}
+          onPress={menu.abrir}
           accessibilityLabel="Abrir el menú"
           className="w-9 h-9 rounded-lg items-center justify-center active:bg-hundido"
         >
@@ -100,12 +110,14 @@ export default function Navegacion() {
           </Texto>
           <ChevronDown size={14} color={paleta.tinta2} />
         </Pressable>
-      </View>
+      </Vidrio>
 
-      {/* Barra de abajo: cuatro lugares y el botón de registrar al medio. */}
-      <View
-        className="absolute bottom-0 left-0 right-0 bg-fondo border-t border-linea z-20 flex-row items-center"
-        style={{ paddingBottom: insets.bottom }}
+      {/* Barra de abajo: cuatro lugares y el botón de registrar al medio.
+          Flota separada del borde, como la de la web, y sube si el teléfono
+          tiene barra de gestos. */}
+      <Vidrio
+        className="absolute left-3 right-3 border border-t-borde-luz border-linea rounded-2xl z-20 flex-row items-center"
+        style={{ bottom: Math.max(insets.bottom, 12) }}
       >
         <Lugar href="/" icono={LayoutDashboard} texto="Inicio" activa={ruta === '/'} />
         <Lugar href="/transactions" icono={Receipt} texto="Movimientos" activa={ruta === '/transactions'} />
@@ -114,7 +126,7 @@ export default function Navegacion() {
           <Pressable
             onPress={() => setGlobalAddOpen(true)}
             accessibilityLabel="Registrar movimiento"
-            className="w-11 h-11 bg-primario active:bg-primario/85 rounded-lg items-center justify-center"
+            className="w-11 h-11 bg-primario active:bg-primario/85 rounded-xl items-center justify-center"
           >
             <Plus size={24} color={paleta.sobrePrimario} />
           </Pressable>
@@ -122,18 +134,26 @@ export default function Navegacion() {
 
         <Lugar href="/chat" icono={Bot} texto="Asistente" activa={ruta.startsWith('/chat')} />
         <Lugar href="/stats" icono={PieChart} texto="Estadísticas" activa={ruta === '/stats'} />
-      </View>
+      </Vidrio>
 
-      {/* El menú lateral.
-          `Modal` y no una vista absoluta: en React Native una vista hermana no
-          se dibuja por encima de todo de forma confiable —el orden manda más
-          que el z-index—, y el menú tiene que tapar también las dos barras. */}
-      <Modal visible={menuAbierto} transparent animationType="fade" onRequestClose={() => setMenuAbierto(false)}>
-        <Pressable className="flex-1 bg-black/60" onPress={() => setMenuAbierto(false)} />
-        <View
-          className="absolute top-0 left-0 bottom-0 w-[272px] max-w-[82%] bg-panel border-r border-linea"
-          style={{ maxWidth: '82%' }}
-        >
+      {/* El menú lateral: una capa encima de todo y no un `Modal`, para poder
+          seguir al dedo (ver MenuLateral.ts). Va última a propósito: en React
+          Native manda el orden más que el z-index, y así tapa las dos barras.
+          Deslizarla hacia la izquierda la cierra. */}
+      {visible ? (
+        <View style={StyleSheet.absoluteFill} className="z-30" {...menu.gestoParaCerrar.panHandlers}>
+          <Animated.View style={[StyleSheet.absoluteFill, { opacity: menu.progreso }]}>
+            <Pressable className="flex-1 bg-black/40" onPress={cerrar} accessibilityLabel="Cerrar el menú" />
+          </Animated.View>
+          <Animated.View
+            style={{
+              position: 'absolute', top: 0, left: 0, bottom: 0, width: menu.ancho,
+              transform: [{
+                translateX: menu.progreso.interpolate({ inputRange: [0, 1], outputRange: [-menu.ancho, 0] }),
+              }],
+            }}
+          >
+          <Vidrio className="flex-1 border-r border-linea">
           <View className="px-5 border-b border-linea" style={{ paddingTop: insets.top }}>
             <View className="flex-row items-center gap-2 py-4">
               <View className="w-6 h-6 bg-primario rounded-md items-center justify-center">
@@ -141,7 +161,7 @@ export default function Navegacion() {
               </View>
               <Texto className="text-base font-semibold text-tinta flex-1">Jobidai Wallet</Texto>
               <Pressable
-                onPress={() => setMenuAbierto(false)}
+                onPress={cerrar}
                 accessibilityLabel="Cerrar el menú"
                 className="p-1 -mr-1"
               >
@@ -157,7 +177,7 @@ export default function Navegacion() {
               return (
                 <Link key={href} href={href as never} asChild>
                   <Pressable
-                    onPress={() => setMenuAbierto(false)}
+                    onPress={cerrarYa}
                     className={`flex-row items-center gap-3 px-3 py-3 rounded-lg ${
                       activa ? 'bg-hundido' : 'active:bg-hundido'
                     }`}
@@ -187,8 +207,10 @@ export default function Navegacion() {
               <Texto className="text-xs text-tinta-2 text-center" numberOfLines={1}>{email}</Texto>
             ) : null}
           </View>
+          </Vidrio>
+          </Animated.View>
         </View>
-      </Modal>
+      ) : null}
     </>
   );
 }

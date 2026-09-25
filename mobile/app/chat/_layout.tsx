@@ -51,7 +51,7 @@ export default function AsistenteLayout() {
         paddingBottom: insets.bottom + ALTO_DE_LA_BARRA_DE_ABAJO,
       }}
     >
-      <View className="flex-row gap-1 bg-panel border border-linea rounded-xl p-1 mb-4">
+      <View className="flex-row gap-1 bg-panel border border-t-borde-luz border-linea rounded-2xl p-1 mb-4">
         {CANALES.map(({ href, icon: Icono, label }) => {
           // Exacto y no por prefijo: `/chat` es prefijo de los otros dos, y por
           // prefijo quedarían las tres marcadas a la vez.

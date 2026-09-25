@@ -26,28 +26,28 @@ export default function ResumenDelMes({
   const [entero, centavos] = separarCentavos(fmt.money(Math.abs(balance)));
 
   return (
-    <View>
-      <Texto className="text-sm text-tinta-2">Balance del mes</Texto>
+    <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl overflow-hidden">
+      <Texto className="text-sm text-tinta-2 px-5 pt-4">Balance del mes</Texto>
       <Texto
-        className={`text-4xl font-semibold tracking-tight mt-1 ${negativo ? 'text-peligro' : 'text-tinta'}`}
+        className={`text-4xl font-semibold tracking-tight mt-1 px-5 ${negativo ? 'text-peligro' : 'text-tinta'}`}
         style={TABULARES}
       >
         {negativo ? '−' : ''}{entero}
         <Texto className={`text-4xl font-semibold ${negativo ? 'text-peligro/60' : 'text-tinta-3'}`}>{centavos}</Texto>
       </Texto>
-      <View className="flex-row mt-5 border-y border-linea">
+      <View className="flex-row mt-5 border-t border-linea">
         <Total etiqueta="Ingresos" monto={`+${fmt.money(income)}`} tono="text-acento" href={incomeHref} />
         <View className="w-px bg-linea" />
-        <Total etiqueta="Gastos" monto={`−${fmt.money(expenses)}`} tono="text-tinta" href={expensesHref} separado />
+        <Total etiqueta="Gastos" monto={`−${fmt.money(expenses)}`} tono="text-tinta" href={expensesHref} />
       </View>
     </View>
   );
 }
 
-function Total({ etiqueta, monto, tono, href, separado }: {
-  etiqueta: string; monto: string; tono: string; href?: string; separado?: boolean;
+function Total({ etiqueta, monto, tono, href }: {
+  etiqueta: string; monto: string; tono: string; href?: string;
 }) {
-  const clase = `flex-1 py-3 ${separado ? 'pl-4' : ''}`;
+  const clase = 'flex-1 px-5 py-3';
   const contenido = (
     <>
       <Texto className="text-xs text-tinta-2">{etiqueta}</Texto>

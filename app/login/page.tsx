@@ -122,7 +122,7 @@ function LoginInner() {
         )}
 
         {confirmar ? (
-          <div className="bg-panel border border-linea rounded-xl p-5 sm:p-6 text-center space-y-3">
+          <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-5 sm:p-6 text-center space-y-3">
             <CheckCircle2 className="w-8 h-8 text-acento mx-auto" />
             <p className="text-sm text-tinta font-medium">Revisá tu correo</p>
             <p className="text-xs text-tinta-2">
@@ -131,12 +131,12 @@ function LoginInner() {
             </p>
           </div>
         ) : (
-          <form onSubmit={enviar} className="bg-panel border border-linea rounded-xl p-5 sm:p-6 space-y-4">
+          <form onSubmit={enviar} className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-5 sm:p-6 space-y-4">
             <button
               type="button"
               onClick={entrarConGoogle}
               disabled={cargandoGoogle || cargando || !configurado}
-              className="w-full py-3 bg-panel border border-linea-fuerte hover:bg-presionado disabled:opacity-50 text-tinta rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2.5"
+              className="w-full py-3 bg-panel border border-t-borde-luz border-linea-fuerte hover:bg-presionado disabled:opacity-50 text-tinta rounded-2xl text-sm font-medium transition-colors flex items-center justify-center gap-2.5"
             >
               {cargandoGoogle ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

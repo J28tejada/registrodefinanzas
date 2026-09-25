@@ -110,7 +110,7 @@ export default function CardForm({
   };
 
   return (
-    <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 space-y-2.5">
+    <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5 space-y-2.5">
       <p className="text-sm font-medium text-tinta">
         {card ? 'Editar medio de pago' : 'Nuevo medio de pago'}
       </p>

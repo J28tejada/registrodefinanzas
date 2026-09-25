@@ -77,7 +77,7 @@ export default function Navigation() {
       <LedgerSelector />
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex fixed left-0 top-0 h-full w-60 bg-hundido border-r border-linea flex-col z-20">
+      <aside className="hidden md:flex fixed left-0 top-0 h-full w-60 vidrio border-r border-linea flex-col z-20">
         <div className="p-3 pt-4 space-y-2">
           <div className="flex items-center gap-2 px-2">
             <div className="w-6 h-6 bg-primario rounded-md flex items-center justify-center">
@@ -134,7 +134,7 @@ export default function Navigation() {
       </aside>
 
       {/* Mobile: top bar with ledger switcher */}
-      <header className="md:hidden fixed top-0 left-0 right-0 bg-fondo border-b border-linea z-20 px-3 py-2.5 flex items-center gap-1">
+      <header className="md:hidden fixed top-0 left-0 right-0 vidrio border-b border-linea z-20 px-3 py-2.5 flex items-center gap-1">
         <button
           onClick={() => setMenuAbierto(true)}
           aria-label="Abrir el menú"
@@ -162,7 +162,7 @@ export default function Navigation() {
 
       {/* Panel lateral de móvil */}
       <div
-        className={`md:hidden fixed inset-0 z-30 bg-black/60 transition-opacity ${
+        className={`md:hidden fixed inset-0 z-30 bg-black/40 transition-opacity ${
           menuAbierto ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setMenuAbierto(false)}
@@ -173,7 +173,7 @@ export default function Navigation() {
           La transición lo incluye para que al cerrar termine de salir antes de
           desaparecer, en vez de cortarse de golpe. */}
       <aside
-        className={`md:hidden fixed top-0 left-0 bottom-0 z-40 w-[min(17rem,82vw)] bg-panel border-r border-linea flex flex-col transition-[transform,visibility] duration-200 ${
+        className={`md:hidden fixed top-0 left-0 bottom-0 z-40 w-[min(17rem,82vw)] vidrio border-r border-linea flex flex-col transition-[transform,visibility] duration-200 ${
           menuAbierto ? 'translate-x-0 visible' : '-translate-x-full invisible'
         }`}
       >
@@ -229,7 +229,7 @@ export default function Navigation() {
           medio. Presupuestos sigue en el menú lateral: estos cuatro son para lo
           que se abre a diario, y un tope se configura una vez y después se mira
           de paso en el tablero. */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-fondo border-t border-linea z-20 flex items-center pb-safe">
+      <nav className="md:hidden fixed left-3 right-3 bottom-safe vidrio border border-t-borde-luz border-linea rounded-2xl z-20 flex items-center">
         <Lugar href="/" icono={LayoutDashboard} texto="Inicio" activa={pathname === '/'} />
         <Lugar href="/transactions" icono={Receipt} texto="Movimientos" activa={pathname === '/transactions'} />
 
@@ -238,7 +238,7 @@ export default function Navigation() {
         <div className="flex-1 flex justify-center py-2">
           <button
             onClick={() => setGlobalAddOpen(true)}
-            className="w-11 h-11 bg-primario hover:bg-primario/85 active:bg-primario/85 rounded-lg flex items-center justify-center transition-colors"
+            className="w-11 h-11 bg-primario hover:bg-primario/85 active:bg-primario/85 rounded-xl flex items-center justify-center transition-colors"
             aria-label="Registrar movimiento"
           >
             <Plus className="w-6 h-6 text-sobre-primario" />

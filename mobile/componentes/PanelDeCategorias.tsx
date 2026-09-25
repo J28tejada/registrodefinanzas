@@ -53,14 +53,14 @@ export default function PanelDeCategorias() {
 
   if (cargando) {
     return (
-      <View className="bg-panel border border-linea rounded-xl p-4 items-center">
+      <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 items-center">
         <Loader2 size={20} color={paleta.tinta2} />
       </View>
     );
   }
 
   return (
-    <View className="bg-panel border border-linea rounded-xl p-4 gap-5">
+    <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-5">
       <View>
         <View className="flex-row items-center gap-2">
           <Tags size={16} color={paleta.acento} />

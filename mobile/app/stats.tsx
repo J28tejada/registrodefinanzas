@@ -114,7 +114,7 @@ export default function Estadisticas() {
         </View>
       </View>
 
-      <View className="flex-row gap-1 bg-panel border border-linea rounded-xl p-1">
+      <View className="flex-row gap-1 bg-panel border border-t-borde-luz border-linea rounded-2xl p-1">
         {(['expense', 'income'] as const).map(t => (
           <Pressable key={t} onPress={() => setTipo(t)}
             className={`flex-1 py-2 rounded-lg items-center ${tipo === t ? 'bg-presionado' : ''}`}>
@@ -135,7 +135,7 @@ export default function Estadisticas() {
       {cargando ? (
         <View className="bg-hundido rounded-xl h-52" />
       ) : filas.length === 0 ? (
-        <View className="items-center py-12 bg-panel border border-linea rounded-xl">
+        <View className="items-center py-12 bg-panel border border-t-borde-luz border-linea rounded-2xl">
           <PieChart size={32} color={paleta.tinta3} />
           <Texto className="text-sm text-tinta-2 mt-3">
             No hay {etiqueta.toLowerCase()} en este mes.
@@ -143,7 +143,7 @@ export default function Estadisticas() {
         </View>
       ) : (
         <>
-          <View className="bg-panel border border-linea rounded-xl p-4">
+          <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4">
             <AnilloDeCategorias
               porciones={porciones} total={total} etiqueta={etiqueta} formatearMonto={fmt.money}
             />
@@ -163,7 +163,7 @@ export default function Estadisticas() {
                   } as never}
                   asChild
                 >
-                  <Pressable className="bg-panel border border-linea active:border-linea-fuerte rounded-xl px-4 py-3">
+                  <Pressable className="bg-panel border border-t-borde-luz border-linea active:border-linea-fuerte rounded-2xl px-4 py-3">
                     <View className="flex-row items-center gap-3">
                       <View className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: color }} />
                       <View className="flex-1">

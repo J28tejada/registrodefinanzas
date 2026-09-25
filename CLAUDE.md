@@ -28,14 +28,25 @@ igual. Las mismas 20 pantallas.
 
 ## El tema
 
-Claro (estilo Notion) y oscuro (estilo ChatGPT), según lo que diga el sistema.
-Los colores salen de un solo lugar, `lib/tema.json`, y los dos
-`tailwind.config` los cargan por `lib/tema-tailwind.js` como variables CSS.
+Vidrio esmerilado sobre un fondo liso (glassmorphism), en claro y en oscuro
+según lo que diga el sistema. Monocromo plateado; no es el "liquid glass" de
+Apple. Los colores salen de un solo lugar, `lib/tema.json`, y los dos
+`tailwind.config` los cargan por `lib/tema-tailwind.js` como variables CSS. Un
+color puede traer su transparencia (hex de 8 dígitos): así `bg-panel` ya es
+vidrio.
 
 - En las clases, **solo los tokens**: `bg-fondo`, `bg-panel`, `bg-hundido`,
-  `bg-elevado`, `border-linea`, `text-tinta`, `text-tinta-2`, `bg-primario`,
-  `text-acento`, `text-peligro`… Nunca `slate-800` ni `emerald-500`: no
-  cambian con el tema.
+  `bg-elevado`, `border-linea`, `border-t-borde-luz`, `text-tinta`,
+  `text-tinta-2`, `bg-primario`, `text-acento`, `text-peligro`… Nunca
+  `slate-800` ni `emerald-500`: no cambian con el tema.
+- Una tarjeta es `bg-panel border border-t-borde-luz border-linea rounded-2xl`:
+  el borde de arriba más claro es la luz que viene de arriba. Una por sección,
+  con la lista adentro; no una por fila.
+- Desenfoque de verdad solo donde hay contenido detrás (barras, menú lateral,
+  hojas, modales): la clase `vidrio` en la web, el componente `Vidrio` en el
+  teléfono (`expo-blur`; en Android va sin desenfoque, más tapado).
+- El fondo es liso, con una luz suave que baja desde arriba (`fondo-luz` →
+  `fondo`). Sin formas ni manchas detrás.
 - Donde no hay `className` (íconos de lucide, `ActivityIndicator`,
   `placeholderTextColor`), el teléfono usa `useColores()` de
   `mobile/lib/colores.ts`, que lee el mismo `tema.json`.

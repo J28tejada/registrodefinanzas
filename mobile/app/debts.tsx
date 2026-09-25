@@ -255,7 +255,7 @@ function TarjetaDeuda({
   const tono = deuda.monthCovered ? 'bg-primario' : deuda.paidThisMonth > 0 ? 'bg-aviso' : 'bg-presionado';
 
   return (
-    <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
+    <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-3">
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
           <Texto className="text-sm font-medium text-tinta" numberOfLines={1}>{deuda.name}</Texto>
@@ -421,7 +421,7 @@ function FormularioDeuda({
   const listo = Boolean(nombre.trim() && total && cuota && cuotas && categoria);
 
   return (
-    <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
+    <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-3">
       <View className="flex-row items-center gap-2">
         <Landmark size={16} color={paleta.acento} />
         <Texto className="text-sm font-medium text-tinta">Nueva deuda</Texto>

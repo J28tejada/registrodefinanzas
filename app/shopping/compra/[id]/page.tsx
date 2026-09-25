@@ -145,7 +145,7 @@ export default function CompraPage() {
       )}
 
       {/* El número por el que se abre esta pantalla en el súper. */}
-      <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 space-y-2">
+      <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5 space-y-2">
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
             <p className="text-2xs text-tinta-2">
@@ -193,7 +193,7 @@ export default function CompraPage() {
       {!compra.closed && <AgregarArticulo tripId={compra.id} onListo={cargar} />}
 
       {compra.articulos.length === 0 ? (
-        <div className="text-center py-10 text-tinta-2 bg-panel border border-linea rounded-xl">
+        <div className="text-center py-10 text-tinta-2 bg-panel border border-t-borde-luz border-linea rounded-2xl">
           <ShoppingCart className="w-8 h-8 mx-auto mb-3 text-tinta-3" />
           <p className="text-sm">Esta compra está vacía.</p>
         </div>
@@ -441,7 +441,7 @@ function AgregarArticulo({ tripId, onListo }: { tripId: string; onListo: () => P
   };
 
   return (
-    <div className="bg-panel border border-linea rounded-xl p-3 space-y-2">
+    <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-3 space-y-2">
       <div className="flex gap-2">
         <input
           type="text"
@@ -541,7 +541,7 @@ function CerrarCompra({
   }
 
   return (
-    <div className="bg-panel border border-acento/30 rounded-xl p-4 space-y-3">
+    <div className="bg-panel border border-t-borde-luz border-acento/30 rounded-2xl p-4 space-y-3">
       <div>
         <p className="text-sm font-medium text-tinta">Anotar la compra</p>
         <p className="text-xs text-tinta-2 mt-0.5">

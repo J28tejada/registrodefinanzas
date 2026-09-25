@@ -211,7 +211,7 @@ function TransactionsInner() {
 
       {/* Date range filter (collapsible) */}
       {showFilters && (
-        <div className="bg-panel border border-linea rounded-xl p-4 space-y-3">
+        <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 space-y-3">
           <p className="text-xs text-tinta-2 font-medium">Rango de fechas</p>
           <div className="grid grid-cols-2 gap-3">
             {/* min-w-0: sin esto el item de la grilla mide su contenido mínimo,

@@ -46,14 +46,14 @@ export default function CategoriesPanel() {
 
   if (cargando) {
     return (
-      <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5">
+      <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5">
         <Loader2 className="w-5 h-5 animate-spin text-tinta-2 mx-auto" />
       </div>
     );
   }
 
   return (
-    <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 space-y-5">
+    <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5 space-y-5">
       <div>
         <p className="font-semibold text-tinta text-sm flex items-center gap-2">
           <Tags className="w-4 h-4 text-acento" /> Categorías

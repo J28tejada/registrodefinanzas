@@ -128,7 +128,7 @@ export default function FormularioDeTarjeta({
   };
 
   return (
-    <View className="bg-panel border border-linea rounded-xl p-4 gap-2.5">
+    <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-2.5">
       <Texto className="text-sm font-medium text-tinta">
         {card ? 'Editar medio de pago' : 'Nuevo medio de pago'}
       </Texto>

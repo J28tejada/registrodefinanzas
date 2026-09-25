@@ -15,6 +15,7 @@ import {
   Card, CARD_GROUPS, CARD_KIND_LABEL, LEDGER_COLOR_MAP, Transaction, TransactionType,
 } from '@compartido/types';
 import { useColores } from '../lib/colores';
+import Vidrio from './Vidrio';
 
 interface Borrador {
   ledger_id: string;
@@ -146,10 +147,10 @@ export default function ModalDeMovimiento({
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View className="flex-1 bg-black/60 justify-end">
-        <View className="bg-panel rounded-t-2xl max-h-[92%]">
+      <View className="flex-1 bg-black/40 justify-end">
+        <Vidrio className="border-t border-t-borde-luz border-linea rounded-t-2xl max-h-[92%]">
           {/* La cabecera se queda arriba mientras el formulario scrollea. */}
-          <View className="bg-panel border-b border-linea px-5 py-4 flex-row items-center justify-between rounded-t-2xl">
+          <View className="border-b border-linea px-5 py-4 flex-row items-center justify-between rounded-t-2xl">
             <Texto className="font-semibold text-tinta">
               {editando ? 'Editar registro' : 'Nuevo registro'}
             </Texto>
@@ -414,7 +415,7 @@ export default function ModalDeMovimiento({
               </Pressable>
             </View>
           </ScrollView>
-        </View>
+        </Vidrio>
       </View>
     </Modal>
   );

@@ -227,7 +227,7 @@ function TarjetaDeuda({
   const tono = deuda.monthCovered ? 'bg-primario' : deuda.paidThisMonth > 0 ? 'bg-aviso' : 'bg-presionado';
 
   return (
-    <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 space-y-3">
+    <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium text-tinta truncate">{deuda.name}</p>
@@ -393,7 +393,7 @@ function FormularioDeuda({
   };
 
   return (
-    <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 space-y-3">
+    <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5 space-y-3">
       <p className="text-sm font-medium text-tinta flex items-center gap-2">
         <Landmark className="w-4 h-4 text-acento" /> Nueva deuda
       </p>

@@ -116,7 +116,7 @@ export default function StatsPage() {
       </div>
 
       {/* Gastos / Ingresos */}
-      <div className="grid grid-cols-2 gap-1 bg-panel border border-linea rounded-xl p-1">
+      <div className="grid grid-cols-2 gap-1 bg-panel border border-t-borde-luz border-linea rounded-2xl p-1">
         {(['expense', 'income'] as const).map(t => (
           <button
             key={t}
@@ -141,13 +141,13 @@ export default function StatsPage() {
       {cargando ? (
         <div className="bg-hundido rounded-xl h-52 animate-pulse" />
       ) : filas.length === 0 ? (
-        <div className="text-center py-12 text-tinta-2 bg-panel border border-linea rounded-xl">
+        <div className="text-center py-12 text-tinta-2 bg-panel border border-t-borde-luz border-linea rounded-2xl">
           <PieChart className="w-8 h-8 mx-auto mb-3 text-tinta-3" />
           <p className="text-sm">No hay {etiqueta.toLowerCase()} en este mes.</p>
         </div>
       ) : (
         <>
-          <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5">
+          <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5">
             <CategoryDonut
               porciones={porciones}
               total={total}
@@ -165,7 +165,7 @@ export default function StatsPage() {
                 <Link
                   key={c.category}
                   href={`/transactions?type=${tipo}&category=${encodeURIComponent(c.category)}&startDate=${start}&endDate=${end}${cuenta}`}
-                  className="block bg-panel border border-linea hover:border-linea-fuerte rounded-xl px-4 py-3 transition-colors"
+                  className="block bg-panel border border-t-borde-luz border-linea hover:border-linea-fuerte rounded-2xl px-4 py-3 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} aria-hidden />

@@ -1,6 +1,9 @@
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { usePathname } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useColores } from '../lib/colores';
 import Navegacion from './Navegacion';
+import { useMenuLateral } from './MenuLateral';
 
 /**
  * El gemelo de components/AppShell.tsx.
@@ -16,9 +19,26 @@ import Navegacion from './Navegacion';
  */
 const SIN_NAVEGACION = ['/login', '/auth', '/galeria', '/formato'];
 
+/**
+ * El fondo liso con la luz que baja desde arriba: el mismo degradé del `body`
+ * de la web. Detrás de todo, para que el vidrio tenga algo que dejar ver.
+ */
+function Fondo() {
+  const paleta = useColores();
+  return (
+    <LinearGradient
+      colors={[paleta.fondoLuz, paleta.fondo]}
+      locations={[0, 0.55]}
+      style={StyleSheet.absoluteFill}
+      pointerEvents="none"
+    />
+  );
+}
+
 export default function Estructura({ children }: { children: React.ReactNode }) {
   const ruta = usePathname();
   const desnuda = SIN_NAVEGACION.some(p => ruta.startsWith(p));
+  const menu = useMenuLateral();
 
   /*
    * `p-4` también en las desnudas: la web las envuelve en
@@ -28,12 +48,21 @@ export default function Estructura({ children }: { children: React.ReactNode }) 
    * bloques de la galería — un corrimiento parejo es siempre un contenedor de
    * más o de menos, no un problema de la pantalla.
    */
-  if (desnuda) return <View className="flex-1 bg-fondo p-4">{children}</View>;
+  if (desnuda) {
+    return (
+      <View className="flex-1 bg-fondo">
+        <Fondo />
+        <View className="flex-1 p-4">{children}</View>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-fondo">
-      <View className="flex-1">{children}</View>
-      <Navegacion />
+      <Fondo />
+      {/* Deslizar de izquierda a derecha sobre cualquier pantalla abre el menú. */}
+      <View className="flex-1" {...menu.gestoParaAbrir.panHandlers}>{children}</View>
+      <Navegacion menu={menu} />
     </View>
   );
 }

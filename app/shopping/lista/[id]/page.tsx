@@ -99,7 +99,7 @@ export default function ListaPage() {
         </div>
       )}
 
-      <div className="bg-panel border border-linea rounded-xl p-4 flex items-baseline justify-between gap-3">
+      <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 flex items-baseline justify-between gap-3">
         <div className="min-w-0">
           <p className="text-2xs text-tinta-2">Costaría</p>
           <p className="text-xl font-semibold text-tinta tabular-nums">{fmt.money(lista.total)}</p>
@@ -112,7 +112,7 @@ export default function ListaPage() {
       <AgregarArticulo listId={lista.id} onListo={cargar} />
 
       {lista.articulos.length === 0 ? (
-        <div className="text-center py-10 text-tinta-2 bg-panel border border-linea rounded-xl">
+        <div className="text-center py-10 text-tinta-2 bg-panel border border-t-borde-luz border-linea rounded-2xl">
           <ClipboardList className="w-8 h-8 mx-auto mb-3 text-tinta-3" />
           <p className="text-sm">La lista está vacía.</p>
         </div>
@@ -183,7 +183,7 @@ function FilaPlantilla({
   };
 
   return (
-    <div className="bg-panel border border-linea rounded-xl">
+    <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl">
       <button
         onClick={() => abierta ? setAbierta(false) : abrir()}
         className="w-full flex items-center gap-3 px-3 py-2.5 text-left"
@@ -279,7 +279,7 @@ function AgregarArticulo({ listId, onListo }: { listId: string; onListo: () => P
   };
 
   return (
-    <div className="bg-panel border border-linea rounded-xl p-3 space-y-2">
+    <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-3 space-y-2">
       <div className="flex gap-2">
         <input
           type="text"

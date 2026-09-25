@@ -140,7 +140,7 @@ export default function Login() {
         ) : null}
 
         {confirmar ? (
-          <View className="bg-panel border border-linea rounded-xl p-5 items-center gap-3">
+          <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-5 items-center gap-3">
             <CheckCircle2 size={32} color={paleta.acento} />
             <Texto className="text-sm text-tinta font-medium">Revisá tu correo</Texto>
             <Texto className="text-xs text-tinta-2 text-center">
@@ -149,12 +149,12 @@ export default function Login() {
             </Texto>
           </View>
         ) : (
-          <View className="bg-panel border border-linea rounded-xl p-5 gap-4">
+          <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-5 gap-4">
             <Pressable
               onPress={entrarConGoogle}
               disabled={cargandoGoogle || cargando || !estaConfigurado}
               style={apagado(cargandoGoogle || cargando || !estaConfigurado)}
-              className="w-full py-3 bg-panel border border-linea-fuerte active:bg-presionado rounded-xl flex-row items-center justify-center gap-2.5"
+              className="w-full py-3 bg-panel border border-t-borde-luz border-linea-fuerte active:bg-presionado rounded-2xl flex-row items-center justify-center gap-2.5"
             >
               {cargandoGoogle
                 ? <ActivityIndicator size="small" color={paleta.tinta2} />

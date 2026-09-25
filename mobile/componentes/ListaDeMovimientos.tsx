@@ -66,9 +66,9 @@ export default function ListaDeMovimientos({
   }
 
   return (
-    // Una lista con líneas entre filas, como la web.
-    <View className="border-t border-linea">
-      {transactions.map(tx => {
+    // Una sola tarjeta de vidrio con líneas entre filas, como la web.
+    <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl px-3">
+      {transactions.map((tx, i) => {
         const origen = ORIGEN[tx.source] ?? ORIGEN.manual;
         const IconoOrigen = origen.icono;
         const cuentaDelMov = tx.ledger_id ? ledgers.find(l => l.id === tx.ledger_id) : null;
@@ -79,7 +79,9 @@ export default function ListaDeMovimientos({
           <Pressable
             key={tx.id}
             onPress={() => onEdit(tx)}
-            className="border-b border-linea px-1 py-3 flex-row items-center gap-3 active:bg-hundido"
+            className={`px-1 py-3 flex-row items-center gap-3 active:bg-hundido ${
+              i < transactions.length - 1 ? 'border-b border-linea' : ''
+            }`}
           >
             {/* El ícono de la categoría en lugar de la barrita de color: la
                 barra decía si entraba o salía, que el signo del monto ya dice. */}

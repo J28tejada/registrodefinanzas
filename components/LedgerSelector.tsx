@@ -276,9 +276,9 @@ export default function LedgerSelector() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={handleClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={handleClose} />
 
-      <div className="relative w-full md:max-w-md bg-panel border border-linea-fuerte md:rounded-2xl rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col">
+      <div className="relative w-full md:max-w-md vidrio border border-t-borde-luz border-linea md:rounded-2xl rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-linea">
           <h2 className="font-semibold text-tinta">

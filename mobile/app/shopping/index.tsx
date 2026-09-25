@@ -136,7 +136,7 @@ export default function Supermercado() {
         {cargando ? (
           <View className="h-20 bg-hundido rounded-xl" />
         ) : enCurso.length === 0 && cerradas.length === 0 ? (
-          <Texto className="text-xs text-tinta-2 bg-panel border border-linea rounded-xl px-4 py-6 text-center">
+          <Texto className="text-xs text-tinta-2 bg-panel border border-t-borde-luz border-linea rounded-2xl px-4 py-6 text-center">
             Ninguna compra todavía. Cuando vayas al súper, arrancá una desde una lista.
           </Texto>
         ) : (
@@ -180,7 +180,7 @@ export default function Supermercado() {
         </Texto>
 
         {creandoLista ? (
-          <View className="bg-panel border border-linea rounded-xl p-3 gap-2">
+          <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-3 gap-2">
             <TextInput
               value={nombreLista}
               onChangeText={setNombreLista}
@@ -212,14 +212,14 @@ export default function Supermercado() {
         ) : null}
 
         {!cargando && lists.length === 0 && !creandoLista ? (
-          <Texto className="text-xs text-tinta-2 bg-panel border border-linea rounded-xl px-4 py-6 text-center">
+          <Texto className="text-xs text-tinta-2 bg-panel border border-t-borde-luz border-linea rounded-2xl px-4 py-6 text-center">
             Todavía no tenés ninguna lista.
           </Texto>
         ) : null}
 
         {lists.map(l => (
           <Link key={l.id} href={`/shopping/lista/${l.id}` as never} asChild>
-            <Pressable className="bg-panel border border-linea active:border-linea-fuerte rounded-xl px-4 py-3">
+            <Pressable className="bg-panel border border-t-borde-luz border-linea active:border-linea-fuerte rounded-2xl px-4 py-3">
               <View className="flex-row items-center gap-3">
                 <View className="flex-1">
                   <Texto className="text-sm text-tinta" numberOfLines={1}>{l.name}</Texto>
@@ -279,7 +279,7 @@ function IniciarCompra({
   };
 
   return (
-    <View className="bg-panel border border-acento/30 rounded-xl p-4 gap-3">
+    <View className="bg-panel border border-t-borde-luz border-acento/30 rounded-2xl p-4 gap-3">
       <Texto className="text-sm font-medium text-tinta">Empezar una compra</Texto>
 
       <View className="gap-1">
@@ -343,7 +343,7 @@ function TarjetaCompra({
 
   return (
     <Link href={`/shopping/compra/${compra.id}` as never} asChild>
-      <Pressable className="bg-panel border border-linea active:border-linea-fuerte rounded-xl px-4 py-3.5">
+      <Pressable className="bg-panel border border-t-borde-luz border-linea active:border-linea-fuerte rounded-2xl px-4 py-3.5">
         <View className="flex-row items-center gap-3">
           <View className={`w-9 h-9 rounded-xl items-center justify-center ${
             compra.closed ? 'bg-hundido' : 'bg-acento/10'

@@ -61,9 +61,9 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
   }
 
   return (
-    // Una lista con líneas entre filas y no una tarjeta por movimiento: con
-    // tantas cajas seguidas la pantalla era puro borde.
-    <div className="border-t border-linea">
+    // Una sola tarjeta de vidrio con líneas entre filas, no una tarjeta por
+    // movimiento: con tantas cajas seguidas la pantalla era puro borde.
+    <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl px-3">
       {transactions.map(tx => {
         const Source = sourceBadge[tx.source] ?? sourceBadge.manual;
         const SourceIcon = Source.icon;
@@ -76,7 +76,7 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
             // Tocar la fila la edita: en un teléfono, un lápiz y una papelera
             // en cada fila le comían el ancho al texto.
             onClick={() => onEdit(tx)}
-            className="border-b border-linea hover:bg-hundido px-1 py-3 flex items-center gap-3 group transition-colors cursor-pointer"
+            className="border-b border-linea last:border-b-0 hover:bg-hundido px-1 py-3 flex items-center gap-3 group transition-colors cursor-pointer"
           >
             {/* El ícono de la categoría en lugar de la barrita de color: la
                 barra decía si entraba o salía, que el signo del monto ya dice.

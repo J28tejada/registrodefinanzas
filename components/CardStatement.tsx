@@ -37,7 +37,7 @@ export default function CardStatement({
   const tono = budgetTone(uso);
 
   return (
-    <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 space-y-4">
+    <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-medium text-tinta">Estado de cuenta</p>
         {card.alerts && ciclo && (

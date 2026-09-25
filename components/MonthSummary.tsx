@@ -30,24 +30,24 @@ export default function MonthSummary({ income, expenses, balance, incomeHref, ex
   const [entero, centavos] = separarCentavos(fmt.money(Math.abs(balance)));
 
   return (
-    <section>
-      <p className="text-sm text-tinta-2">Balance del mes</p>
-      <p className={`text-4xl font-semibold tracking-tight tabular-nums mt-1 ${negativo ? 'text-peligro' : 'text-tinta'}`}>
+    <section className="bg-panel border border-t-borde-luz border-linea rounded-2xl overflow-hidden">
+      <p className="text-sm text-tinta-2 px-5 pt-4">Balance del mes</p>
+      <p className={`text-4xl font-semibold tracking-tight tabular-nums mt-1 px-5 ${negativo ? 'text-peligro' : 'text-tinta'}`}>
         {negativo ? '−' : ''}{entero}<span className={negativo ? 'text-peligro/60' : 'text-tinta-3'}>{centavos}</span>
       </p>
-      <div className="flex mt-5 border-y border-linea">
+      <div className="flex mt-5 border-t border-linea">
         <Total etiqueta="Ingresos" monto={`+${fmt.money(income)}`} tono="text-acento" href={incomeHref} />
         <div className="w-px bg-linea" />
-        <Total etiqueta="Gastos" monto={`−${fmt.money(expenses)}`} tono="text-tinta" href={expensesHref} separado />
+        <Total etiqueta="Gastos" monto={`−${fmt.money(expenses)}`} tono="text-tinta" href={expensesHref} />
       </div>
     </section>
   );
 }
 
-function Total({ etiqueta, monto, tono, href, separado }: {
-  etiqueta: string; monto: string; tono: string; href?: string; separado?: boolean;
+function Total({ etiqueta, monto, tono, href }: {
+  etiqueta: string; monto: string; tono: string; href?: string;
 }) {
-  const clase = `flex-1 py-3 ${separado ? 'pl-4' : ''}`;
+  const clase = 'flex-1 px-5 py-3';
   const contenido = (
     <>
       <p className="text-xs text-tinta-2">{etiqueta}</p>

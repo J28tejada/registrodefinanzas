@@ -99,7 +99,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 space-y-5">
+      <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5 space-y-5">
         {/* Moneda */}
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm text-tinta">
@@ -191,7 +191,7 @@ export default function SettingsPage() {
       <CategoriesPanel />
 
       {/* Cuenta */}
-      <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 flex items-center gap-3">
+      <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5 flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <p className="text-sm text-tinta font-medium truncate">{email || 'Sesión iniciada'}</p>
           <p className="text-xs text-tinta-2">Tus datos son solo tuyos: nadie más los ve.</p>

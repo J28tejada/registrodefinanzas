@@ -198,15 +198,15 @@ export default function DashboardPage() {
 
           {/* Presupuestos del mes */}
           {budgets.length > 0 && (
-            <section>
+            <section className="bg-panel border border-t-borde-luz border-linea rounded-2xl px-4 pt-3.5 pb-1">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="text-base font-semibold text-tinta">Presupuestos</h3>
                 <Link href="/budgets" className="text-sm text-tinta-2 hover:text-tinta transition-colors">
                   Ver todos
                 </Link>
               </div>
-              {/* Filas separadas por una línea, sin tarjeta alrededor: es una
-                  lista, y una caja con borde no le agregaba nada. */}
+              {/* Una tarjeta de vidrio por sección, con la lista adentro y una
+                  línea entre filas; no una tarjeta por fila. */}
               {[...budgets]
                 .sort((a, b) => b.percent - a.percent)
                 .slice(0, 4)
@@ -220,7 +220,7 @@ export default function DashboardPage() {
 
           {/* Category breakdown */}
           {summary.byCategory.length > 0 && (
-            <section>
+            <section className="bg-panel border border-t-borde-luz border-linea rounded-2xl px-4 pt-3.5 pb-1">
               <h3 className="text-base font-semibold text-tinta mb-1">Categorías del mes</h3>
               <div>
                 {summary.byCategory.slice(0, 6).map(cat => {

@@ -120,7 +120,7 @@ export default function Billetera() {
       {cards.length > 0 ? (
         // Dos columnas en el teléfono: con tres, "RD$2,250.00" no entra en su
         // tercio y el número —que es a lo que se viene— sale cortado.
-        <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
+        <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-3">
           <View className="flex-row gap-3">
             <View className="flex-1">
               <Texto className="text-2xs text-tinta-2">Gastado</Texto>
@@ -147,7 +147,7 @@ export default function Billetera() {
           ))}
         </View>
       ) : cards.length === 0 ? (
-        <View className="items-center py-12 bg-panel border border-linea rounded-xl">
+        <View className="items-center py-12 bg-panel border border-t-borde-luz border-linea rounded-2xl">
           <CreditCard size={32} color={paleta.tinta3} />
           <Texto className="text-sm text-tinta-2 mt-3">
             {verArchivadas ? 'No tenés nada archivado.' : 'Todavía no cargaste ninguno.'}
@@ -198,7 +198,7 @@ function Fila({ card, total, fmt }: {
   return (
     <Link href={`/cards/${card.id}` as never} asChild>
       <Pressable
-        className="bg-panel border border-linea active:border-linea-fuerte rounded-xl p-4"
+        className="bg-panel border border-t-borde-luz border-linea active:border-linea-fuerte rounded-2xl p-4"
         style={card.archived ? { opacity: 0.6 } : undefined}
       >
         <View className="flex-row items-center gap-3">

@@ -196,7 +196,7 @@ export default function Tablero() {
           />
 
           {presupuestos.length > 0 ? (
-            <View>
+            <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl px-4 pt-3.5 pb-1">
               <View className="flex-row items-center justify-between mb-1">
                 <Texto className="text-base font-semibold text-tinta">Presupuestos</Texto>
                 <Link href="/budgets" asChild>
@@ -212,7 +212,7 @@ export default function Tablero() {
           ) : null}
 
           {summary.byCategory.length > 0 ? (
-            <View>
+            <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl px-4 pt-3.5 pb-1">
               <Texto className="text-base font-semibold text-tinta mb-1">Categorías del mes</Texto>
               {summary.byCategory.slice(0, 6).map(cat => {
                 const max = summary.byCategory[0].total;

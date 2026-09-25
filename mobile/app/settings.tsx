@@ -103,7 +103,7 @@ export default function Configuracion() {
         </View>
       ) : null}
 
-      <View className="bg-panel border border-linea rounded-xl p-4 gap-5">
+      <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-5">
         {/* Moneda */}
         <View className="gap-2">
           <View className="flex-row items-center gap-2">
@@ -203,7 +203,7 @@ export default function Configuracion() {
       <PanelDeCategorias />
 
       {/* Cuenta */}
-      <View className="bg-panel border border-linea rounded-xl p-4 flex-row items-center gap-3">
+      <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 flex-row items-center gap-3">
         <View className="flex-1">
           <Texto className="text-sm text-tinta font-medium" numberOfLines={1}>
             {email || 'Sesión iniciada'}

@@ -47,7 +47,7 @@ export default function EstadoDeCuenta({
   const tono = budgetTone(uso);
 
   return (
-    <View className="bg-panel border border-linea rounded-xl p-4 gap-4">
+    <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-4">
       <View className="flex-row items-start justify-between gap-3">
         <Texto className="text-sm font-medium text-tinta">Estado de cuenta</Texto>
         {card.alerts && ciclo ? (

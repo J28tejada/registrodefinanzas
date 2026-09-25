@@ -284,7 +284,7 @@ export default function DetalleDeTarjeta() {
 
       {/* Dos columnas en el teléfono, igual que en la lista: en un tercio de
           pantalla los montos salen cortados. */}
-      <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
+      <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-3">
         <View className="flex-row gap-3">
           <View className="flex-1">
             <Texto className="text-2xs text-tinta-2">Gastado</Texto>
@@ -302,7 +302,7 @@ export default function DetalleDeTarjeta() {
       </View>
 
       {/* Los últimos meses: un mes suelto no dice si la estás usando más. */}
-      <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
+      <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-3">
         <Texto className="text-sm font-medium text-tinta">Últimos meses</Texto>
         {maxMes === 0 ? (
           <Texto className="text-xs text-tinta-2 py-4 text-center">
@@ -341,7 +341,7 @@ export default function DetalleDeTarjeta() {
 
       {/* En qué se fue: la pregunta que sigue a "gasté tanto con esta tarjeta". */}
       {detalle.byCategory.length > 0 ? (
-        <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
+        <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-3">
           <Texto className="text-sm font-medium text-tinta">En qué se fue</Texto>
           <View className="gap-2.5">
             {detalle.byCategory.map(c => (
@@ -374,7 +374,7 @@ export default function DetalleDeTarjeta() {
           {movimientos.length > 0 ? <Texto className="text-sm text-tinta-2"> · {movimientos.length}</Texto> : null}
         </Texto>
         {movimientos.length === 0 ? (
-          <Texto className="text-xs text-tinta-2 py-6 text-center bg-panel border border-linea rounded-xl">
+          <Texto className="text-xs text-tinta-2 py-6 text-center bg-panel border border-t-borde-luz border-linea rounded-2xl">
             Nada pagado por acá en {fmt.monthLabel(`${mes}-01`)}.
           </Texto>
         ) : (

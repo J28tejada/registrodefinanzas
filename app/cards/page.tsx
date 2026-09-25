@@ -103,7 +103,7 @@ export default function CardsPage() {
       {cards.length > 0 && (
         // Dos columnas en el teléfono: con tres, "RD$2,250.00" no entra en su
         // tercio y el número —que es a lo que se viene— sale cortado.
-        <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="min-w-0">
             <p className="text-2xs sm:text-xs text-tinta-2">Gastado</p>
             <p className="text-lg sm:text-xl font-semibold text-tinta mt-1 truncate">{fmt.money(total)}</p>
@@ -135,7 +135,7 @@ export default function CardsPage() {
           ))}
         </div>
       ) : cards.length === 0 ? (
-        <div className="text-center py-12 text-tinta-2 bg-panel border border-linea rounded-xl">
+        <div className="text-center py-12 text-tinta-2 bg-panel border border-t-borde-luz border-linea rounded-2xl">
           <CreditCard className="w-8 h-8 mx-auto mb-3 text-tinta-3" />
           <p className="text-sm">
             {verArchivadas ? 'No tenés nada archivado.' : 'Todavía no cargaste ninguno.'}

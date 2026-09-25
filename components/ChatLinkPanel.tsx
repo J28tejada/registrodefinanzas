@@ -96,7 +96,7 @@ export default function ChatLinkPanel({
 
   return (
     <>
-      <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 space-y-4">
+      <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5 space-y-4">
         <div>
           <p className="font-semibold text-tinta text-sm">{titulo}</p>
           <div className="text-xs text-tinta-2 mt-0.5">{instrucciones}</div>
@@ -172,7 +172,7 @@ export default function ChatLinkPanel({
       <div className="space-y-2">
         <p className="text-sm font-medium text-tinta">Chats autorizados</p>
         {chats.length === 0 && (
-          <div className="text-center py-8 text-tinta-2 text-sm bg-panel border border-linea rounded-xl">
+          <div className="text-center py-8 text-tinta-2 text-sm bg-panel border border-t-borde-luz border-linea rounded-2xl">
             Todavía no hay ninguno.
           </div>
         )}
@@ -181,7 +181,7 @@ export default function ChatLinkPanel({
           const color = ledger ? LEDGER_COLOR_MAP[ledger.color] : null;
           const etiqueta = formatearId(c.external_id);
           return (
-            <div key={c.id} className="bg-panel border border-linea rounded-xl px-4 py-3 flex items-center gap-3">
+            <div key={c.id} className="bg-panel border border-t-borde-luz border-linea rounded-2xl px-4 py-3 flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-tinta font-medium truncate">{etiqueta}</p>
                 <div className="relative mt-1">

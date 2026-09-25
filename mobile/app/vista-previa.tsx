@@ -25,7 +25,7 @@ export default function VistaPrevia() {
 
       <ResumenDelMes income={RESUMENES[0].income} expenses={RESUMENES[0].expenses} balance={RESUMENES[0].balance} />
 
-      <View>
+      <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl px-4 pt-3.5 pb-1">
         <Texto className="text-base font-semibold text-tinta mb-1">Presupuestos</Texto>
         {PRESUPUESTOS.map(p => (
           <View key={p.id} className="py-3.5 border-t border-linea">
@@ -36,7 +36,7 @@ export default function VistaPrevia() {
 
       {/* Relleno: si la barra de abajo tapa esto, el pb-32 no alcanza. */}
       {[1, 2, 3].map(n => (
-        <View key={n} className="bg-panel border border-linea rounded-xl p-5">
+        <View key={n} className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-5">
           <Texto className="text-sm text-tinta-2">Bloque de relleno {n}</Texto>
         </View>
       ))}

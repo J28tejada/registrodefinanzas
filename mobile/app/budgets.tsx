@@ -241,7 +241,7 @@ export default function Presupuestos() {
       ) : null}
 
       {/* Alta */}
-      <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
+      <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-3">
         <View className="flex-row items-center gap-2">
           <Target size={16} color={paleta.tinta2} />
           <Texto className="text-sm font-medium text-tinta">Nuevo presupuesto</Texto>

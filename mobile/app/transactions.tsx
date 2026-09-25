@@ -176,7 +176,7 @@ export default function Movimientos() {
       ) : null}
 
       {verFiltros ? (
-        <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
+        <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-3">
           <Texto className="text-xs text-tinta-2 font-medium">Rango de fechas</Texto>
           <View className="flex-row gap-3">
             <View className="flex-1 gap-1.5">

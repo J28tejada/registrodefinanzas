@@ -6,9 +6,33 @@
    barras de desplazamiento) siguen al tema del sistema igual que la app. */
 :root { color-scheme: light dark; }
 
+/* El fondo es liso: una luz muy suave que baja desde arriba y nada más. El
+   vidrio necesita algo de variación detrás para leerse como vidrio y no como
+   una tarjeta gris; formas o manchas competían con los números. Va fijo para
+   que al hacer scroll las tarjetas pasen por encima de la luz y no se la lleven. */
 body {
   @apply bg-fondo text-tinta;
+  background-image: linear-gradient(180deg, rgb(var(--c-fondo-luz)) 0%, rgb(var(--c-fondo)) 55%);
+  background-attachment: fixed;
   overflow-x: hidden;
+}
+
+/* Vidrio de verdad: lo que pasa por debajo se desenfoca. Solo en lo que tiene
+   contenido detrás —las barras, el menú lateral, las hojas y los modales—;
+   las tarjetas no lo necesitan porque detrás solo está el fondo liso, y con
+   el panel translúcido y el borde con luz ya se ven igual.
+   Es el gemelo de mobile/componentes/Vidrio.tsx. */
+@layer components {
+  .vidrio {
+    background-color: rgb(var(--c-panel-fuerte) / var(--a-panel-fuerte));
+    -webkit-backdrop-filter: blur(24px) saturate(130%);
+    backdrop-filter: blur(24px) saturate(130%);
+  }
+  /* Sin desenfoque (navegadores viejos, modo de ahorro), el vidrio casi
+     transparente dejaría el texto encima de lo que pasa por debajo. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .vidrio { background-color: rgb(var(--c-fondo) / 0.96); }
+  }
 }
 
 /**
@@ -23,6 +47,9 @@ body {
  */
 .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px)); }
 .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+/* La barra de abajo flota: separada del borde, y más arriba si el teléfono
+   tiene barra de gestos. */
+.bottom-safe { bottom: max(0.75rem, env(safe-area-inset-bottom, 0px)); }
 
 /**
  * En iOS, `input[type=date]` trae un ancho intrínseco propio y no baja de ahí

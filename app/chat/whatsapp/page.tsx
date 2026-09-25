@@ -165,7 +165,7 @@ export default function WhatsappPage() {
       />
 
       {/* Cómo se usa */}
-      <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 space-y-3">
+      <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5 space-y-3">
         <p className="font-semibold text-tinta text-sm">Cómo se usa</p>
         <ul className="space-y-2 text-sm text-tinta-2">
           {[
@@ -216,7 +216,7 @@ export default function WhatsappPage() {
                 </div>
               )}
 
-              <div className="bg-panel border border-linea rounded-xl p-4 space-y-4">
+              <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-hundido rounded-lg flex items-center justify-center flex-shrink-0">
                     <MessageCircle className="w-5 h-5 text-tinta-2" />
@@ -290,7 +290,7 @@ export default function WhatsappPage() {
 
               {/* Emparejar el teléfono del bot con Evolution */}
               {av.configurado && av.state !== 'open' && (
-                <div className="bg-panel border border-linea rounded-xl p-4 space-y-4">
+                <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 space-y-4">
                   <div>
                     <p className="font-semibold text-tinta text-sm">Vincular el teléfono del asistente</p>
                     <p className="text-xs text-tinta-2 mt-0.5">

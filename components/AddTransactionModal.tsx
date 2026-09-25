@@ -187,14 +187,14 @@ export default function AddTransactionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full md:max-w-lg bg-panel border border-linea-fuerte md:rounded-2xl rounded-t-2xl shadow-2xl max-h-[95vh] overflow-y-auto">
+      <div className="relative w-full md:max-w-lg vidrio border border-t-borde-luz border-linea md:rounded-2xl rounded-t-2xl shadow-2xl max-h-[95vh] overflow-y-auto">
         {/* z-10: sin él la cabecera queda en el fondo del apilado y cualquier
             elemento posicionado del formulario —el botón "Hablar", que es
             `relative`— se pinta ENCIMA del título al desplazar el modal. Estar
             pegada arriba no alcanza: hay que estar adelante también. */}
-        <div className="sticky top-0 z-10 bg-panel border-b border-linea px-5 py-4 flex items-center justify-between">
+        <div className="sticky top-0 z-10 vidrio border-b border-linea px-5 py-4 flex items-center justify-between">
           <h2 className="font-semibold text-tinta">
             {editingTransaction ? 'Editar registro' : 'Nuevo registro'}
           </h2>

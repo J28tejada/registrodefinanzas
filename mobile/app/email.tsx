@@ -188,7 +188,7 @@ export default function Correo() {
       ) : null}
 
       {!connected ? (
-        <View className="bg-panel border border-linea rounded-xl p-5 gap-5">
+        <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-5 gap-5">
           <View className="flex-row items-center gap-3">
             <View className="w-12 h-12 bg-hundido rounded-xl items-center justify-center">
               <Mail size={24} color={paleta.tinta2} />
@@ -225,7 +225,7 @@ export default function Correo() {
       ) : (
         <>
           {/* La cuenta conectada */}
-          <View className="bg-panel border border-linea rounded-xl p-4 flex-row items-center gap-3">
+          <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 flex-row items-center gap-3">
             <View className="w-10 h-10 bg-hundido rounded-lg items-center justify-center">
               <Mail size={20} color={paleta.tinta2} />
             </View>
