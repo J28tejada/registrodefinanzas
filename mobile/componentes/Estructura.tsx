@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { usePathname } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { GestureDetector } from 'react-native-gesture-handler';
 import { useColores } from '../lib/colores';
 import Navegacion from './Navegacion';
 import { useMenuLateral } from './MenuLateral';
@@ -61,7 +62,9 @@ export default function Estructura({ children }: { children: React.ReactNode }) 
     <View className="flex-1 bg-fondo">
       <Fondo />
       {/* Deslizar de izquierda a derecha sobre cualquier pantalla abre el menú. */}
-      <View className="flex-1" {...menu.gestoParaAbrir.panHandlers}>{children}</View>
+      <GestureDetector gesture={menu.gestoParaAbrir}>
+        <View className="flex-1">{children}</View>
+      </GestureDetector>
       <Navegacion menu={menu} />
     </View>
   );

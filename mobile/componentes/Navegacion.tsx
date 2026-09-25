@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
-import { Animated, BackHandler, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { BackHandler, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { GestureDetector } from 'react-native-gesture-handler';
+import Animated, { interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import { Link, usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -58,7 +60,13 @@ export default function Navegacion({ menu }: { menu: MenuLateral }) {
   const { currentLedger, setSelectorOpen, setGlobalAddOpen } = useCuenta();
   const { session } = useSesion();
   const insets = useSafeAreaInsets();
-  const { cerrarYa, cerrar, visible } = menu;
+  const { cerrarYa, cerrar, abierto, progreso, ancho } = menu;
+  // El panel y el velo se mueven en el hilo de la interfaz: React no se entera
+  // de cada cuadro del arrastre.
+  const estiloVelo = useAnimatedStyle(() => ({ opacity: progreso.get() }));
+  const estiloPanel = useAnimatedStyle(() => ({
+    transform: [{ translateX: interpolate(progreso.get(), [0, 1], [-ancho, 0]) }],
+  }));
 
   // Al navegar el menú tiene que irse solo: si no, tapa la pantalla recién
   // abierta y hay que cerrarlo a mano.
@@ -67,10 +75,10 @@ export default function Navegacion({ menu }: { menu: MenuLateral }) {
   // El botón de atrás de Android cierra el menú antes que la pantalla. Con el
   // `Modal` lo hacía `onRequestClose`; la capa animada tiene que pedirlo.
   useEffect(() => {
-    if (!visible) return;
+    if (!abierto) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => { cerrar(); return true; });
     return () => sub.remove();
-  }, [visible, cerrar]);
+  }, [abierto, cerrar]);
 
   const email = session?.user?.email ?? '';
   const colorDeCuenta = currentLedger ? LEDGER_COLOR_MAP[currentLedger.color] : null;
@@ -140,18 +148,14 @@ export default function Navegacion({ menu }: { menu: MenuLateral }) {
           seguir al dedo (ver MenuLateral.ts). Va última a propósito: en React
           Native manda el orden más que el z-index, y así tapa las dos barras.
           Deslizarla hacia la izquierda la cierra. */}
-      {visible ? (
-        <View style={StyleSheet.absoluteFill} className="z-30" {...menu.gestoParaCerrar.panHandlers}>
-          <Animated.View style={[StyleSheet.absoluteFill, { opacity: menu.progreso }]}>
+      {abierto ? (
+        <GestureDetector gesture={menu.gestoParaCerrar}>
+        <View style={StyleSheet.absoluteFill} className="z-30">
+          <Animated.View style={[StyleSheet.absoluteFill, estiloVelo]}>
             <Pressable className="flex-1 bg-black/40" onPress={cerrar} accessibilityLabel="Cerrar el menú" />
           </Animated.View>
           <Animated.View
-            style={{
-              position: 'absolute', top: 0, left: 0, bottom: 0, width: menu.ancho,
-              transform: [{
-                translateX: menu.progreso.interpolate({ inputRange: [0, 1], outputRange: [-menu.ancho, 0] }),
-              }],
-            }}
+            style={[{ position: 'absolute', top: 0, left: 0, bottom: 0, width: ancho }, estiloPanel]}
           >
           <Vidrio className="flex-1 border-r border-linea">
           <View className="px-5 border-b border-linea" style={{ paddingTop: insets.top }}>
@@ -210,6 +214,7 @@ export default function Navegacion({ menu }: { menu: MenuLateral }) {
           </Vidrio>
           </Animated.View>
         </View>
+        </GestureDetector>
       ) : null}
     </>
   );

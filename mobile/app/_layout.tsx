@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, useFonts,
@@ -32,22 +33,25 @@ export default function RaizDelLayout() {
   if (!listas) return null;
 
   return (
-    <SafeAreaProvider>
-      {/* El mismo orden que app/providers.tsx en la web: las categorías cuelgan
-          de la cuenta activa, así que el proveedor de cuenta va primero. */}
-      <ProveedorDeSesion>
-        <ProveedorDeAjustes>
-          <ProveedorDeCuenta>
-            <ProveedorDeCategorias>
-              <Guardia />
-              <ModalGlobalDeMovimiento />
-              <SelectorDeCuenta />
-            </ProveedorDeCategorias>
-          </ProveedorDeCuenta>
-        </ProveedorDeAjustes>
-      </ProveedorDeSesion>
-      <StatusBar style="auto" />
-    </SafeAreaProvider>
+    // Sin esta raíz los gestos de Gesture Handler no hacen nada, y sin error.
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        {/* El mismo orden que app/providers.tsx en la web: las categorías cuelgan
+            de la cuenta activa, así que el proveedor de cuenta va primero. */}
+        <ProveedorDeSesion>
+          <ProveedorDeAjustes>
+            <ProveedorDeCuenta>
+              <ProveedorDeCategorias>
+                <Guardia />
+                <ModalGlobalDeMovimiento />
+                <SelectorDeCuenta />
+              </ProveedorDeCategorias>
+            </ProveedorDeCuenta>
+          </ProveedorDeAjustes>
+        </ProveedorDeSesion>
+        <StatusBar style="auto" />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
