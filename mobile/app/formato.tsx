@@ -20,11 +20,11 @@ export default function Formato() {
   const fallo = new Map(fallas.map(f => [`${f.caso.que}|${f.caso.entrada}`, f.obtuvo]));
 
   return (
-    <ScrollView className="flex-1 bg-slate-950" contentContainerClassName="p-4 pb-32">
+    <ScrollView className="flex-1 bg-fondo" contentContainerClassName="p-4 pb-32">
       <View className="max-w-2xl mx-auto w-full gap-4">
         <View>
-          <Texto className="text-xl font-bold text-white">Formato</Texto>
-          <Texto className="text-slate-400 text-sm">
+          <Texto className="text-xl font-semibold text-tinta">Formato</Texto>
+          <Texto className="text-tinta-2 text-sm">
             {fallas.length === 0
               ? `Los ${CASOS.length} casos coinciden con la web en este teléfono.`
               : `${fallas.length} de ${CASOS.length} no coinciden con la web.`}
@@ -32,27 +32,27 @@ export default function Formato() {
         </View>
 
         <View className={`rounded-2xl border p-4 ${fallas.length === 0
-          ? 'bg-emerald-500/10 border-emerald-500/30'
-          : 'bg-rose-500/10 border-rose-500/30'}`}>
-          <Texto className={`text-sm font-medium ${fallas.length === 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+          ? 'bg-acento/10 border-acento/30'
+          : 'bg-peligro/10 border-peligro/30'}`}>
+          <Texto className={`text-sm font-medium ${fallas.length === 0 ? 'text-acento' : 'text-peligro'}`}>
             {fallas.length === 0 ? 'Todo igual que en la web' : 'Hay diferencias'}
           </Texto>
         </View>
 
-        <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-3">
+        <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
           {CASOS.map(caso => {
             const obtuvo = fallo.get(`${caso.que}|${caso.entrada}`);
             return (
               <View key={`${caso.que}-${caso.entrada}`} className="gap-0.5">
-                <Texto className="text-2xs text-slate-500">
+                <Texto className="text-2xs text-tinta-2">
                   {caso.que}({JSON.stringify(caso.entrada)}) — {caso.porque}
                 </Texto>
                 {obtuvo === undefined ? (
-                  <Texto className="text-sm text-emerald-400">{caso.esperado}</Texto>
+                  <Texto className="text-sm text-acento">{caso.esperado}</Texto>
                 ) : (
                   <>
-                    <Texto className="text-sm text-rose-400">obtuvo: {obtuvo}</Texto>
-                    <Texto className="text-sm text-slate-400">esperaba: {caso.esperado}</Texto>
+                    <Texto className="text-sm text-peligro">obtuvo: {obtuvo}</Texto>
+                    <Texto className="text-sm text-tinta-2">esperaba: {caso.esperado}</Texto>
                   </>
                 )}
               </View>

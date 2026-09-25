@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { Link } from 'expo-router';
-import {
-  ChevronLeft, ChevronRight, Plus, RefreshCw, TrendingDown, TrendingUp, Wallet,
-} from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Plus, RefreshCw } from 'lucide-react-native';
 import Texto from '../componentes/Texto';
 import Pantalla from '../componentes/Pantalla';
-import TarjetaDeResumen from '../componentes/TarjetaDeResumen';
+import ResumenDelMes from '../componentes/ResumenDelMes';
 import BarraDePresupuesto from '../componentes/BarraDePresupuesto';
 import ListaDeMovimientos from '../componentes/ListaDeMovimientos';
 import AvisosDeTarjeta from '../componentes/AvisosDeTarjeta';
@@ -21,9 +19,11 @@ import {
 import { limitesDelMes } from '@compartido/format';
 import { avisosDeTarjetas, AvisoDeTarjeta } from '@compartido/tarjetas';
 import { BudgetProgress, LEDGER_COLOR_MAP, Summary, Transaction } from '@compartido/types';
+import { useColores } from '../lib/colores';
 
 /** El gemelo de app/page.tsx. */
 export default function Tablero() {
+  const paleta = useColores();
   const { currentLedger, refreshLedgers, transactionVersion, setGlobalAddOpen } = useCuenta();
   const { session } = useSesion();
   const { settings } = useAjustes();
@@ -127,52 +127,54 @@ export default function Tablero() {
   const visibles = filtro === 'all' ? recientes : recientes.filter(t => t.type === filtro);
 
   return (
-    <Pantalla className="gap-6">
+    <Pantalla className="gap-8">
       {/* Cabecera */}
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center gap-3 flex-1">
-          {colorDeCuenta ? (
-            <View className="w-10 h-10 rounded-xl" style={{ backgroundColor: colorDeCuenta.main }} />
-          ) : null}
           <View className="flex-1">
-            <Texto className="text-xl font-bold text-white" numberOfLines={1}>
-              {currentLedger?.name ?? 'Dashboard'}
-            </Texto>
+            <View className="flex-row items-center gap-2">
+              {colorDeCuenta ? (
+                <View className="w-3 h-3 rounded" style={{ backgroundColor: colorDeCuenta.main }} />
+              ) : null}
+              <Texto className="text-xl font-semibold text-tinta flex-1" numberOfLines={1}>
+                {currentLedger?.name ?? 'Inicio'}
+              </Texto>
+            </View>
             <View className="flex-row items-center gap-1 mt-0.5">
               <Pressable onPress={irAtras} className="p-0.5">
-                <ChevronLeft size={16} color="#64748b" />
+                <ChevronLeft size={16} color={paleta.tinta2} />
               </Pressable>
-              <Texto className="text-sm text-slate-400 capitalize text-center" style={{ minWidth: 130 }}>
+              <Texto className="text-sm text-tinta-2 text-center" style={{ minWidth: 130 }}>
                 {nombreDelMes}
               </Texto>
               <Pressable onPress={irAdelante} disabled={esMesActual} className="p-0.5"
                 style={esMesActual ? { opacity: 0.3 } : undefined}>
-                <ChevronRight size={16} color="#64748b" />
+                <ChevronRight size={16} color={paleta.tinta2} />
               </Pressable>
               {!esMesActual ? (
                 <Pressable onPress={irAlMesActual} className="ml-1">
-                  <Texto className="text-xs text-emerald-400">Hoy</Texto>
+                  <Texto className="text-xs font-medium text-tinta">Hoy</Texto>
                 </Pressable>
               ) : null}
             </View>
           </View>
         </View>
         <View className="flex-row gap-2">
-          <Pressable onPress={cargar} className="p-2 active:bg-slate-800 rounded-lg">
-            <RefreshCw size={16} color="#94a3b8" />
+          <Pressable onPress={cargar} className="p-2 active:bg-hundido rounded-lg">
+            <RefreshCw size={16} color={paleta.tinta2} />
           </Pressable>
           <Pressable
             onPress={() => setGlobalAddOpen(true)}
-            className="flex-row items-center gap-2 px-4 py-2 bg-emerald-600 active:bg-emerald-500 rounded-xl"
+            className="flex-row items-center gap-2 px-3.5 py-2 bg-primario active:bg-primario/85 rounded-lg"
           >
-            <Plus size={16} color="#ffffff" />
+            <Plus size={16} color={paleta.sobrePrimario} />
           </Pressable>
         </View>
       </View>
 
       {error && !cargando ? (
-        <View className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4">
-          <Texto className="text-rose-400 text-sm">{error}</Texto>
+        <View className="bg-peligro/10 border border-peligro/30 rounded-xl p-4">
+          <Texto className="text-peligro text-sm">{error}</Texto>
         </View>
       ) : null}
 
@@ -182,69 +184,60 @@ export default function Tablero() {
       <AvisosDeTarjeta avisos={avisos} />
 
       {cargando ? (
-        <View className="flex-row gap-3">
-          {[0, 1].map(i => (
-            <View key={i} className="flex-1 bg-slate-900 border border-slate-800 rounded-xl h-28" />
-          ))}
-        </View>
+        <View className="bg-hundido rounded-xl h-36" />
       ) : summary ? (
         <>
-          {/* Dos columnas, como la web en un teléfono: `md:grid-cols-3` no
-              aplica a este ancho. El balance ocupa la fila entera. */}
-          <View className="gap-3">
-            <View className="flex-row gap-3">
-              <View className="flex-1">
-                <TarjetaDeResumen title="Ingresos" subtitle="del mes"
-                  amount={summary.totalIncome} variant="income" icon={TrendingUp} />
-              </View>
-              <View className="flex-1">
-                <TarjetaDeResumen title="Gastos" subtitle="del mes"
-                  amount={summary.totalExpenses} variant="expense" icon={TrendingDown} />
-              </View>
-            </View>
-            <TarjetaDeResumen title="Balance" subtitle="del mes"
-              amount={summary.totalBalance} variant="balance" icon={Wallet} />
-          </View>
+          <ResumenDelMes
+            income={summary.totalIncome}
+            expenses={summary.totalExpenses}
+            balance={summary.totalBalance}
+            incomeHref={`/transactions?type=income&startDate=${inicioDelMes}&endDate=${finDelMes}`}
+            expensesHref={`/transactions?type=expense&startDate=${inicioDelMes}&endDate=${finDelMes}`}
+          />
 
           {presupuestos.length > 0 ? (
-            <View className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-              <View className="flex-row items-center justify-between mb-4">
-                <Texto className="text-sm font-medium text-slate-300">Presupuestos del mes</Texto>
+            <View>
+              <View className="flex-row items-center justify-between mb-1">
+                <Texto className="text-base font-semibold text-tinta">Presupuestos</Texto>
                 <Link href="/budgets" asChild>
-                  <Pressable><Texto className="text-xs text-emerald-400">Ver todos</Texto></Pressable>
+                  <Pressable><Texto className="text-sm text-tinta-2">Ver todos</Texto></Pressable>
                 </Link>
               </View>
-              <View className="gap-3">
-                {[...presupuestos].sort((a, b) => b.percent - a.percent).slice(0, 4)
-                  .map(b => <BarraDePresupuesto key={b.id} budget={b} compact />)}
-              </View>
+              {[...presupuestos].sort((a, b) => b.percent - a.percent).slice(0, 4).map(b => (
+                <View key={b.id} className="py-3.5 border-t border-linea">
+                  <BarraDePresupuesto budget={b} compact />
+                </View>
+              ))}
             </View>
           ) : null}
 
           {summary.byCategory.length > 0 ? (
-            <View className="bg-slate-900 border border-slate-800 rounded-xl p-4">
-              <Texto className="text-sm font-medium text-slate-300 mb-4">Top categorías del mes</Texto>
-              <View className="gap-2.5">
-                {summary.byCategory.slice(0, 6).map(cat => {
-                  const max = summary.byCategory[0].total;
-                  const pct = Math.round((cat.total / max) * 100);
-                  return (
-                    <View key={`${cat.category}-${cat.type}`} className="gap-1 px-2 py-1.5 rounded-lg">
-                      <View className="flex-row justify-between">
-                        <View className="flex-row items-center gap-2 flex-1">
-                          <View className={`w-2 h-2 rounded-full ${cat.type === 'income' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
-                          <Texto className="text-xs text-slate-300 flex-1" numberOfLines={1}>{cat.category}</Texto>
-                        </View>
-                        <Texto className="text-xs text-slate-400">{fmt.money(cat.total)}</Texto>
+            <View>
+              <Texto className="text-base font-semibold text-tinta mb-1">Categorías del mes</Texto>
+              {summary.byCategory.slice(0, 6).map(cat => {
+                const max = summary.byCategory[0].total;
+                const pct = Math.round((cat.total / max) * 100);
+                const filtros = new URLSearchParams({
+                  category: cat.category, startDate: inicioDelMes, endDate: finDelMes, type: cat.type,
+                });
+                return (
+                  <Link key={`${cat.category}-${cat.type}`} href={`/transactions?${filtros}` as never} asChild>
+                    <Pressable className="py-3 border-t border-linea active:bg-hundido">
+                      <View className="flex-row justify-between gap-2">
+                        <Texto className="text-sm text-tinta flex-1" numberOfLines={1}>{cat.category}</Texto>
+                        <Texto className={`text-sm ${cat.type === 'income' ? 'text-acento' : 'text-tinta-2'}`}
+                          style={{ fontVariant: ['tabular-nums'] }}>
+                          {cat.type === 'income' ? '+' : ''}{fmt.money(cat.total)}
+                        </Texto>
                       </View>
-                      <View className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                        <View className={`h-full rounded-full ${cat.type === 'income' ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                      <View className="h-1 bg-hundido rounded-full overflow-hidden mt-2">
+                        <View className={`h-full rounded-full ${cat.type === 'income' ? 'bg-acento' : 'bg-tinta-3'}`}
                           style={{ width: `${pct}%` }} />
                       </View>
-                    </View>
-                  );
-                })}
-              </View>
+                    </Pressable>
+                  </Link>
+                );
+              })}
             </View>
           ) : null}
         </>
@@ -252,18 +245,14 @@ export default function Tablero() {
 
       <View>
         <View className="flex-row items-center justify-between gap-2 mb-3">
-          <Texto className="text-sm font-medium text-slate-300">Transacciones del mes</Texto>
-          <View className="flex-row gap-1 bg-slate-900 border border-slate-800 rounded-lg p-1">
+          <Texto className="text-base font-semibold text-tinta">Movimientos del mes</Texto>
+          <View className="flex-row gap-0.5 bg-hundido rounded-lg p-0.5">
             {([['all', 'Todos'], ['income', 'Ingresos'], ['expense', 'Gastos']] as const).map(([valor, etiqueta]) => {
               const activo = filtro === valor;
-              const fondo = !activo ? '' : valor === 'income' ? 'bg-emerald-500/20'
-                : valor === 'expense' ? 'bg-rose-500/20' : 'bg-slate-700';
-              const color = !activo ? 'text-slate-400' : valor === 'income' ? 'text-emerald-300'
-                : valor === 'expense' ? 'text-rose-300' : 'text-white';
               return (
                 <Pressable key={valor} onPress={() => setFiltro(valor)}
-                  className={`px-3 py-1 rounded-md ${fondo}`}>
-                  <Texto className={`text-xs font-medium ${color}`}>{etiqueta}</Texto>
+                  className={`px-3 py-1 rounded-md ${activo ? 'bg-elevado' : ''}`}>
+                  <Texto className={`text-xs font-medium ${activo ? 'text-tinta' : 'text-tinta-2'}`}>{etiqueta}</Texto>
                 </Pressable>
               );
             })}

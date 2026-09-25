@@ -67,12 +67,12 @@ export default function CardsPage() {
     <div className="max-w-2xl mx-auto space-y-6 pt-14 md:pt-0">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white">Billetera</h1>
-          <p className="text-slate-400 text-sm">Tus tarjetas, cuentas y efectivo, con cuánto va por cada uno</p>
+          <h1 className="text-xl sm:text-2xl font-semibold text-tinta">Billetera</h1>
+          <p className="text-tinta-2 text-sm">Tus tarjetas, cuentas y efectivo, con cuánto va por cada uno</p>
         </div>
         <button
           onClick={() => setCreando(v => !v)}
-          className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5 flex-shrink-0"
+          className="px-3 py-2 bg-primario hover:bg-primario/85 text-sobre-primario rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 flex-shrink-0"
         >
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">Nueva</span>
@@ -81,19 +81,19 @@ export default function CardsPage() {
 
       {/* Mes */}
       <div className="flex items-center justify-center gap-1">
-        <button onClick={() => moverMes(-1)} className="p-1 text-slate-500 hover:text-white rounded transition-colors" aria-label="Mes anterior">
+        <button onClick={() => moverMes(-1)} className="p-1 text-tinta-2 hover:text-tinta rounded transition-colors" aria-label="Mes anterior">
           <ChevronLeft className="w-4 h-4" />
         </button>
-        <span className="text-sm text-slate-300 capitalize min-w-[140px] text-center">
+        <span className="text-sm text-tinta min-w-[140px] text-center">
           {fmt.monthLabel(`${mes}-01`)}
         </span>
-        <button onClick={() => moverMes(1)} className="p-1 text-slate-500 hover:text-white rounded transition-colors" aria-label="Mes siguiente">
+        <button onClick={() => moverMes(1)} className="p-1 text-tinta-2 hover:text-tinta rounded transition-colors" aria-label="Mes siguiente">
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
       {error && (
-        <p className="flex items-start gap-2 text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
+        <p className="flex items-start gap-2 text-peligro text-sm bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /> <span>{error}</span>
         </p>
       )}
@@ -103,18 +103,18 @@ export default function CardsPage() {
       {cards.length > 0 && (
         // Dos columnas en el teléfono: con tres, "RD$2,250.00" no entra en su
         // tercio y el número —que es a lo que se viene— sale cortado.
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="min-w-0">
-            <p className="text-2xs sm:text-xs text-slate-400 uppercase tracking-wider">Gastado</p>
-            <p className="text-lg sm:text-xl font-bold text-white mt-1 truncate">{fmt.money(total)}</p>
+            <p className="text-2xs sm:text-xs text-tinta-2">Gastado</p>
+            <p className="text-lg sm:text-xl font-semibold text-tinta mt-1 truncate">{fmt.money(total)}</p>
           </div>
           <div className="min-w-0">
-            <p className="text-2xs sm:text-xs text-slate-400 uppercase tracking-wider">En uso</p>
-            <p className="text-lg sm:text-xl font-bold text-white mt-1">{activas.length}</p>
+            <p className="text-2xs sm:text-xs text-tinta-2">En uso</p>
+            <p className="text-lg sm:text-xl font-semibold text-tinta mt-1">{activas.length}</p>
           </div>
           <div className="min-w-0 col-span-2 sm:col-span-1">
-            <p className="text-2xs sm:text-xs text-slate-400 uppercase tracking-wider">La que más</p>
-            <p className="text-sm sm:text-base font-semibold text-emerald-400 mt-1.5 truncate">
+            <p className="text-2xs sm:text-xs text-tinta-2">La que más</p>
+            <p className="text-sm sm:text-base font-semibold text-acento mt-1.5 truncate">
               {lider && lider.gastoDelMes > 0 ? lider.name : '—'}
             </p>
           </div>
@@ -131,12 +131,12 @@ export default function CardsPage() {
       {cargando ? (
         <div className="space-y-2">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-20 bg-slate-900 border border-slate-800 rounded-2xl animate-pulse" />
+            <div key={i} className="h-20 bg-hundido rounded-xl animate-pulse" />
           ))}
         </div>
       ) : cards.length === 0 ? (
-        <div className="text-center py-12 text-slate-500 bg-slate-900 border border-slate-800 rounded-2xl">
-          <CreditCard className="w-8 h-8 mx-auto mb-3 text-slate-600" />
+        <div className="text-center py-12 text-tinta-2 bg-panel border border-linea rounded-xl">
+          <CreditCard className="w-8 h-8 mx-auto mb-3 text-tinta-3" />
           <p className="text-sm">
             {verArchivadas ? 'No tenés nada archivado.' : 'Todavía no cargaste ninguno.'}
           </p>
@@ -151,7 +151,7 @@ export default function CardsPage() {
             if (delGrupo.length === 0) return null;
             return (
               <div key={titulo} className="space-y-2">
-                <p className="text-xs font-medium text-slate-400 uppercase tracking-wider px-1">
+                <p className="text-xs font-medium text-tinta-2 px-1">
                   {titulo}
                 </p>
                 {delGrupo.map(c => (
@@ -165,7 +165,7 @@ export default function CardsPage() {
 
       <button
         onClick={() => setVerArchivadas(v => !v)}
-        className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+        className="text-xs text-tinta-2 hover:text-tinta transition-colors"
       >
         {verArchivadas ? 'Ver solo las activas' : 'Ver también las archivadas'}
       </button>
@@ -189,7 +189,7 @@ function FilaTarjeta({
   return (
     <Link
       href={`/cards/${card.id}`}
-      className={`block bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 transition-colors ${card.archived ? 'opacity-60' : ''}`}
+      className={`block bg-panel border border-linea hover:border-linea-fuerte rounded-xl p-4 transition-colors ${card.archived ? 'opacity-60' : ''}`}
     >
       <div className="flex items-center gap-3">
         <div
@@ -201,8 +201,8 @@ function FilaTarjeta({
           {/* El nombre se queda con el renglón entero. Los últimos cuatro bajan
               a la línea de abajo: en un teléfono le comían la mitad al nombre,
               que es lo que uno lee para saber cuál es. */}
-          <p className="text-sm font-medium text-white truncate">{card.name}</p>
-          <p className="text-xs text-slate-500 truncate">
+          <p className="text-sm font-medium text-tinta truncate">{card.name}</p>
+          <p className="text-xs text-tinta-2 truncate">
             {CARD_KIND_LABEL[card.kind]}
             {card.issuer && ` · ${card.issuer}`}
             {card.last4 && ` · ···· ${card.last4}`}
@@ -210,10 +210,10 @@ function FilaTarjeta({
           </p>
         </div>
         <div className="text-right flex-shrink-0">
-          <p className="text-sm font-semibold text-white tabular-nums">{money(card.gastoDelMes)}</p>
-          <p className="text-2xs text-slate-500">{card.usos} mov.</p>
+          <p className="text-sm font-semibold text-tinta tabular-nums">{money(card.gastoDelMes)}</p>
+          <p className="text-2xs text-tinta-2">{card.usos} mov.</p>
         </div>
-        <Flecha className="w-4 h-4 text-slate-600 flex-shrink-0" />
+        <Flecha className="w-4 h-4 text-tinta-3 flex-shrink-0" />
       </div>
 
       {/* En una tarjeta de crédito lo que se quiere saber no es cuánto se gastó
@@ -222,7 +222,7 @@ function FilaTarjeta({
       {saldo ? (
         <div className="mt-3 space-y-1.5">
           {card.credit_limit != null && (
-            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-hundido rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${budgetTone(saldo.usoDelLimite ?? 0).bar}`}
                 style={{ width: `${Math.min(saldo.usoDelLimite ?? 0, 100)}%` }}
@@ -230,14 +230,14 @@ function FilaTarjeta({
             </div>
           )}
           <div className="flex items-center justify-between gap-2 text-2xs">
-            <span className="text-slate-400">
+            <span className="text-tinta-2">
               {saldo.saldo > 0 ? `Debés ${money(saldo.saldo)}` : 'Al día'}
               {card.credit_limit != null && saldo.usoDelLimite != null && (
-                <span className="text-slate-600"> · {Math.round(saldo.usoDelLimite)}% del límite</span>
+                <span className="text-tinta-3"> · {Math.round(saldo.usoDelLimite)}% del límite</span>
               )}
             </span>
             {saldo.ciclo && (
-              <span className={`flex-shrink-0 ${saldo.ciclo.daysToDue <= 3 ? 'text-amber-400' : 'text-slate-500'}`}>
+              <span className={`flex-shrink-0 ${saldo.ciclo.daysToDue <= 3 ? 'text-aviso' : 'text-tinta-2'}`}>
                 paga {fmt.date(saldo.ciclo.nextDue)}
               </span>
             )}
@@ -246,7 +246,7 @@ function FilaTarjeta({
       ) : parte > 0 ? (
         /* Cuánto del gasto del mes se fue por acá: comparar dos tarjetas por sus
            montos obliga a hacer la cuenta; la barra la muestra hecha. */
-        <div className="mt-3 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+        <div className="mt-3 h-1.5 bg-hundido rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all"
             style={{ width: `${parte}%`, background: colores.main }}

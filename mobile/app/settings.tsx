@@ -13,9 +13,11 @@ import { useSesion } from '../componentes/ContextoDeSesion';
 import { supabase } from '../lib/supabase';
 import { CURRENCIES } from '@compartido/types';
 import { makeFormatters, zonasHorarias } from '@compartido/format';
+import { useColores } from '../lib/colores';
 
 /** El gemelo de app/settings/page.tsx. */
 export default function Configuracion() {
+  const paleta = useColores();
   const router = useRouter();
   const { settings, loaded, save } = useAjustes();
   const { session } = useSesion();
@@ -74,7 +76,7 @@ export default function Configuracion() {
   if (!loaded) {
     return (
       <View className="flex-1 items-center justify-center">
-        <Loader2 size={24} color="#94a3b8" />
+        <Loader2 size={24} color={paleta.tinta2} />
       </View>
     );
   }
@@ -82,31 +84,31 @@ export default function Configuracion() {
   return (
     <Pantalla className="gap-6" keyboardShouldPersistTaps="handled">
       <View>
-        <Texto className="text-xl font-bold text-white">Configuración</Texto>
-        <Texto className="text-slate-400 text-sm">Moneda, formato y zona horaria de tu cuenta</Texto>
+        <Texto className="text-xl font-semibold text-tinta">Configuración</Texto>
+        <Texto className="text-tinta-2 text-sm">Moneda, formato y zona horaria de tu cuenta</Texto>
       </View>
 
       {error ? (
-        <View className="flex-row items-start gap-2 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
-          <View className="mt-0.5"><AlertCircle size={16} color="#fb7185" /></View>
-          <Texto className="text-rose-400 text-sm flex-1">{error}</Texto>
+        <View className="flex-row items-start gap-2 bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
+          <View className="mt-0.5"><AlertCircle size={16} color={paleta.peligro} /></View>
+          <Texto className="text-peligro text-sm flex-1">{error}</Texto>
         </View>
       ) : null}
       {guardado && !hayCambios ? (
-        <View className="flex-row items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3">
-          <CheckCircle2 size={16} color="#34d399" />
-          <Texto className="text-emerald-400 text-sm flex-1">
+        <View className="flex-row items-center gap-2 bg-acento/10 border border-acento/20 rounded-xl px-4 py-3">
+          <CheckCircle2 size={16} color={paleta.acento} />
+          <Texto className="text-acento text-sm flex-1">
             Configuración guardada. Los montos ya se muestran en {settings.currency}.
           </Texto>
         </View>
       ) : null}
 
-      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-5">
+      <View className="bg-panel border border-linea rounded-xl p-4 gap-5">
         {/* Moneda */}
         <View className="gap-2">
           <View className="flex-row items-center gap-2">
-            <Coins size={16} color="#34d399" />
-            <Texto className="text-sm text-slate-300">Moneda</Texto>
+            <Coins size={16} color={paleta.acento} />
+            <Texto className="text-sm text-tinta">Moneda</Texto>
           </View>
           <Selector
             value={CURRENCIES.some(c => c.code === currency) ? currency : 'otra'}
@@ -123,12 +125,12 @@ export default function Configuracion() {
             value={currency}
             onChangeText={t => setCurrency(t.toUpperCase().slice(0, 3))}
             placeholder="Código ISO, ej. DOP"
-            placeholderTextColor="#64748b"
+            placeholderTextColor={paleta.tinta2}
             autoCapitalize="characters"
             autoCorrect={false}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
+            className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2 text-sm text-tinta"
           />
-          <Texto className="text-xs text-slate-500">
+          <Texto className="text-xs text-tinta-2">
             Cambia cómo se muestran los montos. No convierte lo ya registrado: los
             números guardados quedan igual, solo cambia el símbolo.
           </Texto>
@@ -137,19 +139,19 @@ export default function Configuracion() {
         {/* Locale */}
         <View className="gap-2">
           <View className="flex-row items-center gap-2">
-            <Globe size={16} color="#60a5fa" />
-            <Texto className="text-sm text-slate-300">Formato regional</Texto>
+            <Globe size={16} color={paleta.info} />
+            <Texto className="text-sm text-tinta">Formato regional</Texto>
           </View>
           <TextInput
             value={locale}
             onChangeText={setLocale}
             placeholder="es-DO"
-            placeholderTextColor="#64748b"
+            placeholderTextColor={paleta.tinta2}
             autoCapitalize="none"
             autoCorrect={false}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white"
+            className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
           />
-          <Texto className="text-xs text-slate-500">
+          <Texto className="text-xs text-tinta-2">
             Define separadores de miles y cómo se escriben las fechas. Se completa
             solo al elegir una moneda de la lista.
           </Texto>
@@ -158,8 +160,8 @@ export default function Configuracion() {
         {/* Zona horaria */}
         <View className="gap-2">
           <View className="flex-row items-center gap-2">
-            <Clock size={16} color="#a78bfa" />
-            <Texto className="text-sm text-slate-300">Zona horaria</Texto>
+            <Clock size={16} color={paleta.info} />
+            <Texto className="text-sm text-tinta">Zona horaria</Texto>
           </View>
           <Selector
             value={timezone}
@@ -170,17 +172,17 @@ export default function Configuracion() {
             onChange={setTimezone}
             titulo="Zona horaria"
           />
-          <Texto className="text-xs text-slate-500">
+          <Texto className="text-xs text-tinta-2">
             Con esto se resuelve qué día es «hoy». El servidor corre en UTC: sin la zona
             correcta, un gasto de las nueve de la noche quedaría anotado mañana.
           </Texto>
         </View>
 
         {/* Vista previa */}
-        <View className="bg-slate-800 rounded-xl p-4 gap-1.5">
-          <Texto className="text-xs text-slate-400">Así se va a ver</Texto>
-          <Texto className="text-lg font-semibold text-white">{vistaPrevia.money(1234567.89)}</Texto>
-          <Texto className="text-xs text-slate-400">
+        <View className="bg-hundido rounded-xl p-4 gap-1.5">
+          <Texto className="text-xs text-tinta-2">Así se va a ver</Texto>
+          <Texto className="text-lg font-semibold text-tinta">{vistaPrevia.money(1234567.89)}</Texto>
+          <Texto className="text-xs text-tinta-2">
             {vistaPrevia.date(vistaPrevia.today())} · hoy es {vistaPrevia.today()}
           </Texto>
         </View>
@@ -189,10 +191,10 @@ export default function Configuracion() {
           onPress={guardar}
           disabled={guardando || !hayCambios}
           style={guardando || !hayCambios ? { opacity: 0.5 } : undefined}
-          className="w-full py-3 bg-emerald-600 active:bg-emerald-500 rounded-xl flex-row items-center justify-center gap-2"
+          className="w-full py-3 bg-primario active:bg-primario/85 rounded-lg flex-row items-center justify-center gap-2"
         >
-          {guardando ? <Loader2 size={16} color="#ffffff" /> : <CheckCircle2 size={16} color="#ffffff" />}
-          <Texto className="text-white text-sm font-medium">
+          {guardando ? <Loader2 size={16} color={paleta.sobrePrimario} /> : <CheckCircle2 size={16} color={paleta.sobrePrimario} />}
+          <Texto className="text-sobre-primario text-sm font-medium">
             {hayCambios ? 'Guardar cambios' : 'Sin cambios'}
           </Texto>
         </Pressable>
@@ -201,19 +203,19 @@ export default function Configuracion() {
       <PanelDeCategorias />
 
       {/* Cuenta */}
-      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex-row items-center gap-3">
+      <View className="bg-panel border border-linea rounded-xl p-4 flex-row items-center gap-3">
         <View className="flex-1">
-          <Texto className="text-sm text-white font-medium" numberOfLines={1}>
+          <Texto className="text-sm text-tinta font-medium" numberOfLines={1}>
             {email || 'Sesión iniciada'}
           </Texto>
-          <Texto className="text-xs text-slate-500">Tus datos son solo tuyos: nadie más los ve.</Texto>
+          <Texto className="text-xs text-tinta-2">Tus datos son solo tuyos: nadie más los ve.</Texto>
         </View>
         <Pressable
           onPress={salir}
-          className="px-3 py-2 bg-slate-800 active:bg-rose-600 rounded-lg flex-row items-center gap-1.5"
+          className="px-3 py-2 bg-hundido active:bg-peligro/85 rounded-lg flex-row items-center gap-1.5"
         >
-          <LogOut size={14} color="#e2e8f0" />
-          <Texto className="text-slate-200 text-xs font-medium">Salir</Texto>
+          <LogOut size={14} color={paleta.tinta} />
+          <Texto className="text-tinta text-xs font-medium">Salir</Texto>
         </Pressable>
       </View>
     </Pantalla>

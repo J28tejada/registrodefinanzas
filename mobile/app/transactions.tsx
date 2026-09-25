@@ -11,6 +11,7 @@ import { useSesion } from '../componentes/ContextoDeSesion';
 import { db } from '../lib/datos';
 import { deleteTransaction, getAllTransactions } from '@compartido/db';
 import { Transaction, TransactionFilters, TransactionType } from '@compartido/types';
+import { useColores } from '../lib/colores';
 
 const PESTANAS: { value: TransactionType | ''; label: string }[] = [
   { value: '', label: 'Todos' },
@@ -20,6 +21,7 @@ const PESTANAS: { value: TransactionType | ''; label: string }[] = [
 
 /** El gemelo de app/transactions/page.tsx. */
 export default function Movimientos() {
+  const paleta = useColores();
   const { currentLedger, refreshLedgers, transactionVersion, setGlobalAddOpen } = useCuenta();
   const { session } = useSesion();
   const usuario = session?.user?.id;
@@ -90,51 +92,47 @@ export default function Movimientos() {
     <Pantalla className="gap-5">
       <View className="flex-row items-center justify-between">
         <View className="flex-1">
-          <Texto className="text-xl font-bold text-white" numberOfLines={1}>
-            {currentLedger ? currentLedger.name : 'Todas las transacciones'}
+          <Texto className="text-xl font-semibold text-tinta" numberOfLines={1}>
+            {currentLedger ? currentLedger.name : 'Todos los movimientos'}
           </Texto>
-          <Texto className="text-slate-400 text-sm">{movimientos.length} registros</Texto>
+          <Texto className="text-tinta-2 text-sm">{movimientos.length} {movimientos.length === 1 ? 'movimiento' : 'movimientos'}</Texto>
         </View>
         <View className="flex-row gap-2">
           <Pressable
             onPress={() => setVerFiltros(v => !v)}
             className={`p-2 rounded-lg border ${
               verFiltros || hayFiltroDeFecha
-                ? 'bg-emerald-500/10 border-emerald-500/30'
-                : 'border-slate-700'
+                ? 'bg-hundido border-linea-fuerte'
+                : 'border-linea-fuerte'
             }`}
           >
-            <Filter size={16} color={verFiltros || hayFiltroDeFecha ? '#34d399' : '#94a3b8'} />
+            <Filter size={16} color={verFiltros || hayFiltroDeFecha ? paleta.tinta : paleta.tinta2} />
           </Pressable>
           <Pressable
             onPress={() => setGlobalAddOpen(true)}
-            className="flex-row items-center gap-2 px-4 py-2 bg-emerald-600 active:bg-emerald-500 rounded-xl"
+            className="flex-row items-center gap-2 px-4 py-2 bg-primario active:bg-primario/85 rounded-lg"
           >
-            <Plus size={16} color="#ffffff" />
+            <Plus size={16} color={paleta.sobrePrimario} />
           </Pressable>
         </View>
       </View>
 
       {error && !cargando ? (
-        <View className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4">
-          <Texto className="text-rose-400 text-sm">{error}</Texto>
+        <View className="bg-peligro/10 border border-peligro/30 rounded-xl p-4">
+          <Texto className="text-peligro text-sm">{error}</Texto>
         </View>
       ) : null}
 
       {/* Pestañas de tipo y buscador. En la web van uno al lado del otro a
           partir de `sm:`, que en un teléfono no aplica: van apilados. */}
       <View className="gap-2">
-        <View className="flex-row gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
+        <View className="flex-row gap-0.5 bg-hundido rounded-lg p-0.5">
           {PESTANAS.map(({ value, label }) => {
             const activa = tipo === value;
-            const fondo = !activa ? '' : value === 'income' ? 'bg-emerald-500/20'
-              : value === 'expense' ? 'bg-rose-500/20' : 'bg-slate-700';
-            const color = !activa ? 'text-slate-400' : value === 'income' ? 'text-emerald-300'
-              : value === 'expense' ? 'text-rose-300' : 'text-white';
             return (
               <Pressable key={value} onPress={() => setTipo(value)}
-                className={`flex-1 px-3 py-1.5 rounded-lg items-center ${fondo}`}>
-                <Texto className={`text-xs font-medium ${color}`}>{label}</Texto>
+                className={`flex-1 px-3 py-1.5 rounded-md items-center ${activa ? 'bg-elevado' : ''}`}>
+                <Texto className={`text-xs font-medium ${activa ? 'text-tinta' : 'text-tinta-2'}`}>{label}</Texto>
               </Pressable>
             );
           })}
@@ -142,19 +140,19 @@ export default function Movimientos() {
 
         <View className="relative">
           <View className="absolute left-3 top-1/2 -translate-y-1/2 z-10">
-            <Search size={16} color="#64748b" />
+            <Search size={16} color={paleta.tinta2} />
           </View>
           <TextInput
             value={busqueda}
             onChangeText={setBusqueda}
             placeholder="Buscar..."
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-8 py-2 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500"
+            className="w-full bg-hundido border border-linea rounded-lg pl-9 pr-8 py-2 text-sm text-tinta placeholder:text-tinta-3 focus:border-tinta-3"
             style={{ fontFamily: 'Inter_400Regular' }}
           />
           {busqueda ? (
             <Pressable onPress={() => setBusqueda('')}
               className="absolute right-3 top-1/2 -translate-y-1/2">
-              <X size={16} color="#64748b" />
+              <X size={16} color={paleta.tinta2} />
             </Pressable>
           ) : null}
         </View>
@@ -164,37 +162,37 @@ export default function Movimientos() {
         <View className="flex-row flex-wrap gap-2">
           {categoria ? (
             <Etiqueta texto={`Categoría: ${categoria}`} onQuitar={() => setCategoria('')}
-              className="bg-violet-500/10 border-violet-500/20" color="text-violet-300" />
+              className="bg-hundido border-linea-fuerte" color="text-tinta" />
           ) : null}
           {desde ? (
             <Etiqueta texto={`Desde: ${desde}`} onQuitar={() => setDesde('')}
-              className="bg-slate-800 border-slate-700" color="text-slate-300" />
+              className="bg-hundido border-linea-fuerte" color="text-tinta" />
           ) : null}
           {hasta ? (
             <Etiqueta texto={`Hasta: ${hasta}`} onQuitar={() => setHasta('')}
-              className="bg-slate-800 border-slate-700" color="text-slate-300" />
+              className="bg-hundido border-linea-fuerte" color="text-tinta" />
           ) : null}
         </View>
       ) : null}
 
       {verFiltros ? (
-        <View className="bg-slate-900 border border-slate-800 rounded-xl p-4 gap-3">
-          <Texto className="text-xs text-slate-400 font-medium">RANGO DE FECHAS</Texto>
+        <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
+          <Texto className="text-xs text-tinta-2 font-medium">Rango de fechas</Texto>
           <View className="flex-row gap-3">
             <View className="flex-1 gap-1.5">
-              <Texto className="text-xs text-slate-500 leading-6">Desde</Texto>
+              <Texto className="text-xs text-tinta-2 leading-6">Desde</Texto>
               <CampoDeFecha value={desde} onChange={setDesde} />
             </View>
             <View className="flex-1 gap-1.5">
-              <Texto className="text-xs text-slate-500 leading-6">Hasta</Texto>
+              <Texto className="text-xs text-tinta-2 leading-6">Hasta</Texto>
               <CampoDeFecha value={hasta} onChange={setHasta} />
             </View>
           </View>
           {hayFiltroDeFecha ? (
             <Pressable onPress={() => { setDesde(''); setHasta(''); }}
               className="flex-row items-center gap-1">
-              <X size={14} color="#94a3b8" />
-              <Texto className="text-xs text-slate-400">Limpiar fechas</Texto>
+              <X size={14} color={paleta.tinta2} />
+              <Texto className="text-xs text-tinta-2">Limpiar fechas</Texto>
             </Pressable>
           ) : null}
         </View>
@@ -214,10 +212,11 @@ export default function Movimientos() {
 function Etiqueta({ texto, onQuitar, className, color }: {
   texto: string; onQuitar: () => void; className: string; color: string;
 }) {
+  const paleta = useColores();
   return (
     <View className={`flex-row items-center gap-1.5 px-3 py-1 border rounded-full ${className}`}>
       <Texto className={`text-xs ${color}`}>{texto}</Texto>
-      <Pressable onPress={onQuitar}><X size={12} color="#94a3b8" /></Pressable>
+      <Pressable onPress={onQuitar}><X size={12} color={paleta.tinta2} /></Pressable>
     </View>
   );
 }

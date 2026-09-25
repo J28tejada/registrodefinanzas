@@ -51,7 +51,7 @@ export default function AsistenteLayout() {
         paddingBottom: insets.bottom + ALTO_DE_LA_BARRA_DE_ABAJO,
       }}
     >
-      <View className="flex-row gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1 mb-4">
+      <View className="flex-row gap-1 bg-panel border border-linea rounded-xl p-1 mb-4">
         {CANALES.map(({ href, icon: Icono, label }) => {
           // Exacto y no por prefijo: `/chat` es prefijo de los otros dos, y por
           // prefijo quedarían las tres marcadas a la vez.
@@ -60,13 +60,13 @@ export default function AsistenteLayout() {
             <Link key={href} href={href as never} asChild>
               <Pressable
                 className={`flex-1 flex-row items-center justify-center gap-1.5 px-2 py-2 rounded-lg ${
-                  activo ? 'bg-emerald-500/15' : 'active:bg-slate-800'
+                  activo ? 'bg-hundido' : 'active:bg-hundido'
                 }`}
               >
                 {/* El ícono no se dibuja, igual que en la web debajo de 640px:
                     con los tres puestos, "Telegram" no entra en un teléfono
                     angosto y hay que scrollear la barra para encontrarlo. */}
-                <Texto className={`text-sm ${activo ? 'text-emerald-400' : 'text-slate-400'}`}>
+                <Texto className={`text-sm ${activo ? 'text-tinta font-medium' : 'text-tinta-2'}`}>
                   {label}
                 </Texto>
               </Pressable>

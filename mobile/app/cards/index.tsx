@@ -17,9 +17,11 @@ import { getCardsWithUsage } from '@compartido/db';
 import { limitesDelMes } from '@compartido/format';
 import { avisosDeTarjetas } from '@compartido/tarjetas';
 import { CARD_GROUPS, CARD_KIND_LABEL, CardWithUsage, LEDGER_COLOR_MAP } from '@compartido/types';
+import { useColores } from '../../lib/colores';
 
 /** El gemelo de app/cards/page.tsx. */
 export default function Billetera() {
+  const paleta = useColores();
   const fmt = useFormatters();
   const { transactionVersion } = useCuenta();
   const { session } = useSesion();
@@ -72,36 +74,36 @@ export default function Billetera() {
     <Pantalla className="gap-6">
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
-          <Texto className="text-xl font-bold text-white">Billetera</Texto>
-          <Texto className="text-slate-400 text-sm">
+          <Texto className="text-xl font-semibold text-tinta">Billetera</Texto>
+          <Texto className="text-tinta-2 text-sm">
             Tus tarjetas, cuentas y efectivo, con cuánto va por cada uno
           </Texto>
         </View>
         <Pressable
           onPress={() => setCreando(v => !v)}
           accessibilityLabel="Nuevo medio de pago"
-          className="px-3 py-2 bg-emerald-600 active:bg-emerald-500 rounded-xl flex-row items-center gap-1.5"
+          className="px-3 py-2 bg-primario active:bg-primario/85 rounded-lg flex-row items-center gap-1.5"
         >
-          <Plus size={16} color="#ffffff" />
+          <Plus size={16} color={paleta.sobrePrimario} />
         </Pressable>
       </View>
 
       <View className="flex-row items-center justify-center gap-1">
         <Pressable onPress={() => moverMes(-1)} className="p-1">
-          <ChevronLeft size={16} color="#64748b" />
+          <ChevronLeft size={16} color={paleta.tinta2} />
         </Pressable>
-        <Texto className="text-sm text-slate-300 capitalize text-center" style={{ minWidth: 140 }}>
+        <Texto className="text-sm text-tinta text-center" style={{ minWidth: 140 }}>
           {fmt.monthLabel(`${mes}-01`)}
         </Texto>
         <Pressable onPress={() => moverMes(1)} className="p-1">
-          <ChevronRight size={16} color="#64748b" />
+          <ChevronRight size={16} color={paleta.tinta2} />
         </Pressable>
       </View>
 
       {error ? (
-        <View className="flex-row items-start gap-2 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
-          <View className="mt-0.5"><AlertCircle size={16} color="#fb7185" /></View>
-          <Texto className="text-rose-400 text-sm flex-1">{error}</Texto>
+        <View className="flex-row items-start gap-2 bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
+          <View className="mt-0.5"><AlertCircle size={16} color={paleta.peligro} /></View>
+          <Texto className="text-peligro text-sm flex-1">{error}</Texto>
         </View>
       ) : null}
 
@@ -118,20 +120,20 @@ export default function Billetera() {
       {cards.length > 0 ? (
         // Dos columnas en el teléfono: con tres, "RD$2,250.00" no entra en su
         // tercio y el número —que es a lo que se viene— sale cortado.
-        <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-3">
+        <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
           <View className="flex-row gap-3">
             <View className="flex-1">
-              <Texto className="text-2xs text-slate-400 uppercase tracking-wider">Gastado</Texto>
-              <Texto className="text-lg font-bold text-white mt-1" numberOfLines={1}>{fmt.money(total)}</Texto>
+              <Texto className="text-2xs text-tinta-2">Gastado</Texto>
+              <Texto className="text-lg font-semibold text-tinta mt-1" numberOfLines={1}>{fmt.money(total)}</Texto>
             </View>
             <View className="flex-1">
-              <Texto className="text-2xs text-slate-400 uppercase tracking-wider">En uso</Texto>
-              <Texto className="text-lg font-bold text-white mt-1">{activas.length}</Texto>
+              <Texto className="text-2xs text-tinta-2">En uso</Texto>
+              <Texto className="text-lg font-semibold text-tinta mt-1">{activas.length}</Texto>
             </View>
           </View>
           <View>
-            <Texto className="text-2xs text-slate-400 uppercase tracking-wider">La que más</Texto>
-            <Texto className="text-sm font-semibold text-emerald-400 mt-1.5" numberOfLines={1}>
+            <Texto className="text-2xs text-tinta-2">La que más</Texto>
+            <Texto className="text-sm font-semibold text-acento mt-1.5" numberOfLines={1}>
               {lider && lider.gastoDelMes > 0 ? lider.name : '—'}
             </Texto>
           </View>
@@ -141,16 +143,16 @@ export default function Billetera() {
       {cargando ? (
         <View className="gap-2">
           {[0, 1, 2].map(i => (
-            <View key={i} className="h-20 bg-slate-900 border border-slate-800 rounded-2xl" />
+            <View key={i} className="h-20 bg-hundido rounded-xl" />
           ))}
         </View>
       ) : cards.length === 0 ? (
-        <View className="items-center py-12 bg-slate-900 border border-slate-800 rounded-2xl">
-          <CreditCard size={32} color="#475569" />
-          <Texto className="text-sm text-slate-500 mt-3">
+        <View className="items-center py-12 bg-panel border border-linea rounded-xl">
+          <CreditCard size={32} color={paleta.tinta3} />
+          <Texto className="text-sm text-tinta-2 mt-3">
             {verArchivadas ? 'No tenés nada archivado.' : 'Todavía no cargaste ninguno.'}
           </Texto>
-          <Texto className="text-xs text-slate-500 mt-1">
+          <Texto className="text-xs text-tinta-2 mt-1">
             Una tarjeta, tu cuenta corriente o de ahorro, el efectivo.
           </Texto>
         </View>
@@ -163,7 +165,7 @@ export default function Billetera() {
             if (delGrupo.length === 0) return null;
             return (
               <View key={titulo} className="gap-2">
-                <Texto className="text-xs font-medium text-slate-400 uppercase tracking-wider px-1">
+                <Texto className="text-xs font-medium text-tinta-2 px-1">
                   {titulo}
                 </Texto>
                 {delGrupo.map(c => <Fila key={c.id} card={c} total={total} fmt={fmt} />)}
@@ -174,7 +176,7 @@ export default function Billetera() {
       )}
 
       <Pressable onPress={() => setVerArchivadas(v => !v)}>
-        <Texto className="text-xs text-slate-500">
+        <Texto className="text-xs text-tinta-2">
           {verArchivadas ? 'Ver solo las activas' : 'Ver también las archivadas'}
         </Texto>
       </Pressable>
@@ -188,14 +190,15 @@ function Fila({ card, total, fmt }: {
   total: number;
   fmt: { money: (n: number) => string; date: (iso: string) => string };
 }) {
-  const colores = LEDGER_COLOR_MAP[card.color] ?? { dark: '#334155', main: '#475569' };
+  const paleta = useColores();
+  const colores = LEDGER_COLOR_MAP[card.color] ?? { dark: paleta.lineaFuerte, main: paleta.tinta3 };
   const parte = total > 0 ? (card.gastoDelMes / total) * 100 : 0;
   const saldo = card.balance;
 
   return (
     <Link href={`/cards/${card.id}` as never} asChild>
       <Pressable
-        className="bg-slate-900 border border-slate-800 active:border-slate-700 rounded-2xl p-4"
+        className="bg-panel border border-linea active:border-linea-fuerte rounded-xl p-4"
         style={card.archived ? { opacity: 0.6 } : undefined}
       >
         <View className="flex-row items-center gap-3">
@@ -203,8 +206,8 @@ function Fila({ card, total, fmt }: {
           <View className="flex-1">
             {/* El nombre se queda con el renglón entero. Los últimos cuatro bajan
                 a la línea de abajo: en un teléfono le comían la mitad al nombre. */}
-            <Texto className="text-sm font-medium text-white" numberOfLines={1}>{card.name}</Texto>
-            <Texto className="text-xs text-slate-500" numberOfLines={1}>
+            <Texto className="text-sm font-medium text-tinta" numberOfLines={1}>{card.name}</Texto>
+            <Texto className="text-xs text-tinta-2" numberOfLines={1}>
               {CARD_KIND_LABEL[card.kind]}
               {card.issuer ? ` · ${card.issuer}` : ''}
               {card.last4 ? ` · ···· ${card.last4}` : ''}
@@ -212,10 +215,10 @@ function Fila({ card, total, fmt }: {
             </Texto>
           </View>
           <View className="items-end">
-            <Texto className="text-sm font-semibold text-white">{fmt.money(card.gastoDelMes)}</Texto>
-            <Texto className="text-2xs text-slate-500">{card.usos} mov.</Texto>
+            <Texto className="text-sm font-semibold text-tinta">{fmt.money(card.gastoDelMes)}</Texto>
+            <Texto className="text-2xs text-tinta-2">{card.usos} mov.</Texto>
           </View>
-          <ChevronRight size={16} color="#475569" />
+          <ChevronRight size={16} color={paleta.tinta3} />
         </View>
 
         {/* En una tarjeta de crédito lo que se quiere saber no es cuánto se gastó
@@ -223,26 +226,26 @@ function Fila({ card, total, fmt }: {
         {saldo ? (
           <View className="mt-3 gap-1.5">
             {card.credit_limit != null ? (
-              <View className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <View className="h-1.5 bg-hundido rounded-full overflow-hidden">
                 <View className={`h-full rounded-full ${budgetTone(saldo.usoDelLimite ?? 0).bar}`}
                   style={{ width: `${Math.min(saldo.usoDelLimite ?? 0, 100)}%` }} />
               </View>
             ) : null}
             <View className="flex-row items-center justify-between gap-2">
-              <Texto className="text-2xs text-slate-400 flex-1" numberOfLines={1}>
+              <Texto className="text-2xs text-tinta-2 flex-1" numberOfLines={1}>
                 {saldo.saldo > 0 ? `Debés ${fmt.money(saldo.saldo)}` : 'Al día'}
                 {card.credit_limit != null && saldo.usoDelLimite != null
                   ? ` · ${Math.round(saldo.usoDelLimite)}% del límite` : ''}
               </Texto>
               {saldo.ciclo ? (
-                <Texto className={`text-2xs ${saldo.ciclo.daysToDue <= 3 ? 'text-amber-400' : 'text-slate-500'}`}>
+                <Texto className={`text-2xs ${saldo.ciclo.daysToDue <= 3 ? 'text-aviso' : 'text-tinta-2'}`}>
                   paga {fmt.date(saldo.ciclo.nextDue)}
                 </Texto>
               ) : null}
             </View>
           </View>
         ) : parte > 0 ? (
-          <View className="mt-3 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+          <View className="mt-3 h-1.5 bg-hundido rounded-full overflow-hidden">
             <View className="h-full rounded-full" style={{ width: `${parte}%`, backgroundColor: colores.main }} />
           </View>
         ) : null}

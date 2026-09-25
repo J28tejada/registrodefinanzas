@@ -60,9 +60,9 @@ export const CASOS: CasoDeFormato[] = [
   { que: 'date', entrada: '2026-12-31', esperado: '31 dic de 2026',
     porque: 'el último día del año' },
 
-  { que: 'monthLabel', entrada: '2026-09-01', esperado: 'septiembre de 2026',
-    porque: 'el mes completo, que va en la cabecera de cada pantalla' },
-  { que: 'monthLabel', entrada: '2026-03-01', esperado: 'marzo de 2026',
+  { que: 'monthLabel', entrada: '2026-09-01', esperado: 'Septiembre de 2026',
+    porque: 'el mes completo, que va en la cabecera de cada pantalla; mayúscula solo en la inicial' },
+  { que: 'monthLabel', entrada: '2026-03-01', esperado: 'Marzo de 2026',
     porque: 'un mes corto' },
 ];
 

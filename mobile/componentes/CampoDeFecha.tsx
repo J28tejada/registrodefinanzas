@@ -35,9 +35,9 @@ export default function CampoDeFecha({
     <>
       <Pressable
         onPress={() => setAbierto(true)}
-        className={className || 'w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2'}
+        className={className || 'w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2'}
       >
-        <Texto className={`text-sm ${value ? 'text-white' : 'text-slate-500'}`}>
+        <Texto className={`text-sm ${value ? 'text-tinta' : 'text-tinta-2'}`}>
           {value || placeholder}
         </Texto>
       </Pressable>
@@ -63,7 +63,7 @@ export default function CampoDeFecha({
       {/* En iOS la rueda se queda abierta hasta que alguien la cierre. */}
       {abierto && Platform.OS === 'ios' ? (
         <Pressable onPress={() => setAbierto(false)} className="py-2">
-          <Texto className="text-xs text-emerald-400 text-center">Listo</Texto>
+          <Texto className="text-xs text-acento text-center">Listo</Texto>
         </Pressable>
       ) : null}
     </>

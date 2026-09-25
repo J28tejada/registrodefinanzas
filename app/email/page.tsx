@@ -18,7 +18,7 @@ interface ImportRow extends EmailTransaction {
 
 export default function EmailPage() {
   return (
-    <Suspense fallback={<div className="max-w-2xl mx-auto pt-14 md:pt-0 flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>}>
+    <Suspense fallback={<div className="max-w-2xl mx-auto pt-14 md:pt-0 flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-tinta-2" /></div>}>
       <EmailPageInner />
     </Suspense>
   );
@@ -158,7 +158,7 @@ function EmailPageInner() {
   if (!statusLoaded) {
     return (
       <div className="max-w-2xl mx-auto pt-14 md:pt-0 flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        <Loader2 className="w-6 h-6 animate-spin text-tinta-2" />
       </div>
     );
   }
@@ -167,13 +167,13 @@ function EmailPageInner() {
     <div className="max-w-2xl mx-auto space-y-6 pt-14 md:pt-0">
       {/* Header */}
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-white">Correo electrónico</h1>
-        <p className="text-slate-400 text-sm">Importa transacciones desde correos bancarios</p>
+        <h1 className="text-xl sm:text-2xl font-semibold text-tinta">Correo electrónico</h1>
+        <p className="text-tinta-2 text-sm">Importa transacciones desde correos bancarios</p>
       </div>
 
       {/* Error */}
       {error && (
-        <div className="flex items-start gap-2 text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
+        <div className="flex items-start gap-2 text-peligro text-sm bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>{error}</span>
         </div>
@@ -181,20 +181,20 @@ function EmailPageInner() {
 
       {/* Not connected */}
       {!connected && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 space-y-5">
+        <div className="bg-panel border border-linea rounded-xl p-5 sm:p-6 space-y-5">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
-              <Mail className="w-6 h-6 text-blue-400" />
+            <div className="w-12 h-12 bg-hundido rounded-xl flex items-center justify-center">
+              <Mail className="w-6 h-6 text-tinta-2" />
             </div>
             <div>
-              <p className="font-semibold text-white">Conectar Gmail</p>
-              <p className="text-sm text-slate-400">
+              <p className="font-semibold text-tinta">Conectar Gmail</p>
+              <p className="text-sm text-tinta-2">
                 Escanea tus correos bancarios y extrae gastos automáticamente con IA
               </p>
             </div>
           </div>
 
-          <ul className="space-y-2 text-sm text-slate-400">
+          <ul className="space-y-2 text-sm text-tinta-2">
             {[
               'Detecta correos de tu banco automáticamente',
               'La IA extrae monto, descripción y categoría',
@@ -202,16 +202,16 @@ function EmailPageInner() {
               'Solo lectura — no se envía ni modifica nada',
             ].map(item => (
               <li key={item} className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-acento flex-shrink-0" />
                 {item}
               </li>
             ))}
           </ul>
 
           {configMissing ? (
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 space-y-2">
-              <p className="text-amber-400 text-sm font-medium">Configuración requerida</p>
-              <p className="text-slate-400 text-xs">
+            <div className="bg-aviso/10 border border-aviso/20 rounded-xl p-4 space-y-2">
+              <p className="text-aviso text-sm font-medium">Configuración requerida</p>
+              <p className="text-tinta-2 text-xs">
                 Para conectar Gmail necesitas crear credenciales OAuth en Google Cloud Console y
                 agregarlas como variables de entorno en Vercel.
               </p>
@@ -219,18 +219,18 @@ function EmailPageInner() {
                 href="https://console.cloud.google.com/apis/credentials"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs text-info hover:text-info transition-colors"
               >
                 Ir a Google Cloud Console <ExternalLink className="w-3 h-3" />
               </a>
-              <div className="mt-2 bg-slate-800 rounded-lg p-3 text-xs font-mono text-slate-300 space-y-1">
+              <div className="mt-2 bg-hundido rounded-lg p-3 text-xs font-mono text-tinta space-y-1">
                 <p>GOOGLE_CLIENT_ID=...</p>
                 <p>GOOGLE_CLIENT_SECRET=...</p>
                 <p>NEXT_PUBLIC_APP_URL=https://registrodefinanzas.vercel.app</p>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-tinta-2">
                 URI de redirección autorizado:{' '}
-                <code className="text-slate-300">
+                <code className="text-tinta">
                   {process.env.NEXT_PUBLIC_APP_URL ?? 'https://TU_DOMINIO'}/api/email/callback
                 </code>
               </p>
@@ -238,7 +238,7 @@ function EmailPageInner() {
           ) : (
             <button
               onClick={handleConnect}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 bg-primario hover:bg-primario/85 text-sobre-primario rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
             >
               <Mail className="w-4 h-4" />
               Conectar con Gmail
@@ -251,19 +251,19 @@ function EmailPageInner() {
       {connected && (
         <>
           {/* Account card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
-              <Mail className="w-5 h-5 text-emerald-400" />
+          <div className="bg-panel border border-linea rounded-xl p-4 flex items-center gap-3">
+            <div className="w-10 h-10 bg-hundido rounded-lg flex items-center justify-center">
+              <Mail className="w-5 h-5 text-tinta-2" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{connectedEmail}</p>
-              <p className="text-xs text-emerald-400 flex items-center gap-1">
+              <p className="text-sm font-medium text-tinta truncate">{connectedEmail}</p>
+              <p className="text-xs text-acento flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3" /> Conectado
               </p>
             </div>
             <button
               onClick={handleDisconnect}
-              className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+              className="p-2 text-tinta-2 hover:text-peligro hover:bg-peligro/10 rounded-lg transition-colors"
               title="Desconectar"
             >
               <Unlink className="w-4 h-4" />
@@ -274,7 +274,7 @@ function EmailPageInner() {
           <button
             onClick={handleScan}
             disabled={scanning}
-            className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 bg-primario hover:bg-primario/85 disabled:opacity-50 text-sobre-primario rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
           >
             {scanning ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Escaneando correos...</>
@@ -285,7 +285,7 @@ function EmailPageInner() {
 
           {/* Import result */}
           {importResult && (
-            <div className="flex items-center gap-2 text-sm bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 text-emerald-400">
+            <div className="flex items-center gap-2 text-sm bg-acento/10 border border-acento/20 rounded-xl px-4 py-3 text-acento">
               <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
               {importResult.ok} transacciones importadas
               {importResult.fail > 0 && ` · ${importResult.fail} fallaron`}
@@ -294,7 +294,7 @@ function EmailPageInner() {
 
           {/* Scan result */}
           {scannedCount !== null && rows.length === 0 && !scanning && (
-            <div className="text-center py-10 text-slate-500">
+            <div className="text-center py-10 text-tinta-2">
               <Mail className="w-10 h-10 mx-auto mb-3 opacity-30" />
               <p>No se encontraron correos de transacciones</p>
               <p className="text-xs mt-1">Se escanearon {scannedCount} correos bancarios</p>
@@ -305,23 +305,23 @@ function EmailPageInner() {
           {rows.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-slate-300">
+                <p className="text-sm font-medium text-tinta">
                   {rows.length} transacciones detectadas
                   {scannedCount !== null && (
-                    <span className="text-slate-500 font-normal"> · de {scannedCount} correos</span>
+                    <span className="text-tinta-2 font-normal"> · de {scannedCount} correos</span>
                   )}
                 </p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setRows(r => r.map(x => ({ ...x, selected: true })))}
-                    className="text-xs text-slate-400 hover:text-white transition-colors"
+                    className="text-xs text-tinta-2 hover:text-tinta transition-colors"
                   >
                     Seleccionar todo
                   </button>
-                  <span className="text-slate-700">·</span>
+                  <span className="text-tinta-3">·</span>
                   <button
                     onClick={() => setRows(r => r.map(x => ({ ...x, selected: false })))}
-                    className="text-xs text-slate-400 hover:text-white transition-colors"
+                    className="text-xs text-tinta-2 hover:text-tinta transition-colors"
                   >
                     Ninguno
                   </button>
@@ -335,8 +335,8 @@ function EmailPageInner() {
                   return (
                     <div
                       key={row.gmail_message_id}
-                      className={`bg-slate-900 border rounded-xl p-4 transition-colors ${
-                        row.selected ? 'border-slate-700' : 'border-slate-800 opacity-50'
+                      className={`bg-panel border rounded-xl p-4 transition-colors ${
+                        row.selected ? 'border-linea-fuerte' : 'border-linea opacity-50'
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -345,17 +345,17 @@ function EmailPageInner() {
                           type="checkbox"
                           checked={row.selected}
                           onChange={e => setRows(prev => prev.map((r, j) => j === i ? { ...r, selected: e.target.checked } : r))}
-                          className="mt-1 w-4 h-4 accent-emerald-500 flex-shrink-0 cursor-pointer"
+                          className="mt-1 w-4 h-4 accent-primario flex-shrink-0 cursor-pointer"
                         />
 
                         <div className="flex-1 min-w-0 space-y-3">
                           {/* Top row: description + amount */}
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <p className="text-sm font-medium text-white truncate">{row.description}</p>
-                              <p className="text-xs text-slate-500 truncate mt-0.5">{row.subject}</p>
+                              <p className="text-sm font-medium text-tinta truncate">{row.description}</p>
+                              <p className="text-xs text-tinta-2 truncate mt-0.5">{row.subject}</p>
                             </div>
-                            <p className={`text-sm font-bold flex-shrink-0 ${row.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            <p className={`text-sm font-medium tabular-nums flex-shrink-0 ${row.type === 'income' ? 'text-acento' : 'text-tinta'}`}>
                               {row.type === 'income' ? '+' : '−'}{fmt.money(row.amount ?? 0)}
                             </p>
                           </div>
@@ -364,24 +364,24 @@ function EmailPageInner() {
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             {/* Date */}
                             <div className="space-y-1 min-w-0">
-                              <label className="text-slate-500">Fecha</label>
+                              <label className="text-tinta-2">Fecha</label>
                               <input
                                 type="date"
                                 value={row.date_override}
                                 onChange={e => setRows(prev => prev.map((r, j) => j === i ? { ...r, date_override: e.target.value } : r))}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-white focus:outline-none focus:border-emerald-500 text-xs"
+                                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-2 py-1.5 text-tinta focus:outline-none focus:border-tinta-3 text-xs"
                               />
                             </div>
 
                             {/* Ledger */}
                             {ledgers.length > 0 && (
                               <div className="space-y-1">
-                                <label className="text-slate-500">Cuenta</label>
+                                <label className="text-tinta-2">Cuenta</label>
                                 <div className="relative">
                                   <select
                                     value={row.ledger_id}
                                     onChange={e => setRows(prev => prev.map((r, j) => j === i ? { ...r, ledger_id: e.target.value } : r))}
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-6 pr-6 py-1.5 text-white focus:outline-none focus:border-emerald-500 text-xs appearance-none"
+                                    className="w-full bg-hundido border border-linea-fuerte rounded-lg pl-6 pr-6 py-1.5 text-tinta focus:outline-none focus:border-tinta-3 text-xs appearance-none"
                                   >
                                     <option value="">Sin cuenta</option>
                                     {ledgers.map(l => (
@@ -394,18 +394,18 @@ function EmailPageInner() {
                                       style={{ background: `linear-gradient(to right, ${lColor.dark} 35%, ${lColor.main} 35%)` }}
                                     />
                                   )}
-                                  <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400 pointer-events-none" />
+                                  <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-tinta-2 pointer-events-none" />
                                 </div>
                               </div>
                             )}
                           </div>
 
                           {/* Category + confidence */}
-                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <div className="flex items-center gap-2 text-xs text-tinta-2">
                             {row.category && (
-                              <span className="px-2 py-0.5 bg-slate-800 rounded-md text-slate-400">{row.category}</span>
+                              <span className="px-2 py-0.5 bg-hundido rounded-md text-tinta-2">{row.category}</span>
                             )}
-                            <span className="text-slate-600">
+                            <span className="text-tinta-3">
                               {Math.round((row.confidence ?? 0) * 100)}% confianza
                             </span>
                           </div>
@@ -420,7 +420,7 @@ function EmailPageInner() {
               <button
                 onClick={handleImport}
                 disabled={importing || selectedCount === 0}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3 bg-primario hover:bg-primario/85 disabled:opacity-50 text-sobre-primario rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
               >
                 {importing ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Importando...</>

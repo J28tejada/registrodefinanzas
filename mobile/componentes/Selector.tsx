@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, View } from 'react-native';
 import { Check, ChevronDown } from 'lucide-react-native';
 import Texto from './Texto';
+import { useColores } from '../lib/colores';
 
 export interface OpcionDeSelector {
   valor: string;
@@ -33,6 +34,7 @@ export default function Selector({
   /** Lo que se lee arriba de la hoja. */
   titulo?: string;
 }) {
+  const paleta = useColores();
   const [abierto, setAbierto] = useState(false);
   const elegida = opciones.find(o => o.valor === value);
 
@@ -46,28 +48,28 @@ export default function Selector({
     <>
       <Pressable
         onPress={() => setAbierto(true)}
-        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 flex-row items-center gap-2.5"
+        className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 flex-row items-center gap-2.5"
       >
         {elegida?.color ? (
           <View className="w-4 h-4 rounded-sm" style={{ backgroundColor: elegida.color }} />
         ) : null}
-        <Texto className={`flex-1 text-sm ${elegida ? 'text-white' : 'text-slate-500'}`} numberOfLines={1}>
+        <Texto className={`flex-1 text-sm ${elegida ? 'text-tinta' : 'text-tinta-2'}`} numberOfLines={1}>
           {elegida?.etiqueta ?? placeholder}
         </Texto>
-        <ChevronDown size={16} color="#94a3b8" />
+        <ChevronDown size={16} color={paleta.tinta2} />
       </Pressable>
 
       <Modal visible={abierto} transparent animationType="slide" onRequestClose={() => setAbierto(false)}>
         <Pressable className="flex-1 bg-black/60" onPress={() => setAbierto(false)} />
-        <View className="bg-slate-900 border-t border-slate-800 rounded-t-2xl max-h-[70%]">
+        <View className="bg-panel border-t border-linea rounded-t-2xl max-h-[70%]">
           {titulo ? (
-            <Texto className="text-sm font-medium text-white px-5 pt-4 pb-2">{titulo}</Texto>
+            <Texto className="text-sm font-medium text-tinta px-5 pt-4 pb-2">{titulo}</Texto>
           ) : null}
           <ScrollView contentContainerClassName="p-3 pb-8">
             {Object.entries(grupos).map(([grupo, lista]) => (
               <View key={grupo || 'sueltas'} className="gap-1">
                 {grupo ? (
-                  <Texto className="text-xs font-medium text-slate-400 uppercase tracking-wider px-3 pt-3 pb-1">
+                  <Texto className="text-xs font-medium text-tinta-2 px-3 pt-3 pb-1">
                     {grupo}
                   </Texto>
                 ) : null}
@@ -78,16 +80,16 @@ export default function Selector({
                       key={o.valor || 'vacia'}
                       onPress={() => { onChange(o.valor); setAbierto(false); }}
                       className={`flex-row items-center gap-3 px-3 py-3 rounded-lg ${
-                        esta ? 'bg-emerald-500/10' : 'active:bg-slate-800'
+                        esta ? 'bg-hundido' : 'active:bg-hundido'
                       }`}
                     >
                       {o.color ? (
                         <View className="w-4 h-4 rounded-sm" style={{ backgroundColor: o.color }} />
                       ) : null}
-                      <Texto className={`flex-1 text-sm ${esta ? 'text-emerald-400' : 'text-slate-200'}`}>
+                      <Texto className={`flex-1 text-sm ${esta ? 'text-tinta font-medium' : 'text-tinta'}`}>
                         {o.etiqueta}
                       </Texto>
-                      {esta ? <Check size={16} color="#34d399" /> : null}
+                      {esta ? <Check size={16} color={paleta.acento} /> : null}
                     </Pressable>
                   );
                 })}

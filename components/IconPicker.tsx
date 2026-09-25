@@ -29,8 +29,8 @@ export default function IconPicker({
           type="button"
           onClick={() => onColor(null)}
           aria-label="Sin color"
-          className={`w-7 h-7 rounded-md bg-slate-700 border border-slate-600 transition-transform ${
-            color === null ? 'ring-2 ring-white scale-110' : ''
+          className={`w-7 h-7 rounded-md bg-presionado border border-linea-fuerte transition-transform ${
+            color === null ? 'ring-2 ring-tinta scale-110' : ''
           }`}
         />
         {COLORES_CATEGORIA.map(c => (
@@ -39,7 +39,7 @@ export default function IconPicker({
             type="button"
             onClick={() => onColor(c)}
             aria-label={`Color ${c}`}
-            className={`w-7 h-7 rounded-md transition-transform ${color === c ? 'ring-2 ring-white scale-110' : ''}`}
+            className={`w-7 h-7 rounded-md transition-transform ${color === c ? 'ring-2 ring-tinta scale-110' : ''}`}
             style={{ background: LEDGER_COLOR_MAP[c].main }}
           />
         ))}
@@ -50,7 +50,7 @@ export default function IconPicker({
       <div className="max-h-56 overflow-y-auto space-y-3 pr-1">
         {GRUPOS_DE_ICONOS.map(({ titulo, claves }) => (
           <div key={titulo} className="space-y-1.5">
-            <p className="text-2xs text-slate-500 uppercase tracking-wider">{titulo}</p>
+            <p className="text-2xs text-tinta-2">{titulo}</p>
             <div className="grid grid-cols-6 sm:grid-cols-8 gap-1.5">
               {claves.map(clave => {
                 const Icono = ICONOS_CATEGORIA[clave];
@@ -63,12 +63,12 @@ export default function IconPicker({
                     aria-label={clave}
                     aria-pressed={elegido}
                     className={`aspect-square rounded-lg flex items-center justify-center transition-colors ${
-                      elegido ? 'ring-2 ring-emerald-400' : 'hover:bg-slate-800'
+                      elegido ? 'ring-2 ring-tinta-3' : 'hover:bg-hundido'
                     }`}
                   >
                     {elegido
                       ? <CategoryIcon icon={clave} color={color} type={type} size="sm" />
-                      : <Icono className="w-4 h-4 text-slate-400" strokeWidth={1.75} />}
+                      : <Icono className="w-4 h-4 text-tinta-2" strokeWidth={1.75} />}
                   </button>
                 );
               })}

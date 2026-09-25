@@ -11,11 +11,11 @@ import { createClient } from '@/lib/supabase/browser';
 
 // Una trazabilidad que solo sirve consultando la base no le sirve al usuario.
 const sourceBadge = {
-  voice: { icon: Mic, cls: 'text-slate-500', label: 'por voz', texto: '' },
-  ai: { icon: Bot, cls: 'text-slate-500', label: 'con IA', texto: '' },
-  manual: { icon: PencilIcon, cls: 'text-slate-600', label: 'a mano', texto: '' },
-  whatsapp: { icon: MessageCircle, cls: 'text-emerald-500', label: 'vía WhatsApp', texto: 'vía WhatsApp' },
-  telegram: { icon: Send, cls: 'text-sky-400', label: 'vía Telegram', texto: 'vía Telegram' },
+  voice: { icon: Mic, cls: 'text-tinta-2', label: 'por voz', texto: '' },
+  ai: { icon: Bot, cls: 'text-tinta-2', label: 'con IA', texto: '' },
+  manual: { icon: PencilIcon, cls: 'text-tinta-3', label: 'a mano', texto: '' },
+  whatsapp: { icon: MessageCircle, cls: 'text-acento', label: 'vía WhatsApp', texto: 'vía WhatsApp' },
+  telegram: { icon: Send, cls: 'text-info', label: 'vía Telegram', texto: 'vía Telegram' },
 };
 
 interface TransactionListProps {
@@ -42,7 +42,7 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
     return (
       <div className="space-y-2">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl h-16 animate-pulse" />
+          <div key={i} className="bg-hundido rounded-lg h-14 animate-pulse" />
         ))}
       </div>
     );
@@ -50,16 +50,20 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
 
   if (transactions.length === 0) {
     return (
-      <div className="text-center py-12 text-slate-500">
-        <p className="text-4xl mb-3">💸</p>
-        <p>No hay transacciones aquí.</p>
-        <p className="text-sm mt-1">Agrega tu primera transacción con el botón +</p>
+      <div className="flex flex-col items-center text-center py-12">
+        <div className="w-12 h-12 rounded-full bg-hundido flex items-center justify-center mb-3">
+          <Receipt className="w-5 h-5 text-tinta-2" />
+        </div>
+        <p className="text-sm font-medium text-tinta">Todavía no hay movimientos</p>
+        <p className="text-sm text-tinta-2 mt-1">Registrá el primero con el botón +</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
+    // Una lista con líneas entre filas y no una tarjeta por movimiento: con
+    // tantas cajas seguidas la pantalla era puro borde.
+    <div className="border-t border-linea">
       {transactions.map(tx => {
         const Source = sourceBadge[tx.source] ?? sourceBadge.manual;
         const SourceIcon = Source.icon;
@@ -69,7 +73,10 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
         return (
           <div
             key={tx.id}
-            className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-3 flex items-center gap-3 group transition-colors"
+            // Tocar la fila la edita: en un teléfono, un lápiz y una papelera
+            // en cada fila le comían el ancho al texto.
+            onClick={() => onEdit(tx)}
+            className="border-b border-linea hover:bg-hundido px-1 py-3 flex items-center gap-3 group transition-colors cursor-pointer"
           >
             {/* El ícono de la categoría en lugar de la barrita de color: la
                 barra decía si entraba o salía, que el signo del monto ya dice.
@@ -86,7 +93,7 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Sin descripción la fila quedaría con el título en blanco:
                     la categoría es lo que mejor la identifica. */}
-                <span className="text-sm text-white font-medium truncate">
+                <span className="text-sm text-tinta font-medium truncate">
                   {tx.description?.trim() || tx.category}
                 </span>
                 {showLedgerBadge && (
@@ -101,13 +108,13 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 flex-wrap">
+              <div className="flex items-center gap-2 mt-0.5 text-xs text-tinta-2 flex-wrap">
                 <span>
                   {tx.category}
                   {/* El detalle pegado a su categoría y no como otro dato
                       suelto: "Alimentación · Supermercado" se lee como una
                       cosa, que es lo que es. */}
-                  {tx.subcategory && <span className="text-slate-600"> › {tx.subcategory}</span>}
+                  {tx.subcategory && <span className="text-tinta-3"> › {tx.subcategory}</span>}
                 </span>
                 <span>·</span>
                 <span>{fmt.date(tx.date)}</span>
@@ -115,7 +122,7 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
                 {tx.author_name && tx.author_id !== miId && (
                   <>
                     <span>·</span>
-                    <span className="flex items-center gap-1 text-slate-400">
+                    <span className="flex items-center gap-1 text-tinta-2">
                       <User className="w-3 h-3" />
                       {tx.author_name}
                     </span>
@@ -127,11 +134,17 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
                     <span>{tx.payment_method}</span>
                   </>
                 )}
-                <span>·</span>
-                <span className={`flex items-center gap-1 ${Source.cls}`} title={Source.label}>
-                  <SourceIcon className="w-3 h-3" />
-                  {Source.texto && <span>{Source.texto}</span>}
-                </span>
+                {/* Solo cuando no se cargó a mano, que es lo normal. El lápiz de
+                    "a mano" en cada fila se confundía con el de editar. */}
+                {tx.source && tx.source !== 'manual' && (
+                  <>
+                    <span>·</span>
+                    <span className={`flex items-center gap-1 ${Source.cls}`} title={Source.label}>
+                      <SourceIcon className="w-3 h-3" />
+                      {Source.texto && <span>{Source.texto}</span>}
+                    </span>
+                  </>
+                )}
                 {tx.receipt_url && (
                   <>
                     <span>·</span>
@@ -139,7 +152,8 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
                       href={`/api/receipts?path=${encodeURIComponent(tx.receipt_url)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-slate-400 hover:text-emerald-400 transition-colors"
+                      onClick={e => e.stopPropagation()}
+                      className="flex items-center gap-1 text-tinta-2 hover:text-tinta transition-colors"
                     >
                       <Receipt className="w-3 h-3" /> recibo
                     </a>
@@ -150,22 +164,28 @@ export default function TransactionList({ transactions, onEdit, onDelete, loadin
 
             {/* Amount */}
             <div className="text-right flex-shrink-0">
-              <p className={`font-semibold ${tx.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {/* El gasto en tinta y no en rojo: es lo normal de una lista de
+                  movimientos, y en rojo la pantalla entera parecía un error. */}
+              <p className={`font-medium tabular-nums ${tx.type === 'income' ? 'text-acento' : 'text-tinta'}`}>
                 {tx.type === 'income' ? '+' : '−'}{fmt.money(tx.amount)}
               </p>
             </div>
 
             {/* Actions */}
             <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+              {/* Con teclado la fila no se alcanza: el lápiz queda para eso en
+                  pantallas anchas, donde además aparece al pasar el mouse. */}
               <button
-                onClick={() => onEdit(tx)}
-                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                onClick={e => { e.stopPropagation(); onEdit(tx); }}
+                aria-label="Editar"
+                className="hidden sm:inline-flex p-1.5 text-tinta-2 hover:text-tinta hover:bg-presionado rounded-lg transition-colors"
               >
                 <Pencil className="w-3.5 h-3.5" />
               </button>
               <button
-                onClick={() => onDelete(tx.id)}
-                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                onClick={e => { e.stopPropagation(); onDelete(tx.id); }}
+                aria-label="Eliminar"
+                className="p-1.5 text-tinta-2 hover:text-peligro hover:bg-peligro/10 rounded-lg transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>

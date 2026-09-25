@@ -17,8 +17,9 @@ export interface Porcion {
 }
 
 /**
- * Paleta categórica validada contra la superficie oscura (slate-900): banda de
- * luminosidad, piso de croma, separación bajo daltonismo y contraste.
+ * Paleta categórica validada contra las dos superficies del tema —el blanco
+ * del claro y el #212121 del oscuro—: banda de luminosidad, piso de croma,
+ * separación bajo daltonismo y contraste. Pasa las cinco en los dos.
  *
  * Son cinco tonos y no más a propósito. En un anillo lo que se compara son los
  * segmentos vecinos, y en esa lista los cinco pasan con holgura; sumar un sexto
@@ -27,7 +28,7 @@ export interface Porcion {
  * categoría, es lo que sobró.
  */
 export const COLORES_CATEGORIA = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181'];
-export const COLOR_OTROS = '#64748b';
+export const COLOR_OTROS = '#858279';
 /** Cuántas categorías reales se muestran antes de plegar el resto. */
 export const MAXIMO_PORCIONES = COLORES_CATEGORIA.length;
 

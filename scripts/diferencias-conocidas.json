@@ -17,11 +17,7 @@
     },
     "movimientos-lista": {
       "tope": 100,
-      "porque": "A 361px de ancho —el ancho real en un teléfono— la línea de datos de cada fila envuelve distinto: el navegador y Yoga cortan en lugares diferentes, y la lista termina 184px más corta. NO es la estructura: la misma pieza a 560px (movimientos-lista-ancha) da 0,81%. Decisión pendiente: aceptarlo o rearmar esa fila para que no dependa del envoltorio."
-    },
-    "movimientos-vacio": {
-      "tope": 100,
-      "porque": "14px de diferencia de alto en el estado vacío, por el interlineado del emoji 💸. Es una sola pieza y no se repite en ningún lado."
+      "porque": "A 361px de ancho —el ancho real en un teléfono— la línea de datos de cada fila envuelve distinto: el navegador y Yoga cortan en lugares diferentes, y la lista termina 24px más corta (eran 184 cuando cada fila era una tarjeta con borde y relleno). NO es la estructura: la misma pieza a 560px (movimientos-lista-ancha) da menos de 1%. Decisión pendiente: aceptarlo o rearmar esa fila para que no dependa del envoltorio."
     },
     "movimientos-lista-ancha": {
       "tope": 1.5,

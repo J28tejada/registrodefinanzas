@@ -33,19 +33,12 @@ export interface Pieza {
 
 export const ANCHO_POR_DEFECTO = 320;
 
-export const RESUMENES: (Pieza & {
-  title: string; subtitle: string; amount: number;
-  variant: 'income' | 'expense' | 'balance';
-})[] = [
-  { id: 'resumen-ingresos', titulo: 'Resumen · ingresos', ancho: ANCHO_POR_DEFECTO,
-    title: 'Ingresos', subtitle: 'del mes', amount: 24700, variant: 'income' },
-  { id: 'resumen-gastos', titulo: 'Resumen · gastos', ancho: ANCHO_POR_DEFECTO,
-    title: 'Gastos', subtitle: 'del mes', amount: 16921, variant: 'expense' },
-  { id: 'resumen-balance', titulo: 'Resumen · balance', ancho: ANCHO_POR_DEFECTO,
-    title: 'Balance', subtitle: 'del mes', amount: 7779, variant: 'balance' },
-  // El balance negativo agrega un renglón que las otras no tienen.
-  { id: 'resumen-negativo', titulo: 'Resumen · balance negativo', ancho: ANCHO_POR_DEFECTO,
-    title: 'Balance', subtitle: 'del mes', amount: -3200, variant: 'balance' },
+export const RESUMENES: (Pieza & { income: number; expenses: number; balance: number })[] = [
+  { id: 'resumen-mes', titulo: 'Resumen del mes', ancho: 361,
+    income: 24700, expenses: 16921, balance: 7779 },
+  // En negativo cambia el color y aparece el signo: es la otra mitad de la pieza.
+  { id: 'resumen-negativo', titulo: 'Resumen del mes · en negativo', ancho: 361,
+    income: 13721, expenses: 16921, balance: -3200 },
 ];
 
 const presupuesto = (

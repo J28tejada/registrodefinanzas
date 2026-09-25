@@ -1,7 +1,6 @@
 'use client';
 
-import { TrendingDown, TrendingUp, Wallet } from 'lucide-react';
-import SummaryCard from '@/components/SummaryCard';
+import MonthSummary from '@/components/MonthSummary';
 import BudgetBar from '@/components/BudgetBar';
 import CategoryIcon from '@/components/CategoryIcon';
 import TransactionList from '@/components/TransactionList';
@@ -22,23 +21,18 @@ import {
  * Que dibuje los componentes de verdad y no una copia es todo el punto: una
  * galería con su propio JSX comprobaría que la galería se ve igual, no la app.
  */
-const ICONO_RESUMEN = { income: TrendingUp, expense: TrendingDown, balance: Wallet } as const;
-
 export default function GaleriaPage() {
   return (
-    <div className="min-h-screen bg-slate-950 p-6">
+    <div className="min-h-screen bg-fondo p-6">
       <div className="max-w-3xl mx-auto space-y-8">
         <div>
-          <h1 className="text-xl font-bold text-white">Galería · web</h1>
-          <p className="text-slate-400 text-sm">{PIEZAS.length} piezas para comparar con el teléfono</p>
+          <h1 className="text-xl font-semibold text-tinta">Galería · web</h1>
+          <p className="text-tinta-2 text-sm">{PIEZAS.length} piezas para comparar con el teléfono</p>
         </div>
 
         {RESUMENES.map(p => (
           <Pieza key={p.id} id={p.id} titulo={p.titulo} ancho={p.ancho}>
-            <SummaryCard
-              title={p.title} subtitle={p.subtitle} amount={p.amount}
-              variant={p.variant} icon={ICONO_RESUMEN[p.variant]}
-            />
+            <MonthSummary income={p.income} expenses={p.expenses} balance={p.balance} />
           </Pieza>
         ))}
 
@@ -85,7 +79,7 @@ function Pieza({ id, titulo, ancho, children }: {
 }) {
   return (
     <div>
-      <p className="text-xs text-slate-500 mb-2">{titulo}</p>
+      <p className="text-xs text-tinta-2 mb-2">{titulo}</p>
       <div data-pieza={id} style={{ width: ancho }}>{children}</div>
     </div>
   );

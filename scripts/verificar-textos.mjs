@@ -29,14 +29,14 @@ const ts = createRequire(import.meta.url)('typescript');
  * Los gemelos: qué archivo de la web le corresponde a cuál del teléfono.
  *
  * Escrito a mano y no adivinado por el nombre a propósito: los nombres no se
- * parecen (`SummaryCard` ↔ `TarjetaDeResumen`) y adivinar significaría que un
+ * parecen (`MonthSummary` ↔ `ResumenDelMes`) y adivinar significaría que un
  * archivo mal bautizado deja de compararse sin que nadie se entere.
  *
  * Esta lista es además el estado del port: lo que todavía no está acá, no está
  * portado. Agregar el par es parte de portar la pantalla.
  */
 const PARES = [
-  ['components/SummaryCard.tsx', 'mobile/componentes/TarjetaDeResumen.tsx'],
+  ['components/MonthSummary.tsx', 'mobile/componentes/ResumenDelMes.tsx'],
   ['components/BudgetBar.tsx', 'mobile/componentes/BarraDePresupuesto.tsx'],
   ['components/CategoryIcon.tsx', 'mobile/componentes/IconoDeCategoria.tsx'],
   ['components/CategoriesContext.tsx', 'mobile/componentes/ContextoDeCategorias.tsx'],

@@ -4,6 +4,7 @@ import { CalendarClock, Scissors } from 'lucide-react-native';
 import Texto from './Texto';
 import { useFormatters } from './ContextoDeAjustes';
 import { AvisoDeTarjeta, cuandoVence } from '@compartido/tarjetas';
+import { useColores } from '../lib/colores';
 
 /**
  * El cartel de "se te viene el corte" o "se te viene el pago".
@@ -13,6 +14,7 @@ import { AvisoDeTarjeta, cuandoVence } from '@compartido/tarjetas';
  * lo tienen. Acá se ve igual al abrir la app.
  */
 export default function AvisosDeTarjeta({ avisos }: { avisos: AvisoDeTarjeta[] }) {
+  const paleta = useColores();
   const fmt = useFormatters();
   if (avisos.length === 0) return null;
 
@@ -23,9 +25,9 @@ export default function AvisosDeTarjeta({ avisos }: { avisos: AvisoDeTarjeta[] }
         // El pago urge y el corte solo informa: dejar pasar una fecha de pago
         // cuesta plata, un corte no.
         const caja = esPago
-          ? 'bg-amber-500/10 border-amber-500/30'
-          : 'bg-slate-800/60 border-slate-700';
-        const color = esPago ? '#fcd34d' : '#cbd5e1';
+          ? 'bg-aviso/10 border-aviso/30'
+          : 'bg-hundido border-linea-fuerte';
+        const color = esPago ? paleta.aviso : paleta.tinta;
 
         return (
           <Link key={`${aviso.card.id}-${aviso.kind}`} href={`/cards/${aviso.card.id}` as never} asChild>

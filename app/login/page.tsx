@@ -10,7 +10,7 @@ type Modo = 'entrar' | 'registrarse';
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-slate-400" /></div>}>
+    <Suspense fallback={<div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-tinta-2" /></div>}>
       <LoginInner />
     </Suspense>
   );
@@ -93,19 +93,19 @@ function LoginInner() {
     <div className="min-h-[80vh] flex items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-3">
-          <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center mx-auto">
-            <Wallet className="w-6 h-6 text-white" />
+          <div className="w-12 h-12 bg-primario rounded-lg flex items-center justify-center mx-auto">
+            <Wallet className="w-6 h-6 text-sobre-primario" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">Jobidai Wallet</h1>
-            <p className="text-sm text-slate-400">
+            <h1 className="text-xl font-semibold text-tinta">Jobidai Wallet</h1>
+            <p className="text-sm text-tinta-2">
               {modo === 'entrar' ? 'Entrá a tu cuenta' : 'Creá tu cuenta'}
             </p>
           </div>
         </div>
 
         {!configurado && (
-          <div className="flex items-start gap-2 text-amber-400 text-sm bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
+          <div className="flex items-start gap-2 text-aviso text-sm bg-aviso/10 border border-aviso/20 rounded-xl px-4 py-3">
             <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <span>
               Faltan <code>NEXT_PUBLIC_SUPABASE_URL</code> y <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>.
@@ -115,28 +115,28 @@ function LoginInner() {
         )}
 
         {error && (
-          <div className="flex items-start gap-2 text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
+          <div className="flex items-start gap-2 text-peligro text-sm bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
             <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {confirmar ? (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 text-center space-y-3">
-            <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
-            <p className="text-sm text-white font-medium">Revisá tu correo</p>
-            <p className="text-xs text-slate-400">
-              Te mandamos un enlace a <span className="text-slate-200">{email}</span> para confirmar
+          <div className="bg-panel border border-linea rounded-xl p-5 sm:p-6 text-center space-y-3">
+            <CheckCircle2 className="w-8 h-8 text-acento mx-auto" />
+            <p className="text-sm text-tinta font-medium">Revisá tu correo</p>
+            <p className="text-xs text-tinta-2">
+              Te mandamos un enlace a <span className="text-tinta">{email}</span> para confirmar
               la cuenta. Después de abrirlo podés entrar.
             </p>
           </div>
         ) : (
-          <form onSubmit={enviar} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4">
+          <form onSubmit={enviar} className="bg-panel border border-linea rounded-xl p-5 sm:p-6 space-y-4">
             <button
               type="button"
               onClick={entrarConGoogle}
               disabled={cargandoGoogle || cargando || !configurado}
-              className="w-full py-3 bg-white hover:bg-slate-100 disabled:opacity-50 text-slate-900 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2.5"
+              className="w-full py-3 bg-panel border border-linea-fuerte hover:bg-presionado disabled:opacity-50 text-tinta rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2.5"
             >
               {cargandoGoogle ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -152,26 +152,26 @@ function LoginInner() {
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-slate-800" />
-              <span className="text-xs text-slate-500">o con tu correo</span>
-              <div className="flex-1 h-px bg-slate-800" />
+              <div className="flex-1 h-px bg-hundido" />
+              <span className="text-xs text-tinta-2">o con tu correo</span>
+              <div className="flex-1 h-px bg-hundido" />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs text-slate-400">Correo</label>
+              <label className="text-xs text-tinta-2">Correo</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 autoComplete="email"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta placeholder:text-tinta-3 focus:outline-none focus:border-tinta-3"
                 placeholder="vos@ejemplo.com"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs text-slate-400">Contraseña</label>
+              <label className="text-xs text-tinta-2">Contraseña</label>
               <input
                 type="password"
                 required
@@ -179,7 +179,7 @@ function LoginInner() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 autoComplete={modo === 'entrar' ? 'current-password' : 'new-password'}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta placeholder:text-tinta-3 focus:outline-none focus:border-tinta-3"
                 placeholder="Mínimo 6 caracteres"
               />
             </div>
@@ -187,7 +187,7 @@ function LoginInner() {
             <button
               type="submit"
               disabled={cargando || cargandoGoogle || !configurado}
-              className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 bg-primario hover:bg-primario/85 disabled:opacity-50 text-sobre-primario rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
             >
               {cargando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
               {modo === 'entrar' ? 'Entrar' : 'Crear cuenta'}
@@ -196,7 +196,7 @@ function LoginInner() {
             <button
               type="button"
               onClick={() => { setModo(modo === 'entrar' ? 'registrarse' : 'entrar'); setError(''); }}
-              className="w-full text-xs text-slate-400 hover:text-white transition-colors"
+              className="w-full text-xs text-tinta-2 hover:text-tinta transition-colors"
             >
               {modo === 'entrar' ? '¿No tenés cuenta? Creá una' : '¿Ya tenés cuenta? Entrá'}
             </button>

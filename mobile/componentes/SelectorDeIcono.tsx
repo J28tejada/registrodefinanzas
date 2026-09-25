@@ -4,6 +4,7 @@ import IconoDeCategoria from './IconoDeCategoria';
 import { ICONOS_CATEGORIA } from '../lib/iconos-categoria';
 import { COLORES_CATEGORIA, GRUPOS_DE_ICONOS } from '@compartido/categorias-catalogo';
 import { LEDGER_COLOR_MAP, TransactionType } from '@compartido/types';
+import { useColores } from '../lib/colores';
 
 /**
  * El gemelo de components/IconPicker.tsx.
@@ -22,6 +23,7 @@ export default function SelectorDeIcono({
   onIcon: (clave: string) => void;
   onColor: (color: string | null) => void;
 }) {
+  const paleta = useColores();
   return (
     <View className="gap-3">
       <View className="flex-row flex-wrap gap-1.5">
@@ -30,8 +32,8 @@ export default function SelectorDeIcono({
         <Pressable
           onPress={() => onColor(null)}
           accessibilityLabel="Sin color"
-          className={`w-7 h-7 rounded-md bg-slate-700 border ${
-            color === null ? 'border-2 border-white' : 'border-slate-600'
+          className={`w-7 h-7 rounded-md bg-presionado border ${
+            color === null ? 'border-2 border-tinta' : 'border-linea-fuerte'
           }`}
           style={color === null ? { transform: [{ scale: 1.1 }] } : undefined}
         />
@@ -40,7 +42,7 @@ export default function SelectorDeIcono({
             key={c}
             onPress={() => onColor(c)}
             accessibilityLabel={`Color ${c}`}
-            className={`w-7 h-7 rounded-md ${color === c ? 'border-2 border-white' : ''}`}
+            className={`w-7 h-7 rounded-md ${color === c ? 'border-2 border-tinta' : ''}`}
             style={[
               { backgroundColor: LEDGER_COLOR_MAP[c].main },
               color === c ? { transform: [{ scale: 1.1 }] } : null,
@@ -61,7 +63,7 @@ export default function SelectorDeIcono({
       >
         {GRUPOS_DE_ICONOS.map(({ titulo, claves }) => (
           <View key={titulo} className="gap-1.5">
-            <Texto className="text-2xs text-slate-500 uppercase tracking-wider">{titulo}</Texto>
+            <Texto className="text-2xs text-tinta-2">{titulo}</Texto>
             <View className="flex-row flex-wrap">
               {claves.map(clave => {
                 const Icono = ICONOS_CATEGORIA[clave];
@@ -80,11 +82,11 @@ export default function SelectorDeIcono({
                     style={{ width: `${100 / 6}%`, aspectRatio: 1 }}
                   >
                     <View className={`flex-1 w-full rounded-lg items-center justify-center ${
-                      elegido ? 'border-2 border-emerald-400' : ''
+                      elegido ? 'border-2 border-tinta' : ''
                     }`}>
                       {elegido
                         ? <IconoDeCategoria icon={clave} color={color} type={type} size="sm" />
-                        : <Icono size={16} color="#94a3b8" strokeWidth={1.75} />}
+                        : <Icono size={16} color={paleta.tinta2} strokeWidth={1.75} />}
                     </View>
                   </Pressable>
                 );

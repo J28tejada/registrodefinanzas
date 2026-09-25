@@ -109,7 +109,7 @@ export default function CardDetailPage() {
   if (cargando && !detalle) {
     return (
       <div className="max-w-2xl mx-auto pt-14 md:pt-0 flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        <Loader2 className="w-6 h-6 animate-spin text-tinta-2" />
       </div>
     );
   }
@@ -118,7 +118,7 @@ export default function CardDetailPage() {
     return (
       <div className="max-w-2xl mx-auto space-y-4 pt-14 md:pt-0">
         <Volver />
-        <p className="flex items-start gap-2 text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
+        <p className="flex items-start gap-2 text-peligro text-sm bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>{error || 'Ese medio de pago no existe.'}</span>
         </p>
@@ -142,7 +142,7 @@ export default function CardDetailPage() {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-lg font-semibold text-white truncate">{card.name}</p>
+            <p className="text-lg font-semibold text-tinta truncate">{card.name}</p>
             <p className="text-sm truncate" style={{ color: colores.text }}>
               {CARD_KIND_LABEL[card.kind]}
               {card.issuer && ` · ${card.issuer}`}
@@ -172,7 +172,7 @@ export default function CardDetailPage() {
               <button
                 onClick={eliminar}
                 disabled={ocupado}
-                className="p-2 bg-black/20 hover:bg-rose-600 disabled:opacity-50 text-white rounded-lg transition-colors"
+                className="p-2 bg-black/20 hover:bg-peligro/85 disabled:opacity-50 text-white rounded-lg transition-colors"
                 aria-label="Eliminar"
               >
                 <Trash2 className="w-4 h-4" />
@@ -182,7 +182,7 @@ export default function CardDetailPage() {
         </div>
 
         <div className="flex items-end justify-between gap-3">
-          <p className="text-xl text-white font-mono tracking-widest">
+          <p className="text-xl text-tinta font-mono tracking-widest">
             ···· {card.last4 || '····'}
           </p>
           <p className="text-xs text-right" style={{ color: colores.text }}>
@@ -194,7 +194,7 @@ export default function CardDetailPage() {
       </div>
 
       {error && (
-        <p className="flex items-start gap-2 text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
+        <p className="flex items-start gap-2 text-peligro text-sm bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /> <span>{error}</span>
         </p>
       )}
@@ -222,46 +222,46 @@ export default function CardDetailPage() {
 
       {/* Mes */}
       <div className="flex items-center justify-center gap-1">
-        <button onClick={() => moverMes(-1)} className="p-1 text-slate-500 hover:text-white rounded transition-colors" aria-label="Mes anterior">
+        <button onClick={() => moverMes(-1)} className="p-1 text-tinta-2 hover:text-tinta rounded transition-colors" aria-label="Mes anterior">
           <ChevronLeft className="w-4 h-4" />
         </button>
-        <span className="text-sm text-slate-300 capitalize min-w-[140px] text-center">
+        <span className="text-sm text-tinta min-w-[140px] text-center">
           {fmt.monthLabel(`${mes}-01`)}
         </span>
-        <button onClick={() => moverMes(1)} className="p-1 text-slate-500 hover:text-white rounded transition-colors" aria-label="Mes siguiente">
+        <button onClick={() => moverMes(1)} className="p-1 text-tinta-2 hover:text-tinta rounded transition-colors" aria-label="Mes siguiente">
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
       {/* Dos columnas en el teléfono, igual que en la lista: en un tercio de
           pantalla los montos salen cortados. */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div className="min-w-0">
-          <p className="text-2xs sm:text-xs text-slate-400 uppercase tracking-wider">Gastado</p>
-          <p className="text-lg sm:text-xl font-bold text-white mt-1 truncate">{fmt.money(detalle.spent)}</p>
+          <p className="text-2xs sm:text-xs text-tinta-2">Gastado</p>
+          <p className="text-lg sm:text-xl font-semibold text-tinta mt-1 truncate">{fmt.money(detalle.spent)}</p>
         </div>
         <div className="min-w-0">
-          <p className="text-2xs sm:text-xs text-slate-400 uppercase tracking-wider">Movimientos</p>
-          <p className="text-lg sm:text-xl font-bold text-white mt-1">{detalle.count}</p>
+          <p className="text-2xs sm:text-xs text-tinta-2">Movimientos</p>
+          <p className="text-lg sm:text-xl font-semibold text-tinta mt-1">{detalle.count}</p>
         </div>
         <div className="min-w-0 col-span-2 sm:col-span-1">
-          <p className="text-2xs sm:text-xs text-slate-400 uppercase tracking-wider">Promedio</p>
-          <p className="text-lg sm:text-xl font-bold text-white mt-1 truncate">{fmt.money(detalle.average)}</p>
+          <p className="text-2xs sm:text-xs text-tinta-2">Promedio</p>
+          <p className="text-lg sm:text-xl font-semibold text-tinta mt-1 truncate">{fmt.money(detalle.average)}</p>
         </div>
       </div>
 
       {/* Los últimos meses: un mes suelto no dice si la estás usando más. */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
-        <p className="text-sm font-medium text-white">Últimos meses</p>
+      <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 space-y-3">
+        <p className="text-sm font-medium text-tinta">Últimos meses</p>
         {maxMes === 0 ? (
-          <p className="text-xs text-slate-500 py-4 text-center">
+          <p className="text-xs text-tinta-2 py-4 text-center">
             No hay gastos por acá en este período.
           </p>
         ) : (
           <div className="flex items-end gap-2 h-28">
             {detalle.monthly.map(m => (
               <div key={m.month} className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
-                <span className="text-3xs text-slate-500 tabular-nums">
+                <span className="text-3xs text-tinta-2 tabular-nums">
                   {m.total > 0 ? Math.round(m.total).toLocaleString(fmt.config.locale) : ''}
                 </span>
                 <div
@@ -270,11 +270,11 @@ export default function CardDetailPage() {
                     // Un mínimo visible: con 1px de barra no se distingue un mes
                     // flojo de uno sin gastos, y son cosas distintas.
                     height: `${m.total > 0 ? Math.max((m.total / maxMes) * 100, 4) : 0}%`,
-                    background: m.month === mes ? colores.main : '#334155',
+                    background: m.month === mes ? colores.main : 'rgb(var(--c-linea-fuerte))',
                   }}
                   title={`${m.month}: ${fmt.money(m.total)} en ${m.count} mov.`}
                 />
-                <span className={`text-3xs truncate w-full text-center ${m.month === mes ? 'text-slate-300' : 'text-slate-500'}`}>
+                <span className={`text-3xs truncate w-full text-center ${m.month === mes ? 'text-tinta' : 'text-tinta-2'}`}>
                   {fmt.monthLabel(`${m.month}-01`).slice(0, 3)}
                 </span>
               </div>
@@ -285,18 +285,18 @@ export default function CardDetailPage() {
 
       {/* En qué se fue: la pregunta que sigue a "gasté tanto con esta tarjeta". */}
       {detalle.byCategory.length > 0 && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
-          <p className="text-sm font-medium text-white">En qué se fue</p>
+        <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 space-y-3">
+          <p className="text-sm font-medium text-tinta">En qué se fue</p>
           <div className="space-y-2.5">
             {detalle.byCategory.map(c => (
               <div key={c.category} className="space-y-1">
                 <div className="flex items-center justify-between gap-3 text-xs">
-                  <span className="text-slate-300 truncate">{c.category}</span>
-                  <span className="text-slate-400 tabular-nums flex-shrink-0">
+                  <span className="text-tinta truncate">{c.category}</span>
+                  <span className="text-tinta-2 tabular-nums flex-shrink-0">
                     {fmt.money(c.total)} · {c.count}
                   </span>
                 </div>
-                <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-hundido rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all"
                     style={{
@@ -313,12 +313,12 @@ export default function CardDetailPage() {
 
       {/* Movimientos */}
       <div className="space-y-2">
-        <p className="text-sm font-medium text-white">
+        <p className="text-sm font-medium text-tinta">
           Movimientos del mes
-          {movimientos.length > 0 && <span className="text-slate-500"> · {movimientos.length}</span>}
+          {movimientos.length > 0 && <span className="text-tinta-2"> · {movimientos.length}</span>}
         </p>
         {movimientos.length === 0 ? (
-          <p className="text-xs text-slate-500 py-6 text-center bg-slate-900 border border-slate-800 rounded-2xl">
+          <p className="text-xs text-tinta-2 py-6 text-center bg-panel border border-linea rounded-xl">
             Nada pagado por acá en {fmt.monthLabel(`${mes}-01`)}.
           </p>
         ) : (
@@ -347,7 +347,7 @@ function Volver() {
   return (
     <Link
       href="/cards"
-      className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+      className="inline-flex items-center gap-1.5 text-sm text-tinta-2 hover:text-tinta transition-colors"
     >
       <ArrowLeft className="w-4 h-4" /> Billetera
     </Link>

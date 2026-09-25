@@ -2,8 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Los controles nativos del navegador (el calendario de un campo de fecha, las
+   barras de desplazamiento) siguen al tema del sistema igual que la app. */
+:root { color-scheme: light dark; }
+
 body {
-  @apply bg-slate-950 text-white;
+  @apply bg-fondo text-tinta;
   overflow-x: hidden;
 }
 
@@ -40,17 +44,16 @@ input[type='date']::-webkit-date-and-time-value {
   text-align: left;
 }
 
-/* El ícono del calendario que agrega Chrome viene en negro y sobre el fondo
-   oscuro de la app queda casi invisible. Invertido se ve. */
+/* El ícono del calendario que agrega Chrome ya sigue al tema por el
+   `color-scheme` de arriba; invertirlo a mano lo dejaba gris sobre blanco. */
 input[type='date']::-webkit-calendar-picker-indicator {
-  filter: invert(0.7);
   cursor: pointer;
 }
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { @apply bg-slate-950; }
-::-webkit-scrollbar-thumb { @apply bg-slate-700 rounded-full; }
-::-webkit-scrollbar-thumb:hover { @apply bg-slate-500; }
+::-webkit-scrollbar-track { @apply bg-fondo; }
+::-webkit-scrollbar-thumb { @apply bg-linea-fuerte rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-tinta-3; }
 
 @keyframes pulse-ring {
   0% { transform: scale(0.9); opacity: 1; }

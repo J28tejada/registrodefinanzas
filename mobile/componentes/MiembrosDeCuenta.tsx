@@ -10,6 +10,7 @@ import { db } from '../lib/datos';
 import { BASE } from '../lib/api';
 import { createInvite, getLedgerMembers, removeLedgerMember } from '@compartido/db';
 import { LedgerMember, LedgerWithStats } from '@compartido/types';
+import { useColores } from '../lib/colores';
 
 /**
  * El gemelo de components/LedgerMembers.tsx.
@@ -23,6 +24,7 @@ export default function MiembrosDeCuenta({
   onBack: () => void;
   onChanged: () => void;
 }) {
+  const paleta = useColores();
   const { session } = useSesion();
   // Para distinguir mi propia fila: ahí va "salir", no "quitar".
   const miId = session?.user?.id ?? '';
@@ -108,20 +110,20 @@ export default function MiembrosDeCuenta({
   return (
     <View className="gap-5">
       <View className="flex-row items-center gap-2">
-        <Users size={16} color="#94a3b8" />
-        <Texto className="text-sm font-medium text-white">Personas con acceso</Texto>
+        <Users size={16} color={paleta.tinta2} />
+        <Texto className="text-sm font-medium text-tinta">Personas con acceso</Texto>
       </View>
 
       {error ? (
-        <View className="flex-row items-start gap-2 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
-          <View className="mt-0.5"><AlertCircle size={16} color="#fb7185" /></View>
-          <Texto className="text-rose-400 text-sm flex-1">{error}</Texto>
+        <View className="flex-row items-start gap-2 bg-peligro/10 border border-peligro/20 rounded-lg px-3 py-2">
+          <View className="mt-0.5"><AlertCircle size={16} color={paleta.peligro} /></View>
+          <Texto className="text-peligro text-sm flex-1">{error}</Texto>
         </View>
       ) : null}
 
       {cargando ? (
         <View className="gap-2">
-          {[0, 1].map(i => <View key={i} className="h-14 bg-slate-800 rounded-xl" />)}
+          {[0, 1].map(i => <View key={i} className="h-14 bg-hundido rounded-xl" />)}
         </View>
       ) : (
         <View className="gap-2">
@@ -129,21 +131,21 @@ export default function MiembrosDeCuenta({
             const soyYo = m.user_id === miId;
             const puedeQuitar = m.role !== 'owner' && (esDueno || soyYo);
             return (
-              <View key={m.user_id} className="flex-row items-center gap-3 bg-slate-800 rounded-xl px-3 py-2.5">
+              <View key={m.user_id} className="flex-row items-center gap-3 bg-hundido rounded-xl px-3 py-2.5">
                 {m.avatar_url ? (
                   <Image source={{ uri: m.avatar_url }} className="w-8 h-8 rounded-full" />
                 ) : (
-                  <View className="w-8 h-8 rounded-full bg-slate-700 items-center justify-center">
-                    <Texto className="text-sm text-slate-300">{m.name.charAt(0).toUpperCase()}</Texto>
+                  <View className="w-8 h-8 rounded-full bg-presionado items-center justify-center">
+                    <Texto className="text-sm text-tinta">{m.name.charAt(0).toUpperCase()}</Texto>
                   </View>
                 )}
                 <View className="flex-1">
                   <View className="flex-row items-center gap-1.5">
-                    <Texto className="text-sm text-white" numberOfLines={1}>{m.name}</Texto>
-                    {soyYo ? <Texto className="text-xs text-slate-500">(vos)</Texto> : null}
-                    {m.role === 'owner' ? <Crown size={12} color="#fbbf24" /> : null}
+                    <Texto className="text-sm text-tinta" numberOfLines={1}>{m.name}</Texto>
+                    {soyYo ? <Texto className="text-xs text-tinta-2">(vos)</Texto> : null}
+                    {m.role === 'owner' ? <Crown size={12} color={paleta.aviso} /> : null}
                   </View>
-                  <Texto className="text-xs text-slate-500" numberOfLines={1}>{m.email}</Texto>
+                  <Texto className="text-xs text-tinta-2" numberOfLines={1}>{m.email}</Texto>
                 </View>
                 {puedeQuitar ? (
                   <Pressable
@@ -151,7 +153,7 @@ export default function MiembrosDeCuenta({
                     accessibilityLabel={soyYo ? 'Salir de la cuenta' : 'Quitar de la cuenta'}
                     className="p-1.5"
                   >
-                    {soyYo ? <LogOut size={14} color="#64748b" /> : <X size={14} color="#64748b" />}
+                    {soyYo ? <LogOut size={14} color={paleta.tinta2} /> : <X size={14} color={paleta.tinta2} />}
                   </Pressable>
                 ) : null}
               </View>
@@ -167,44 +169,44 @@ export default function MiembrosDeCuenta({
               onPress={generar}
               disabled={generando}
               style={generando ? { opacity: 0.5 } : undefined}
-              className="w-full flex-row items-center justify-center gap-2 py-2.5 bg-emerald-600 active:bg-emerald-500 rounded-xl"
+              className="w-full flex-row items-center justify-center gap-2 py-2.5 bg-primario active:bg-primario/85 rounded-lg"
             >
-              {generando ? <Loader2 size={16} color="#ffffff" /> : <UserPlus size={16} color="#ffffff" />}
-              <Texto className="text-white text-sm font-medium">
+              {generando ? <Loader2 size={16} color={paleta.sobrePrimario} /> : <UserPlus size={16} color={paleta.sobrePrimario} />}
+              <Texto className="text-sobre-primario text-sm font-medium">
                 {generando ? 'Generando...' : 'Invitar a alguien'}
               </Texto>
             </Pressable>
           ) : (
-            <View className="gap-3 bg-slate-800 border border-slate-700 rounded-xl p-4">
+            <View className="gap-3 bg-hundido border border-linea-fuerte rounded-xl p-4">
               <View className="items-center">
-                <Texto className="text-xs text-slate-400">Código de invitación</Texto>
+                <Texto className="text-xs text-tinta-2">Código de invitación</Texto>
                 {/* El `font-mono` de la web no se porta: el teléfono solo carga
                     Inter. El interletrado sí, que es lo que separa los dígitos. */}
-                <Texto className="text-xl text-emerald-300 mt-1" style={{ letterSpacing: 4 }}>
+                <Texto className="text-xl text-acento mt-1" style={{ letterSpacing: 4 }}>
                   {codigo}
                 </Texto>
-                <Texto className="text-xs text-slate-500 mt-1.5">Vence en 7 días</Texto>
+                <Texto className="text-xs text-tinta-2 mt-1.5">Vence en 7 días</Texto>
               </View>
 
               <Pressable
                 onPress={copiar}
-                className="w-full flex-row items-center justify-center gap-2 py-2.5 bg-slate-700 active:bg-slate-600 rounded-lg"
+                className="w-full flex-row items-center justify-center gap-2 py-2.5 bg-presionado active:bg-presionado rounded-lg"
               >
-                {copiado ? <Check size={16} color="#34d399" /> : <Copy size={16} color="#ffffff" />}
-                <Texto className="text-white text-sm">
+                {copiado ? <Check size={16} color={paleta.acento} /> : <Copy size={16} color={paleta.tinta} />}
+                <Texto className="text-tinta text-sm">
                   {copiado
                     ? '¡Enlace copiado!'
                     : BASE ? 'Copiar enlace para compartir' : 'Copiar el código'}
                 </Texto>
               </Pressable>
 
-              <Texto className="text-xs text-slate-500 text-center leading-relaxed">
+              <Texto className="text-xs text-tinta-2 text-center leading-relaxed">
                 Mandáselo por WhatsApp. Quien lo abra y entre con su cuenta
                 va a poder ver y cargar movimientos acá.
               </Texto>
 
               <Pressable onPress={generar}>
-                <Texto className="text-xs text-slate-400 text-center">
+                <Texto className="text-xs text-tinta-2 text-center">
                   Generar otro código (anula el anterior)
                 </Texto>
               </Pressable>
@@ -212,16 +214,16 @@ export default function MiembrosDeCuenta({
           )}
         </View>
       ) : (
-        <Texto className="text-xs text-slate-500 text-center">
+        <Texto className="text-xs text-tinta-2 text-center">
           Solo el dueño de la cuenta puede invitar a más personas.
         </Texto>
       )}
 
       <Pressable
         onPress={onBack}
-        className="w-full py-2.5 bg-slate-800 active:bg-slate-700 rounded-lg items-center"
+        className="w-full py-2.5 bg-hundido active:bg-presionado rounded-lg items-center"
       >
-        <Texto className="text-slate-300 text-sm">Volver</Texto>
+        <Texto className="text-tinta text-sm">Volver</Texto>
       </Pressable>
     </View>
   );

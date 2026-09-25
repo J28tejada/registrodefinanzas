@@ -97,7 +97,7 @@ export default function CompraPage() {
   if (cargando) {
     return (
       <div className="max-w-2xl mx-auto pt-14 md:pt-0 flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        <Loader2 className="w-6 h-6 animate-spin text-tinta-2" />
       </div>
     );
   }
@@ -105,10 +105,10 @@ export default function CompraPage() {
   if (!compra) {
     return (
       <div className="max-w-2xl mx-auto space-y-4 pt-14 md:pt-0">
-        <Link href="/shopping" className="text-sm text-slate-400 hover:text-white flex items-center gap-1.5">
+        <Link href="/shopping" className="text-sm text-tinta-2 hover:text-tinta flex items-center gap-1.5">
           <ArrowLeft className="w-4 h-4" /> Supermercado
         </Link>
-        <p className="text-sm text-rose-400">{error || 'Esa compra no existe.'}</p>
+        <p className="text-sm text-peligro">{error || 'Esa compra no existe.'}</p>
       </div>
     );
   }
@@ -120,70 +120,70 @@ export default function CompraPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-4 pt-14 md:pt-0">
-      <Link href="/shopping" className="text-sm text-slate-400 hover:text-white flex items-center gap-1.5 w-fit">
+      <Link href="/shopping" className="text-sm text-tinta-2 hover:text-tinta flex items-center gap-1.5 w-fit">
         <ArrowLeft className="w-4 h-4" /> Supermercado
       </Link>
 
       <div className="min-w-0">
-        <h1 className="text-xl sm:text-2xl font-bold text-white truncate">{compra.name}</h1>
-        <p className="text-slate-400 text-sm">
+        <h1 className="text-xl sm:text-2xl font-semibold text-tinta truncate">{compra.name}</h1>
+        <p className="text-tinta-2 text-sm">
           {compra.closed ? `Comprada el ${compra.date}` : `${compra.checkedItems} de ${compra.items} artículos`}
         </p>
       </div>
 
       {error && (
-        <div className="flex items-start gap-2 text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
+        <div className="flex items-start gap-2 text-peligro text-sm bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
       {aviso && (
-        <div className="flex items-start gap-2 text-emerald-400 text-sm bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3">
+        <div className="flex items-start gap-2 text-acento text-sm bg-acento/10 border border-acento/20 rounded-xl px-4 py-3">
           <Check className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>{aviso}</span>
         </div>
       )}
 
       {/* El número por el que se abre esta pantalla en el súper. */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-2">
+      <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 space-y-2">
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-2xs uppercase tracking-wider text-slate-500">
+            <p className="text-2xs text-tinta-2">
               {compra.closed ? 'Pagado' : 'En el carrito'}
             </p>
-            <p className="text-2xl font-bold text-emerald-400 tabular-nums">{fmt.money(pagado)}</p>
+            <p className="text-2xl font-semibold text-acento tabular-nums">{fmt.money(pagado)}</p>
           </div>
           {!compra.closed && falta > 0 && (
             <div className="text-right flex-shrink-0">
-              <p className="text-2xs uppercase tracking-wider text-slate-500">Falta</p>
-              <p className="text-sm text-slate-300 tabular-nums">{fmt.money(falta)}</p>
+              <p className="text-2xs text-tinta-2">Falta</p>
+              <p className="text-sm text-tinta tabular-nums">{fmt.money(falta)}</p>
             </div>
           )}
         </div>
 
         {!compra.closed && compra.items > 0 && (
-          <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-            <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${Math.min(avance, 100)}%` }} />
+          <div className="h-1.5 bg-hundido rounded-full overflow-hidden">
+            <div className="h-full bg-primario rounded-full transition-all" style={{ width: `${Math.min(avance, 100)}%` }} />
           </div>
         )}
 
         {/* Contra la lista: es el control que se busca. Cuánto se despegó lo
             real de lo planeado, no cuánto se planeó. */}
         {compra.plannedTotal > 0 && Math.abs(desvio) >= 0.01 ? (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-tinta-2">
             La lista decía {fmt.money(compra.plannedTotal)}
-            <span className={desvio > 0 ? ' text-amber-400' : ' text-emerald-400'}>
+            <span className={desvio > 0 ? ' text-aviso' : ' text-acento'}>
               {' '}· vas {fmt.money(Math.abs(desvio))} {desvio > 0 ? 'por encima' : 'por debajo'}
             </span>
           </p>
         ) : (
-          <p className="text-xs text-slate-500">Toda la compra: {fmt.money(compra.total)}</p>
+          <p className="text-xs text-tinta-2">Toda la compra: {fmt.money(compra.total)}</p>
         )}
 
         {/* Lo que no estaba en la lista, aparte. Es el número que explica la
             mayor parte de los desvíos y el que no se ve mientras uno compra. */}
         {compra.unplannedItems > 0 && (
-          <p className="text-xs text-amber-400">
+          <p className="text-xs text-aviso">
             {fmt.money(compra.unplannedTotal)} en {compra.unplannedItems}{' '}
             {compra.unplannedItems === 1 ? 'artículo que no estaba' : 'artículos que no estaban'} en la lista
           </p>
@@ -193,8 +193,8 @@ export default function CompraPage() {
       {!compra.closed && <AgregarArticulo tripId={compra.id} onListo={cargar} />}
 
       {compra.articulos.length === 0 ? (
-        <div className="text-center py-10 text-slate-500 bg-slate-900 border border-slate-800 rounded-2xl">
-          <ShoppingCart className="w-8 h-8 mx-auto mb-3 text-slate-600" />
+        <div className="text-center py-10 text-tinta-2 bg-panel border border-linea rounded-xl">
+          <ShoppingCart className="w-8 h-8 mx-auto mb-3 text-tinta-3" />
           <p className="text-sm">Esta compra está vacía.</p>
         </div>
       ) : (
@@ -202,8 +202,8 @@ export default function CompraPage() {
           {porCategoria.map(([categoria, articulos]) => (
             <div key={categoria} className="space-y-1.5">
               <div className="flex items-baseline justify-between gap-2 px-1">
-                <p className="text-xs font-medium text-slate-400 uppercase tracking-wider truncate">{categoria}</p>
-                <p className="text-xs text-slate-600 tabular-nums flex-shrink-0">
+                <p className="text-xs font-medium text-tinta-2 truncate">{categoria}</p>
+                <p className="text-xs text-tinta-3 tabular-nums flex-shrink-0">
                   {fmt.money(articulos.reduce((s, a) => s + a.quantity * a.unit_price, 0))}
                 </p>
               </div>
@@ -234,7 +234,7 @@ export default function CompraPage() {
       {compra.closed && compra.transaction_id && (
         <Link
           href="/transactions"
-          className="flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 transition-colors"
+          className="flex items-center gap-2 text-sm text-acento hover:text-acento bg-acento/10 border border-acento/20 rounded-xl px-4 py-3 transition-colors"
         >
           <Receipt className="w-4 h-4 flex-shrink-0" />
           Ya quedó anotada como gasto. Ver en movimientos.
@@ -255,7 +255,7 @@ export default function CompraPage() {
               ? 'La lista ya tenía estos precios.'
               : `Se actualizaron ${datos.actualizados} ${datos.actualizados === 1 ? 'precio' : 'precios'} en la lista.`);
           }}
-          className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+          className="w-full py-2.5 bg-hundido hover:bg-presionado text-tinta rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           Guardar estos precios en la lista
@@ -269,7 +269,7 @@ export default function CompraPage() {
             await fetch(`/api/trips/${compra.id}`, { method: 'DELETE' });
             router.push('/shopping');
           }}
-          className="w-full py-2 text-rose-400 hover:bg-rose-500/10 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5"
+          className="w-full py-2 text-peligro hover:bg-peligro/10 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5"
         >
           <Trash2 className="w-3.5 h-3.5" /> Descartar esta compra
         </button>
@@ -315,8 +315,8 @@ function FilaCompra({
     && Math.abs(item.unit_price - item.planned_unit_price) >= 0.01;
 
   return (
-    <div className={`bg-slate-900 border rounded-xl transition-colors ${
-      item.checked ? 'border-emerald-500/20' : 'border-slate-800'
+    <div className={`bg-panel border rounded-xl transition-colors ${
+      item.checked ? 'border-acento/20' : 'border-linea'
     }`}>
       <div className="flex items-center gap-3 px-3 py-2.5">
         {/* Objetivo táctil grande: esto se toca con una mano, empujando un carrito. */}
@@ -326,7 +326,7 @@ function FilaCompra({
           aria-label={item.checked ? `Desmarcar ${item.name}` : `Marcar ${item.name} como comprado`}
           aria-pressed={item.checked}
           className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors disabled:opacity-50 ${
-            item.checked ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-600 active:bg-slate-700'
+            item.checked ? 'bg-primario text-sobre-primario' : 'bg-hundido text-tinta-3 active:bg-presionado'
           }`}
         >
           <Check className="w-5 h-5" />
@@ -337,74 +337,74 @@ function FilaCompra({
           disabled={bloqueada}
           className="flex-1 min-w-0 text-left"
         >
-          <p className={`text-sm truncate ${item.checked ? 'text-slate-500 line-through' : 'text-white'}`}>
+          <p className={`text-sm truncate ${item.checked ? 'text-tinta-2 line-through' : 'text-tinta'}`}>
             {item.name}
             {item.planned_unit_price == null && (
-              <span className="text-3xs text-sky-400 ml-1.5">nuevo</span>
+              <span className="text-3xs text-info ml-1.5">nuevo</span>
             )}
           </p>
-          <p className="text-xs text-slate-500 tabular-nums">
+          <p className="text-xs text-tinta-2 tabular-nums">
             {item.quantity} {item.unit}
             {item.unit_price > 0 && ` × ${fmt.money(item.unit_price)}`}
             {subioPrecio && (
-              <span className={item.unit_price > item.planned_unit_price! ? 'text-amber-400' : 'text-emerald-400'}>
+              <span className={item.unit_price > item.planned_unit_price! ? 'text-aviso' : 'text-acento'}>
                 {' '}(antes {fmt.money(item.planned_unit_price!)})
               </span>
             )}
           </p>
         </button>
 
-        <p className={`text-sm flex-shrink-0 tabular-nums ${item.checked ? 'text-emerald-400' : 'text-slate-300'}`}>
+        <p className={`text-sm flex-shrink-0 tabular-nums ${item.checked ? 'text-acento' : 'text-tinta'}`}>
           {fmt.money(item.quantity * item.unit_price)}
         </p>
       </div>
 
       {abierta && !bloqueada && (
-        <div className="px-3 pb-3 space-y-2 border-t border-slate-800 pt-3">
+        <div className="px-3 pb-3 space-y-2 border-t border-linea pt-3">
           <div className="grid grid-cols-3 gap-2">
             <div className="space-y-1 min-w-0">
-              <label className="text-2xs text-slate-500">Cantidad</label>
+              <label className="text-2xs text-tinta-2">Cantidad</label>
               <input
                 type="number" min="0" step="0.001" inputMode="decimal"
                 value={cantidad} onChange={e => setCantidad(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-2 py-2 text-sm text-tinta focus:outline-none focus:border-tinta-3"
               />
             </div>
             <div className="space-y-1 min-w-0">
-              <label className="text-2xs text-slate-500">Unidad</label>
+              <label className="text-2xs text-tinta-2">Unidad</label>
               <div className="relative">
                 <select
                   value={unidad} onChange={e => setUnidad(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 pr-6 text-sm text-white focus:outline-none focus:border-emerald-500 appearance-none"
+                  className="w-full bg-hundido border border-linea-fuerte rounded-lg px-2 py-2 pr-6 text-sm text-tinta focus:outline-none focus:border-tinta-3 appearance-none"
                 >
                   {UNIDADES.map(u => <option key={u} value={u}>{u}</option>)}
                 </select>
-                <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-tinta-2 pointer-events-none" />
               </div>
             </div>
             <div className="space-y-1 min-w-0">
-              <label className="text-2xs text-slate-500">Precio c/u</label>
+              <label className="text-2xs text-tinta-2">Precio c/u</label>
               <input
                 type="number" min="0" step="0.01" inputMode="decimal"
                 value={precio} onChange={e => setPrecio(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-2 py-2 text-sm text-tinta focus:outline-none focus:border-tinta-3"
               />
             </div>
           </div>
-          <p className="text-2xs text-slate-500">
+          <p className="text-2xs text-tinta-2">
             Esto cambia solo esta compra. La lista queda como está.
           </p>
           <div className="flex gap-2">
             <button
               onClick={onBorrar}
-              className="px-3 py-2 text-rose-400 hover:bg-rose-500/10 rounded-lg text-xs transition-colors flex items-center gap-1.5 flex-shrink-0"
+              className="px-3 py-2 text-peligro hover:bg-peligro/10 rounded-lg text-xs transition-colors flex items-center gap-1.5 flex-shrink-0"
             >
               <Trash2 className="w-3.5 h-3.5" /> Quitar
             </button>
             <button
               onClick={guardar}
               disabled={guardando}
-              className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
+              className="flex-1 py-2 bg-primario hover:bg-primario/85 disabled:opacity-50 text-sobre-primario rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
             >
               {guardando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
               Guardar
@@ -441,7 +441,7 @@ function AgregarArticulo({ tripId, onListo }: { tripId: string; onListo: () => P
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2">
+    <div className="bg-panel border border-linea rounded-xl p-3 space-y-2">
       <div className="flex gap-2">
         <input
           type="text"
@@ -450,13 +450,13 @@ function AgregarArticulo({ tripId, onListo }: { tripId: string; onListo: () => P
           onKeyDown={e => { if (e.key === 'Enter') agregar(); }}
           placeholder="Agregar algo que no estaba…"
           maxLength={60}
-          className="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+          className="flex-1 min-w-0 bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta placeholder:text-tinta-3 focus:outline-none focus:border-tinta-3"
         />
         <button
           onClick={agregar}
           disabled={guardando || !nombre.trim()}
           aria-label="Agregar"
-          className="px-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center justify-center flex-shrink-0"
+          className="px-4 bg-primario hover:bg-primario/85 disabled:opacity-50 text-sobre-primario rounded-lg transition-colors flex items-center justify-center flex-shrink-0"
         >
           {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
         </button>
@@ -465,11 +465,11 @@ function AgregarArticulo({ tripId, onListo }: { tripId: string; onListo: () => P
         <select
           value={categoria}
           onChange={e => setCategoria(e.target.value)}
-          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 pr-8 text-sm text-slate-300 focus:outline-none focus:border-emerald-500 appearance-none"
+          className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2 pr-8 text-sm text-tinta focus:outline-none focus:border-tinta-3 appearance-none"
         >
           {PASILLOS.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
-        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-tinta-2 pointer-events-none" />
       </div>
     </div>
   );
@@ -532,7 +532,7 @@ function CerrarCompra({
     return (
       <button
         onClick={abrir}
-        className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
+        className="w-full py-3 bg-primario hover:bg-primario/85 text-sobre-primario rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
       >
         <Receipt className="w-4 h-4" />
         Pasé por caja — anotar el gasto
@@ -541,10 +541,10 @@ function CerrarCompra({
   }
 
   return (
-    <div className="bg-slate-900 border border-emerald-500/30 rounded-2xl p-4 space-y-3">
+    <div className="bg-panel border border-acento/30 rounded-xl p-4 space-y-3">
       <div>
-        <p className="text-sm font-medium text-white">Anotar la compra</p>
-        <p className="text-xs text-slate-500 mt-0.5">
+        <p className="text-sm font-medium text-tinta">Anotar la compra</p>
+        <p className="text-xs text-tinta-2 mt-0.5">
           Se registra como gasto del {compra.date}. Los {compra.items - compra.checkedItems} artículos
           sin tildar no se cuentan.
         </p>
@@ -553,17 +553,17 @@ function CerrarCompra({
       {/* El ticket manda: acá aparecen impuestos, ofertas y precios distintos a
           los de la góndola. */}
       <div className="space-y-1">
-        <label className="text-xs text-slate-500">Monto pagado</label>
+        <label className="text-xs text-tinta-2">Monto pagado</label>
         <input
           type="number" min="0" step="0.01" inputMode="decimal"
           value={monto}
           onChange={e => setMonto(e.target.value)}
-          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 tabular-nums"
+          className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta focus:outline-none focus:border-tinta-3 tabular-nums"
         />
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-tinta-2">
           El carrito sumaba {fmt.money(compra.checkedTotal)}
           {Math.abs(diferencia) >= 0.01 && (
-            <span className={diferencia > 0 ? 'text-amber-400' : 'text-emerald-400'}>
+            <span className={diferencia > 0 ? 'text-aviso' : 'text-acento'}>
               {' '}· {diferencia > 0 ? 'pagaste' : 'te ahorraste'} {fmt.money(Math.abs(diferencia))}
               {diferencia > 0 ? ' de más' : ''}
             </span>
@@ -572,16 +572,16 @@ function CerrarCompra({
       </div>
 
       <div className="space-y-1">
-        <label className="text-xs text-slate-500">Categoría del gasto</label>
+        <label className="text-xs text-tinta-2">Categoría del gasto</label>
         <div className="relative">
           <select
             value={categoria}
             onChange={e => setCategoria(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 pr-8 text-sm text-white focus:outline-none focus:border-emerald-500 appearance-none"
+            className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 pr-8 text-sm text-tinta focus:outline-none focus:border-tinta-3 appearance-none"
           >
             {categorias.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-tinta-2 pointer-events-none" />
         </div>
       </div>
 
@@ -589,12 +589,12 @@ function CerrarCompra({
           del súper queda atado a su tarjeta como cualquier otro movimiento. */}
       {tarjetas.length > 0 && (
         <div className="space-y-1">
-          <label className="text-xs text-slate-500">Pagado con</label>
+          <label className="text-xs text-tinta-2">Pagado con</label>
           <div className="relative">
             <select
               value={tarjeta}
               onChange={e => setTarjeta(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 pr-8 text-sm text-white focus:outline-none focus:border-emerald-500 appearance-none"
+              className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 pr-8 text-sm text-tinta focus:outline-none focus:border-tinta-3 appearance-none"
             >
               <option value="">Sin especificar</option>
               {CARD_GROUPS.map(({ titulo, kinds }) => {
@@ -611,24 +611,24 @@ function CerrarCompra({
                 );
               })}
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-tinta-2 pointer-events-none" />
           </div>
         </div>
       )}
 
-      {error && <p className="text-xs text-rose-400">{error}</p>}
+      {error && <p className="text-xs text-peligro">{error}</p>}
 
       <div className="flex gap-2">
         <button
           onClick={() => setAbierto(false)}
-          className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-colors"
+          className="flex-1 py-2.5 bg-hundido hover:bg-presionado text-tinta rounded-lg text-sm transition-colors"
         >
           Todavía no
         </button>
         <button
           onClick={cerrar}
           disabled={guardando || !categoria || !Number.isFinite(cobrado) || cobrado <= 0}
-          className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+          className="flex-1 py-2.5 bg-primario hover:bg-primario/85 disabled:opacity-50 text-sobre-primario rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
         >
           {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
           Anotar gasto

@@ -8,6 +8,7 @@ import { useCuenta } from '../componentes/ContextoDeCuenta';
 import { useSesion } from '../componentes/ContextoDeSesion';
 import { db } from '../lib/datos';
 import { acceptInvite, peekInvite } from '@compartido/db';
+import { useColores } from '../lib/colores';
 
 /**
  * El gemelo de app/unirse/page.tsx.
@@ -17,6 +18,7 @@ import { acceptInvite, peekInvite } from '@compartido/db';
  * lo que haya sin suspender, así que no hay nada que envolver.
  */
 export default function Unirse() {
+  const paleta = useColores();
   const router = useRouter();
   const { codigo: delEnlace } = useLocalSearchParams<{ codigo?: string }>();
   const { session } = useSesion();
@@ -76,14 +78,14 @@ export default function Unirse() {
     return (
       <Pantalla className="min-h-[60vh] items-center justify-center px-4">
         <View className="items-center gap-4">
-          <View className="w-16 h-16 bg-emerald-500 rounded-full items-center justify-center">
-            <Check size={32} color="#ffffff" />
+          <View className="w-16 h-16 bg-primario rounded-full items-center justify-center">
+            <Check size={32} color={paleta.sobrePrimario} />
           </View>
           <View className="items-center">
-            <Texto className="text-white font-semibold text-lg">¡Listo!</Texto>
-            <Texto className="text-slate-400 text-sm mt-1">Ya tenés acceso a {cuenta}</Texto>
+            <Texto className="text-tinta font-semibold text-lg">¡Listo!</Texto>
+            <Texto className="text-tinta-2 text-sm mt-1">Ya tenés acceso a {cuenta}</Texto>
           </View>
-          <Loader2 size={16} color="#64748b" />
+          <Loader2 size={16} color={paleta.tinta2} />
         </View>
       </Pantalla>
     );
@@ -93,12 +95,12 @@ export default function Unirse() {
     <Pantalla className="min-h-[60vh] items-center justify-center px-4" keyboardShouldPersistTaps="handled">
       <View className="w-full gap-6" style={{ maxWidth: 384 }}>
         <View className="items-center gap-3">
-          <View className="w-14 h-14 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl items-center justify-center">
-            <Users size={28} color="#34d399" />
+          <View className="w-12 h-12 bg-hundido rounded-xl items-center justify-center">
+            <Users size={24} color={paleta.tinta2} />
           </View>
           <View className="items-center">
-            <Texto className="text-xl font-bold text-white">Unirse a una cuenta</Texto>
-            <Texto className="text-slate-400 text-sm mt-1 text-center">
+            <Texto className="text-xl font-semibold text-tinta">Unirse a una cuenta</Texto>
+            <Texto className="text-tinta-2 text-sm mt-1 text-center">
               Poné el código de 6 caracteres que te compartieron
             </Texto>
           </View>
@@ -109,34 +111,34 @@ export default function Unirse() {
             value={codigo}
             onChangeText={t => setCodigo(t.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
             placeholder="ABC123"
-            placeholderTextColor="#475569"
+            placeholderTextColor={paleta.tinta3}
             autoFocus
             autoCapitalize="characters"
             autoCorrect={false}
             // El `font-mono` de la web no se porta: el teléfono solo carga Inter.
             // El interletrado sí, que es lo que hace legible un código de seis.
-            className="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-4 text-white text-center text-xl"
+            className="w-full bg-panel border-2 border-linea-fuerte rounded-xl px-4 py-4 text-tinta text-center text-xl"
             style={{ letterSpacing: 4 }}
           />
 
           {verificando ? (
             <View className="flex-row items-center justify-center gap-2">
-              <Loader2 size={14} color="#64748b" />
-              <Texto className="text-slate-500 text-sm">Verificando...</Texto>
+              <Loader2 size={14} color={paleta.tinta2} />
+              <Texto className="text-tinta-2 text-sm">Verificando...</Texto>
             </View>
           ) : null}
 
           {error ? (
             <View className="flex-row items-center justify-center gap-2">
-              <AlertCircle size={16} color="#fb7185" />
-              <Texto className="text-rose-400 text-sm">{error}</Texto>
+              <AlertCircle size={16} color={paleta.peligro} />
+              <Texto className="text-peligro text-sm">{error}</Texto>
             </View>
           ) : null}
 
           {cuenta && !error ? (
-            <View className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 items-center">
-              <Texto className="text-xs text-slate-400">Te invitaron a</Texto>
-              <Texto className="text-emerald-300 font-semibold mt-0.5">{cuenta}</Texto>
+            <View className="bg-acento/10 border border-acento/20 rounded-xl p-4 items-center">
+              <Texto className="text-xs text-tinta-2">Te invitaron a</Texto>
+              <Texto className="text-acento font-semibold mt-0.5">{cuenta}</Texto>
             </View>
           ) : null}
         </View>
@@ -145,10 +147,10 @@ export default function Unirse() {
           onPress={unirse}
           disabled={!cuenta || uniendo || Boolean(error)}
           style={!cuenta || uniendo || error ? { opacity: 0.4 } : undefined}
-          className="w-full py-3 bg-emerald-600 active:bg-emerald-500 rounded-xl flex-row items-center justify-center gap-2"
+          className="w-full py-3 bg-primario active:bg-primario/85 rounded-lg flex-row items-center justify-center gap-2"
         >
-          {uniendo ? <Loader2 size={16} color="#ffffff" /> : null}
-          <Texto className="text-white font-medium">
+          {uniendo ? <Loader2 size={16} color={paleta.sobrePrimario} /> : null}
+          <Texto className="text-sobre-primario font-medium">
             {uniendo ? 'Uniéndose...' : 'Unirme a esta cuenta'}
           </Texto>
         </Pressable>

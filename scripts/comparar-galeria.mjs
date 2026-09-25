@@ -55,7 +55,9 @@ const opcion = (nombre, porDefecto) => {
 // motores distintos y un borde puede diferir en un tono sin que nada esté mal.
 const UMBRAL = Number(opcion('umbral', '0.5'));
 
-const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+// El de la máquina donde se armó esto. En una Mac, por ejemplo:
+//   CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" npm run comparar
+const CHROME = process.env.CHROME ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 
 /**
  * Las diferencias ya miradas y entendidas.

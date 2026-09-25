@@ -15,9 +15,11 @@ import {
   COLOR_OTROS, COLORES_CATEGORIA, MAXIMO_PORCIONES, Porcion,
 } from '@compartido/grafico-de-anillo';
 import { Summary, TransactionType } from '@compartido/types';
+import { useColores } from '../lib/colores';
 
 /** El gemelo de app/stats/page.tsx. */
 export default function Estadisticas() {
+  const paleta = useColores();
   const fmt = useFormatters();
   const { currentLedger, transactionVersion } = useCuenta();
   const { session } = useSesion();
@@ -94,29 +96,29 @@ export default function Estadisticas() {
     <Pantalla className="gap-5">
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
-          <Texto className="text-xl font-bold text-white">Estadísticas</Texto>
-          <Texto className="text-slate-400 text-sm" numberOfLines={1}>
+          <Texto className="text-xl font-semibold text-tinta">Estadísticas</Texto>
+          <Texto className="text-tinta-2 text-sm" numberOfLines={1}>
             {currentLedger ? currentLedger.name : 'Todas las cuentas'}
           </Texto>
         </View>
         <View className="flex-row items-center gap-1 pt-1">
           <Pressable onPress={() => moverMes(-1)} accessibilityLabel="Mes anterior" className="p-1">
-            <ChevronLeft size={16} color="#64748b" />
+            <ChevronLeft size={16} color={paleta.tinta2} />
           </Pressable>
-          <Texto className="text-sm text-slate-400 capitalize text-center" style={{ minWidth: 110 }}>
+          <Texto className="text-sm text-tinta-2 text-center" style={{ minWidth: 110 }}>
             {fmt.monthLabel(`${mes}-01`)}
           </Texto>
           <Pressable onPress={() => moverMes(1)} accessibilityLabel="Mes siguiente" className="p-1">
-            <ChevronRight size={16} color="#64748b" />
+            <ChevronRight size={16} color={paleta.tinta2} />
           </Pressable>
         </View>
       </View>
 
-      <View className="flex-row gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
+      <View className="flex-row gap-1 bg-panel border border-linea rounded-xl p-1">
         {(['expense', 'income'] as const).map(t => (
           <Pressable key={t} onPress={() => setTipo(t)}
-            className={`flex-1 py-2 rounded-lg items-center ${tipo === t ? 'bg-slate-700' : ''}`}>
-            <Texto className={`text-sm font-medium ${tipo === t ? 'text-white' : 'text-slate-400'}`}>
+            className={`flex-1 py-2 rounded-lg items-center ${tipo === t ? 'bg-presionado' : ''}`}>
+            <Texto className={`text-sm font-medium ${tipo === t ? 'text-tinta' : 'text-tinta-2'}`}>
               {t === 'expense' ? 'Gastos' : 'Ingresos'}
             </Texto>
           </Pressable>
@@ -124,24 +126,24 @@ export default function Estadisticas() {
       </View>
 
       {error ? (
-        <View className="flex-row items-start gap-2 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
-          <View className="mt-0.5"><AlertCircle size={16} color="#fb7185" /></View>
-          <Texto className="text-rose-400 text-sm flex-1">{error}</Texto>
+        <View className="flex-row items-start gap-2 bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
+          <View className="mt-0.5"><AlertCircle size={16} color={paleta.peligro} /></View>
+          <Texto className="text-peligro text-sm flex-1">{error}</Texto>
         </View>
       ) : null}
 
       {cargando ? (
-        <View className="bg-slate-900 border border-slate-800 rounded-2xl h-52" />
+        <View className="bg-hundido rounded-xl h-52" />
       ) : filas.length === 0 ? (
-        <View className="items-center py-12 bg-slate-900 border border-slate-800 rounded-2xl">
-          <PieChart size={32} color="#475569" />
-          <Texto className="text-sm text-slate-500 mt-3">
+        <View className="items-center py-12 bg-panel border border-linea rounded-xl">
+          <PieChart size={32} color={paleta.tinta3} />
+          <Texto className="text-sm text-tinta-2 mt-3">
             No hay {etiqueta.toLowerCase()} en este mes.
           </Texto>
         </View>
       ) : (
         <>
-          <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <View className="bg-panel border border-linea rounded-xl p-4">
             <AnilloDeCategorias
               porciones={porciones} total={total} etiqueta={etiqueta} formatearMonto={fmt.money}
             />
@@ -161,24 +163,24 @@ export default function Estadisticas() {
                   } as never}
                   asChild
                 >
-                  <Pressable className="bg-slate-900 border border-slate-800 active:border-slate-700 rounded-xl px-4 py-3">
+                  <Pressable className="bg-panel border border-linea active:border-linea-fuerte rounded-xl px-4 py-3">
                     <View className="flex-row items-center gap-3">
                       <View className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: color }} />
                       <View className="flex-1">
-                        <Texto className="text-sm text-white" numberOfLines={1}>{c.category}</Texto>
-                        <Texto className="text-xs text-slate-500">
+                        <Texto className="text-sm text-tinta" numberOfLines={1}>{c.category}</Texto>
+                        <Texto className="text-xs text-tinta-2">
                           {c.porcentaje.toFixed(1)}% · {c.count} {c.count === 1 ? 'movimiento' : 'movimientos'}
                         </Texto>
                       </View>
-                      <Texto className={`text-sm font-semibold ${tipo === 'expense' ? 'text-rose-400' : 'text-emerald-400'}`}
+                      <Texto className={`text-sm font-semibold ${tipo === 'expense' ? 'text-tinta' : 'text-acento'}`}
                         style={{ fontVariant: ['tabular-nums'] }}>
                         {tipo === 'expense' ? '−' : '+'}{fmt.money(c.total)}
                       </Texto>
-                      <ChevronRight size={16} color="#475569" />
+                      <ChevronRight size={16} color={paleta.tinta3} />
                     </View>
                     {/* La barra repite la proporción a lo largo, donde sí se
                         pueden comparar dos categorías parecidas. */}
-                    <View className="h-1 bg-slate-800 rounded-full overflow-hidden mt-2">
+                    <View className="h-1 bg-hundido rounded-full overflow-hidden mt-2">
                       <View className="h-full rounded-full"
                         style={{ width: `${c.porcentaje}%`, backgroundColor: color }} />
                     </View>
@@ -188,7 +190,7 @@ export default function Estadisticas() {
             })}
           </View>
 
-          <Texto className="text-xs text-slate-500 text-center">
+          <Texto className="text-xs text-tinta-2 text-center">
             Tocá una categoría para ver sus movimientos del mes.
           </Texto>
         </>

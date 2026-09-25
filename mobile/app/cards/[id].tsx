@@ -20,9 +20,11 @@ import {
 } from '@compartido/db';
 import { limitesDelMes } from '@compartido/format';
 import { CardDetail, CARD_KIND_LABEL, LEDGER_COLOR_MAP, Transaction, llevaSaldo } from '@compartido/types';
+import { useColores } from '../../lib/colores';
 
 /** El gemelo de app/cards/[id]/page.tsx. */
 export default function DetalleDeTarjeta() {
+  const paleta = useColores();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const fmt = useFormatters();
@@ -134,7 +136,7 @@ export default function DetalleDeTarjeta() {
   if (cargando && !detalle) {
     return (
       <View className="flex-1 items-center justify-center pt-14">
-        <Loader2 size={24} color="#94a3b8" />
+        <Loader2 size={24} color={paleta.tinta2} />
       </View>
     );
   }
@@ -143,16 +145,16 @@ export default function DetalleDeTarjeta() {
     return (
       <Pantalla className="gap-4">
         <Volver />
-        <View className="flex-row items-start gap-2 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
-          <View className="mt-0.5"><AlertCircle size={16} color="#fb7185" /></View>
-          <Texto className="text-rose-400 text-sm flex-1">{error || 'Ese medio de pago no existe.'}</Texto>
+        <View className="flex-row items-start gap-2 bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
+          <View className="mt-0.5"><AlertCircle size={16} color={paleta.peligro} /></View>
+          <Texto className="text-peligro text-sm flex-1">{error || 'Ese medio de pago no existe.'}</Texto>
         </View>
       </Pantalla>
     );
   }
 
   const { card } = detalle;
-  const colores = LEDGER_COLOR_MAP[card.color] ?? { dark: '#334155', main: '#475569', text: '#e2e8f0' };
+  const colores = LEDGER_COLOR_MAP[card.color] ?? { dark: paleta.lineaFuerte, main: paleta.tinta3, text: paleta.tinta };
   const maxMes = Math.max(...detalle.monthly.map(m => m.total), 0);
   const maxCategoria = detalle.byCategory[0]?.total ?? 0;
 
@@ -175,7 +177,7 @@ export default function DetalleDeTarjeta() {
         <View className="p-5 gap-6">
           <View className="flex-row items-start justify-between gap-3">
             <View className="flex-1">
-              <Texto className="text-lg font-semibold text-white" numberOfLines={1}>{card.name}</Texto>
+              <Texto className="text-lg font-semibold text-tinta" numberOfLines={1}>{card.name}</Texto>
               <Texto className="text-sm" style={{ color: colores.text }} numberOfLines={1}>
                 {CARD_KIND_LABEL[card.kind]}
                 {card.issuer ? ` · ${card.issuer}` : ''}
@@ -207,7 +209,7 @@ export default function DetalleDeTarjeta() {
                   onPress={eliminar}
                   disabled={ocupado}
                   accessibilityLabel="Eliminar"
-                  className="p-2 bg-black/20 active:bg-rose-600 rounded-lg"
+                  className="p-2 bg-black/20 active:bg-peligro/85 rounded-lg"
                   style={ocupado ? { opacity: 0.5 } : undefined}
                 >
                   <Trash2 size={16} color="#ffffff" />
@@ -222,7 +224,7 @@ export default function DetalleDeTarjeta() {
                 suya —Courier en iOS, Roboto Mono en Android—, que es una
                 tipografía distinta en cada mano. El `tracking-widest` ya hace
                 el trabajo de separar los puntos de los dígitos. */}
-            <Texto className="text-xl text-white tracking-widest">
+            <Texto className="text-xl text-tinta tracking-widest">
               ···· {card.last4 || '····'}
             </Texto>
             <View>
@@ -238,9 +240,9 @@ export default function DetalleDeTarjeta() {
       </LinearGradient>
 
       {error ? (
-        <View className="flex-row items-start gap-2 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
-          <View className="mt-0.5"><AlertCircle size={16} color="#fb7185" /></View>
-          <Texto className="text-rose-400 text-sm flex-1">{error}</Texto>
+        <View className="flex-row items-start gap-2 bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
+          <View className="mt-0.5"><AlertCircle size={16} color={paleta.peligro} /></View>
+          <Texto className="text-peligro text-sm flex-1">{error}</Texto>
         </View>
       ) : null}
 
@@ -270,47 +272,47 @@ export default function DetalleDeTarjeta() {
       {/* Mes */}
       <View className="flex-row items-center justify-center gap-1">
         <Pressable onPress={() => moverMes(-1)} accessibilityLabel="Mes anterior" className="p-1">
-          <ChevronLeft size={16} color="#64748b" />
+          <ChevronLeft size={16} color={paleta.tinta2} />
         </Pressable>
-        <Texto className="text-sm text-slate-300 capitalize text-center" style={{ minWidth: 140 }}>
+        <Texto className="text-sm text-tinta text-center" style={{ minWidth: 140 }}>
           {fmt.monthLabel(`${mes}-01`)}
         </Texto>
         <Pressable onPress={() => moverMes(1)} accessibilityLabel="Mes siguiente" className="p-1">
-          <ChevronRight size={16} color="#64748b" />
+          <ChevronRight size={16} color={paleta.tinta2} />
         </Pressable>
       </View>
 
       {/* Dos columnas en el teléfono, igual que en la lista: en un tercio de
           pantalla los montos salen cortados. */}
-      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-3">
+      <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
         <View className="flex-row gap-3">
           <View className="flex-1">
-            <Texto className="text-2xs text-slate-400 uppercase tracking-wider">Gastado</Texto>
-            <Texto className="text-lg font-bold text-white mt-1" numberOfLines={1}>{fmt.money(detalle.spent)}</Texto>
+            <Texto className="text-2xs text-tinta-2">Gastado</Texto>
+            <Texto className="text-lg font-semibold text-tinta mt-1" numberOfLines={1}>{fmt.money(detalle.spent)}</Texto>
           </View>
           <View className="flex-1">
-            <Texto className="text-2xs text-slate-400 uppercase tracking-wider">Movimientos</Texto>
-            <Texto className="text-lg font-bold text-white mt-1">{detalle.count}</Texto>
+            <Texto className="text-2xs text-tinta-2">Movimientos</Texto>
+            <Texto className="text-lg font-semibold text-tinta mt-1">{detalle.count}</Texto>
           </View>
         </View>
         <View>
-          <Texto className="text-2xs text-slate-400 uppercase tracking-wider">Promedio</Texto>
-          <Texto className="text-lg font-bold text-white mt-1" numberOfLines={1}>{fmt.money(detalle.average)}</Texto>
+          <Texto className="text-2xs text-tinta-2">Promedio</Texto>
+          <Texto className="text-lg font-semibold text-tinta mt-1" numberOfLines={1}>{fmt.money(detalle.average)}</Texto>
         </View>
       </View>
 
       {/* Los últimos meses: un mes suelto no dice si la estás usando más. */}
-      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-3">
-        <Texto className="text-sm font-medium text-white">Últimos meses</Texto>
+      <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
+        <Texto className="text-sm font-medium text-tinta">Últimos meses</Texto>
         {maxMes === 0 ? (
-          <Texto className="text-xs text-slate-500 py-4 text-center">
+          <Texto className="text-xs text-tinta-2 py-4 text-center">
             No hay gastos por acá en este período.
           </Texto>
         ) : (
           <View className="flex-row items-end gap-2 h-28">
             {detalle.monthly.map(m => (
               <View key={m.month} className="flex-1 items-center gap-1.5">
-                <Texto className="text-3xs text-slate-500 w-full text-center">
+                <Texto className="text-3xs text-tinta-2 w-full text-center">
                   {m.total > 0 ? Math.round(m.total).toLocaleString(fmt.config.locale) : ''}
                 </Texto>
                 {/* En la web la barra crece con un `height` en porcentaje sobre
@@ -322,11 +324,11 @@ export default function DetalleDeTarjeta() {
                     // Un mínimo visible: con 1px de barra no se distingue un mes
                     // flojo de uno sin gastos, y son cosas distintas.
                     height: `${m.total > 0 ? Math.max((m.total / maxMes) * 100, 4) : 0}%`,
-                    backgroundColor: m.month === mes ? colores.main : '#334155',
+                    backgroundColor: m.month === mes ? colores.main : paleta.lineaFuerte,
                   }}
                 />
                 <Texto
-                  className={`text-3xs w-full text-center ${m.month === mes ? 'text-slate-300' : 'text-slate-500'}`}
+                  className={`text-3xs w-full text-center ${m.month === mes ? 'text-tinta' : 'text-tinta-2'}`}
                   numberOfLines={1}
                 >
                   {fmt.monthLabel(`${m.month}-01`).slice(0, 3)}
@@ -339,18 +341,18 @@ export default function DetalleDeTarjeta() {
 
       {/* En qué se fue: la pregunta que sigue a "gasté tanto con esta tarjeta". */}
       {detalle.byCategory.length > 0 ? (
-        <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-3">
-          <Texto className="text-sm font-medium text-white">En qué se fue</Texto>
+        <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
+          <Texto className="text-sm font-medium text-tinta">En qué se fue</Texto>
           <View className="gap-2.5">
             {detalle.byCategory.map(c => (
               <View key={c.category} className="gap-1">
                 <View className="flex-row items-center justify-between gap-3">
-                  <Texto className="text-xs text-slate-300 flex-1" numberOfLines={1}>{c.category}</Texto>
-                  <Texto className="text-xs text-slate-400">
+                  <Texto className="text-xs text-tinta flex-1" numberOfLines={1}>{c.category}</Texto>
+                  <Texto className="text-xs text-tinta-2">
                     {fmt.money(c.total)} · {c.count}
                   </Texto>
                 </View>
-                <View className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <View className="h-1.5 bg-hundido rounded-full overflow-hidden">
                   <View
                     className="h-full rounded-full"
                     style={{
@@ -367,12 +369,12 @@ export default function DetalleDeTarjeta() {
 
       {/* Movimientos */}
       <View className="gap-2">
-        <Texto className="text-sm font-medium text-white">
+        <Texto className="text-sm font-medium text-tinta">
           Movimientos del mes
-          {movimientos.length > 0 ? <Texto className="text-sm text-slate-500"> · {movimientos.length}</Texto> : null}
+          {movimientos.length > 0 ? <Texto className="text-sm text-tinta-2"> · {movimientos.length}</Texto> : null}
         </Texto>
         {movimientos.length === 0 ? (
-          <Texto className="text-xs text-slate-500 py-6 text-center bg-slate-900 border border-slate-800 rounded-2xl">
+          <Texto className="text-xs text-tinta-2 py-6 text-center bg-panel border border-linea rounded-xl">
             Nada pagado por acá en {fmt.monthLabel(`${mes}-01`)}.
           </Texto>
         ) : (
@@ -391,11 +393,12 @@ export default function DetalleDeTarjeta() {
 }
 
 function Volver() {
+  const paleta = useColores();
   return (
     <Link href="/cards" asChild>
       <Pressable className="flex-row items-center gap-1.5 self-start">
-        <ArrowLeft size={16} color="#94a3b8" />
-        <Texto className="text-sm text-slate-400">Billetera</Texto>
+        <ArrowLeft size={16} color={paleta.tinta2} />
+        <Texto className="text-sm text-tinta-2">Billetera</Texto>
       </Pressable>
     </Link>
   );

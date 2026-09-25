@@ -11,8 +11,8 @@ import { LEDGER_COLOR_MAP } from '@/lib/types';
 
 /** Las mismas pantallas en los dos lados: el menú de móvil no es un resumen. */
 const navItems = [
-  { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/transactions', icon: Receipt, label: 'Transacciones' },
+  { href: '/', icon: LayoutDashboard, label: 'Inicio' },
+  { href: '/transactions', icon: Receipt, label: 'Movimientos' },
   { href: '/stats', icon: PieChart, label: 'Estadísticas' },
   { href: '/shopping', icon: ShoppingCart, label: 'Supermercado' },
   { href: '/budgets', icon: Target, label: 'Presupuestos' },
@@ -77,58 +77,52 @@ export default function Navigation() {
       <LedgerSelector />
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex fixed left-0 top-0 h-full w-60 bg-slate-900 border-r border-slate-800 flex-col z-20">
-        <div className="p-5 border-b border-slate-800 space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
-              <Wallet className="w-4 h-4 text-white" />
+      <aside className="hidden md:flex fixed left-0 top-0 h-full w-60 bg-hundido border-r border-linea flex-col z-20">
+        <div className="p-3 pt-4 space-y-2">
+          <div className="flex items-center gap-2 px-2">
+            <div className="w-6 h-6 bg-primario rounded-md flex items-center justify-center">
+              <Wallet className="w-3.5 h-3.5 text-sobre-primario" />
             </div>
-            <div>
-              <p className="font-semibold text-sm text-white">Jobidai Wallet</p>
-              <p className="text-xs text-slate-400">Control financiero</p>
-            </div>
+            <p className="font-semibold text-sm text-tinta">Jobidai Wallet</p>
           </div>
 
           {/* Ledger switcher */}
           <div className="flex items-center gap-1">
             <button
               onClick={() => setSelectorOpen(true)}
-              className="flex-1 flex items-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-left"
+              className="flex-1 flex items-center gap-2 px-2 py-1.5 hover:bg-presionado rounded-lg transition-colors text-left"
             >
               {ledgerColor ? (
-                <div
-                  className="w-4 h-4 rounded-sm flex-shrink-0"
-                  style={{ background: `linear-gradient(to right, ${ledgerColor.dark} 35%, ${ledgerColor.main} 35%)` }}
-                />
+                <div className="w-3 h-3 rounded flex-shrink-0" style={{ background: ledgerColor.main }} />
               ) : (
-                <LayoutGrid className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                <LayoutGrid className="w-4 h-4 text-tinta-2 flex-shrink-0" />
               )}
-              <span className="text-sm text-slate-200 flex-1 truncate">
+              <span className="text-sm text-tinta flex-1 truncate">
                 {currentLedger?.name ?? 'Todas las cuentas'}
               </span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+              <ChevronDown className="w-3.5 h-3.5 text-tinta-2 flex-shrink-0" />
             </button>
             <button
               onClick={() => setSelectorOpen(true)}
               title="Gestionar cuentas"
-              className="p-2 bg-slate-800 hover:bg-emerald-600 rounded-lg transition-colors text-slate-400 hover:text-white flex-shrink-0"
+              className="p-2 hover:bg-presionado rounded-lg transition-colors text-tinta-2 hover:text-tinta flex-shrink-0"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 px-3 pb-3 space-y-0.5">
           {navItems.map(({ href, icon: Icon, label }) => {
             const active = esActiva(pathname, href);
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                className={`flex items-center gap-3 px-2 py-1.5 rounded-lg text-sm transition-colors ${
                   active
-                    ? 'bg-emerald-500/10 text-emerald-400 font-medium'
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    ? 'bg-presionado text-tinta font-medium'
+                    : 'text-tinta-2 hover:bg-presionado hover:text-tinta'
                 }`}
               >
                 <Icon className="w-4 h-4 flex-shrink-0" />
@@ -137,37 +131,32 @@ export default function Navigation() {
             );
           })}
         </nav>
-
-        <div className="p-4 border-t border-slate-800">
-          <p className="text-xs text-slate-500 text-center">Jobidai Wallet</p>
-        </div>
       </aside>
 
       {/* Mobile: top bar with ledger switcher */}
-      <header className="md:hidden fixed top-0 left-0 right-0 bg-slate-900 border-b border-slate-800 z-20 px-4 py-3 flex items-center gap-2">
+      <header className="md:hidden fixed top-0 left-0 right-0 bg-fondo border-b border-linea z-20 px-3 py-2.5 flex items-center gap-1">
         <button
           onClick={() => setMenuAbierto(true)}
           aria-label="Abrir el menú"
-          className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center flex-shrink-0 active:bg-emerald-600 transition-colors"
+          className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-tinta active:bg-hundido transition-colors"
         >
-          <Menu className="w-4 h-4 text-white" />
+          <Menu className="w-5 h-5" />
         </button>
+        {/* Se lee como el título de la pantalla y se toca para cambiar de
+            cuenta: sin caja alrededor, que la hacía parecer un campo de texto. */}
         <button
           onClick={() => setSelectorOpen(true)}
-          className="flex-1 min-w-0 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 rounded-lg px-3 py-1.5 transition-colors"
+          className="min-w-0 flex items-center gap-2 active:bg-hundido rounded-lg px-2 py-1.5 transition-colors"
         >
           {ledgerColor ? (
-            <div
-              className="w-3.5 h-3.5 rounded-sm flex-shrink-0"
-              style={{ background: `linear-gradient(to right, ${ledgerColor.dark} 35%, ${ledgerColor.main} 35%)` }}
-            />
+            <div className="w-3 h-3 rounded flex-shrink-0" style={{ background: ledgerColor.main }} />
           ) : (
-            <LayoutGrid className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+            <LayoutGrid className="w-3.5 h-3.5 text-tinta-2 flex-shrink-0" />
           )}
-          <span className="text-sm text-slate-200 flex-1 text-left truncate">
+          <span className="text-sm font-medium text-tinta text-left truncate">
             {currentLedger?.name ?? 'Todas las cuentas'}
           </span>
-          <ChevronDown className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+          <ChevronDown className="w-3.5 h-3.5 text-tinta-2 flex-shrink-0" />
         </button>
       </header>
 
@@ -184,20 +173,20 @@ export default function Navigation() {
           La transición lo incluye para que al cerrar termine de salir antes de
           desaparecer, en vez de cortarse de golpe. */}
       <aside
-        className={`md:hidden fixed top-0 left-0 bottom-0 z-40 w-[min(17rem,82vw)] bg-slate-900 border-r border-slate-800 flex flex-col transition-[transform,visibility] duration-200 ${
+        className={`md:hidden fixed top-0 left-0 bottom-0 z-40 w-[min(17rem,82vw)] bg-panel border-r border-linea flex flex-col transition-[transform,visibility] duration-200 ${
           menuAbierto ? 'translate-x-0 visible' : '-translate-x-full invisible'
         }`}
       >
-        <div className="bg-emerald-500 px-5 pt-safe">
-          <div className="flex items-center gap-2 py-5">
-            <Wallet className="w-5 h-5 text-white flex-shrink-0" />
-            <p className="text-lg text-white flex-1">
-              <span className="font-bold">Jobidai</span> Wallet
-            </p>
+        <div className="px-5 pt-safe border-b border-linea">
+          <div className="flex items-center gap-2 py-4">
+            <div className="w-6 h-6 bg-primario rounded-md flex items-center justify-center flex-shrink-0">
+              <Wallet className="w-3.5 h-3.5 text-sobre-primario" />
+            </div>
+            <p className="text-base font-semibold text-tinta flex-1">Jobidai Wallet</p>
             <button
               onClick={() => setMenuAbierto(false)}
               aria-label="Cerrar el menú"
-              className="p-1 -mr-1 text-white/80 active:text-white flex-shrink-0"
+              className="p-1 -mr-1 text-tinta-2 active:text-tinta flex-shrink-0"
             >
               <X className="w-5 h-5" />
             </button>
@@ -215,8 +204,8 @@ export default function Navigation() {
               onClick={() => setMenuAbierto(false)}
               className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm transition-colors ${
                 esActiva(pathname, href)
-                  ? 'bg-emerald-500/10 text-emerald-400 font-medium'
-                  : 'text-slate-300 active:bg-slate-800'
+                  ? 'bg-hundido text-tinta font-medium'
+                  : 'text-tinta-2 active:bg-hundido'
               }`}
             >
               <Icon className="w-5 h-5 flex-shrink-0" />
@@ -225,72 +214,57 @@ export default function Navigation() {
           ))}
         </nav>
 
-        <div className="p-3 pb-safe border-t border-slate-800 space-y-2">
+        <div className="p-3 pb-safe border-t border-linea space-y-2">
           <button
             onClick={salir}
-            className="w-full py-3 bg-emerald-500 active:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 active:bg-hundido text-tinta-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
           >
             <LogOut className="w-4 h-4" /> Cerrar sesión
           </button>
-          {email && <p className="text-xs text-slate-500 text-center truncate">{email}</p>}
+          {email && <p className="text-xs text-tinta-2 text-center truncate">{email}</p>}
         </div>
       </aside>
 
-      {/* Mobile bottom nav — 5 slots with center FAB */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 z-20 flex items-end pb-safe">
-        {/* Dashboard */}
-        <Link
-          href="/"
-          className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors ${pathname === '/' ? 'text-emerald-400' : 'text-slate-400'}`}
-        >
-          <LayoutDashboard className="w-5 h-5" />
-          Dashboard
-        </Link>
+      {/* Barra de abajo del teléfono: cuatro lugares y el botón de registrar al
+          medio. Presupuestos sigue en el menú lateral: estos cuatro son para lo
+          que se abre a diario, y un tope se configura una vez y después se mira
+          de paso en el tablero. */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-fondo border-t border-linea z-20 flex items-center pb-safe">
+        <Lugar href="/" icono={LayoutDashboard} texto="Inicio" activa={pathname === '/'} />
+        <Lugar href="/transactions" icono={Receipt} texto="Movimientos" activa={pathname === '/transactions'} />
 
-        {/* Transacciones */}
-        <Link
-          href="/transactions"
-          className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors ${pathname === '/transactions' ? 'text-emerald-400' : 'text-slate-400'}`}
-        >
-          <Receipt className="w-5 h-5" />
-          Transacciones
-        </Link>
-
-        {/* Center FAB — add transaction */}
-        <div className="flex-1 flex flex-col items-center justify-end pb-2">
+        {/* Alineado con la barra y sin sombra: flotando con un halo parecía de
+            otra app. Sigue siendo lo único relleno, así que se encuentra igual. */}
+        <div className="flex-1 flex justify-center py-2">
           <button
             onClick={() => setGlobalAddOpen(true)}
-            className="w-14 h-14 bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30 -mt-7 transition-colors"
-            aria-label="Registrar transacción"
+            className="w-11 h-11 bg-primario hover:bg-primario/85 active:bg-primario/85 rounded-lg flex items-center justify-center transition-colors"
+            aria-label="Registrar movimiento"
           >
-            <Plus className="w-7 h-7 text-white" />
+            <Plus className="w-6 h-6 text-sobre-primario" />
           </button>
         </div>
 
-        {/* Asistente — star feature. Por prefijo: estando en la pestaña de
-            WhatsApp o de Telegram, la sección sigue siendo esta. */}
-        <Link
-          href="/chat"
-          className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors ${enElAsistente ? 'text-emerald-400' : 'text-emerald-300/70 hover:text-emerald-300'}`}
-        >
-          <div className={`relative ${!enElAsistente ? 'animate-pulse' : ''}`}>
-            <Bot className="w-5 h-5" />
-          </div>
-          Asistente
-        </Link>
-
-        {/* Estadísticas. Presupuestos sigue en el menú lateral: la barra de
-            abajo tiene cuatro lugares y son para lo que se abre a diario. Un
-            tope se configura una vez y después se mira de paso en el tablero,
-            que ya muestra las barras del mes. */}
-        <Link
-          href="/stats"
-          className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 text-xs transition-colors ${pathname === '/stats' ? 'text-emerald-400' : 'text-slate-400'}`}
-        >
-          <PieChart className="w-5 h-5" />
-          Estadísticas
-        </Link>
+        {/* Por prefijo: estando en la pestaña de WhatsApp o de Telegram, la
+            sección sigue siendo esta. */}
+        <Lugar href="/chat" icono={Bot} texto="Asistente" activa={enElAsistente} />
+        <Lugar href="/stats" icono={PieChart} texto="Estadísticas" activa={pathname === '/stats'} />
       </nav>
     </>
+  );
+}
+
+/** Un lugar de la barra de abajo: activo en tinta, el resto en gris. */
+function Lugar({ href, icono: Icono, texto, activa }: {
+  href: string; icono: typeof LayoutDashboard; texto: string; activa: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-1 text-2xs font-medium transition-colors ${activa ? 'text-tinta' : 'text-tinta-2 hover:text-tinta'}`}
+    >
+      <Icono className="w-5 h-5" />
+      {texto}
+    </Link>
   );
 }

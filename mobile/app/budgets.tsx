@@ -17,9 +17,11 @@ import {
 } from '@compartido/db';
 import { limitesDelMes } from '@compartido/format';
 import { BudgetProgress } from '@compartido/types';
+import { useColores } from '../lib/colores';
 
 /** El gemelo de app/budgets/page.tsx. */
 export default function Presupuestos() {
+  const paleta = useColores();
   const fmt = useFormatters();
   const { ledgers, currentLedger, transactionVersion } = useCuenta();
   const { categorias, refrescar: refrescarCategorias } = useCategorias();
@@ -156,28 +158,28 @@ export default function Presupuestos() {
     <Pantalla className="gap-6" keyboardShouldPersistTaps="handled">
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
-          <Texto className="text-xl font-bold text-white">Presupuestos</Texto>
-          <Texto className="text-slate-400 text-sm" numberOfLines={1}>
+          <Texto className="text-xl font-semibold text-tinta">Presupuestos</Texto>
+          <Texto className="text-tinta-2 text-sm" numberOfLines={1}>
             {currentLedger ? `Topes mensuales de ${currentLedger.name}` : 'Topes de todas tus cuentas'}
           </Texto>
         </View>
         <View className="flex-row items-center gap-1 pt-1">
           <Pressable onPress={() => moverMes(-1)} className="p-1">
-            <ChevronLeft size={16} color="#64748b" />
+            <ChevronLeft size={16} color={paleta.tinta2} />
           </Pressable>
-          <Texto className="text-sm text-slate-400 capitalize text-center" style={{ minWidth: 120 }}>
+          <Texto className="text-sm text-tinta-2 text-center" style={{ minWidth: 120 }}>
             {fmt.monthLabel(`${mes}-01`)}
           </Texto>
           <Pressable onPress={() => moverMes(1)} className="p-1">
-            <ChevronRight size={16} color="#64748b" />
+            <ChevronRight size={16} color={paleta.tinta2} />
           </Pressable>
         </View>
       </View>
 
       {error ? (
-        <View className="flex-row items-start gap-2 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
-          <View className="mt-0.5"><AlertCircle size={16} color="#fb7185" /></View>
-          <Texto className="text-rose-400 text-sm flex-1">{error}</Texto>
+        <View className="flex-row items-start gap-2 bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
+          <View className="mt-0.5"><AlertCircle size={16} color={paleta.peligro} /></View>
+          <Texto className="text-peligro text-sm flex-1">{error}</Texto>
         </View>
       ) : null}
 
@@ -185,10 +187,10 @@ export default function Presupuestos() {
           en vez de mostrarse acá: mezclarlos es justo lo que hacía que un tope
           del hogar apareciera en la cuenta personal. */}
       {currentLedger && sinCuenta.length > 0 ? (
-        <View className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 gap-3">
+        <View className="bg-aviso/10 border border-aviso/20 rounded-2xl p-4 gap-3">
           <View className="flex-row items-start gap-2">
-            <View className="mt-0.5"><AlertCircle size={16} color="#fbbf24" /></View>
-            <Texto className="text-sm text-amber-400 flex-1">
+            <View className="mt-0.5"><AlertCircle size={16} color={paleta.aviso} /></View>
+            <Texto className="text-sm text-aviso flex-1">
               {sinCuenta.length === 1 ? 'Tenés un presupuesto' : `Tenés ${sinCuenta.length} presupuestos`} sin
               cuenta asignada. Miden lo que gastás en todas tus cuentas juntas — asignalos para que cada
               tope cuente solo lo suyo.
@@ -197,7 +199,7 @@ export default function Presupuestos() {
           <View className="gap-2">
             {sinCuenta.map(b => (
               <View key={b.id} className="flex-row items-center gap-2">
-                <Texto className="text-sm text-slate-300 flex-1" numberOfLines={1}>
+                <Texto className="text-sm text-tinta flex-1" numberOfLines={1}>
                   {b.category} · {fmt.money(b.amount)}
                 </Texto>
                 <View style={{ width: 150 }}>
@@ -216,33 +218,33 @@ export default function Presupuestos() {
       ) : null}
 
       {budgets.length > 0 ? (
-        <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-3">
+        <View className="border-y border-linea py-4 gap-3">
           {/* Apilado en el teléfono: "RD$14,114.00 / RD$31,224.00" no entra al
               lado de la etiqueta, y el monto no puede achicarse por debajo de su
               contenido. Recién a partir de `sm` hay ancho para una sola línea. */}
           <View className="gap-1">
             <View>
-              <Texto className="text-sm text-slate-300">Total presupuestado</Texto>
-              <Texto className="text-xs text-slate-500">
+              <Texto className="text-sm text-tinta">Total presupuestado</Texto>
+              <Texto className="text-xs text-tinta-2">
                 {excedidos.length > 0
                   ? `${excedidos.length} categoría${excedidos.length > 1 ? 's' : ''} pasada${excedidos.length > 1 ? 's' : ''} del tope`
                   : 'Todo dentro del tope'}
               </Texto>
             </View>
-            <Texto className={`text-xl font-bold ${budgetTone(totalTope > 0 ? Math.round((totalGastado / totalTope) * 100) : 0).text}`}
+            <Texto className={`text-xl font-semibold ${budgetTone(totalTope > 0 ? Math.round((totalGastado / totalTope) * 100) : 0).text}`}
               style={{ fontVariant: ['tabular-nums'] }}>
               {fmt.money(totalGastado)}
-              <Texto className="text-sm text-slate-500"> / {fmt.money(totalTope)}</Texto>
+              <Texto className="text-sm text-tinta-2"> / {fmt.money(totalTope)}</Texto>
             </Texto>
           </View>
         </View>
       ) : null}
 
       {/* Alta */}
-      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-3">
+      <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
         <View className="flex-row items-center gap-2">
-          <Target size={16} color="#34d399" />
-          <Texto className="text-sm font-medium text-slate-300">Nuevo presupuesto</Texto>
+          <Target size={16} color={paleta.tinta2} />
+          <Texto className="text-sm font-medium text-tinta">Nuevo presupuesto</Texto>
         </View>
         <View className="gap-2">
           <View className="flex-row gap-2">
@@ -257,9 +259,9 @@ export default function Presupuestos() {
             </View>
             <Pressable
               onPress={() => { setCreandoCat(v => !v); setErrorCat(''); }}
-              className="px-3 py-2.5 bg-slate-800 active:bg-slate-700 rounded-lg justify-center"
+              className="px-3 py-2.5 bg-hundido active:bg-presionado rounded-lg justify-center"
             >
-              <Plus size={16} color="#94a3b8" />
+              <Plus size={16} color={paleta.tinta2} />
             </Pressable>
           </View>
           <TextInput
@@ -267,16 +269,16 @@ export default function Presupuestos() {
             onChangeText={setMonto}
             keyboardType="decimal-pad"
             placeholder="Tope mensual"
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500"
+            className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta placeholder:text-tinta-3 focus:border-tinta-3"
             style={{ fontFamily: 'Inter_400Regular' }}
           />
           <Pressable
             onPress={guardar}
             disabled={guardando || !categoria || !monto}
             style={guardando || !categoria || !monto ? { opacity: 0.5 } : undefined}
-            className="w-full py-2.5 bg-emerald-600 active:bg-emerald-500 rounded-lg items-center"
+            className="w-full py-2.5 bg-primario active:bg-primario/85 rounded-lg items-center"
           >
-            <Texto className="text-white text-sm font-medium">
+            <Texto className="text-sobre-primario text-sm font-medium">
               {guardando ? 'Guardando...' : 'Guardar'}
             </Texto>
           </Pressable>
@@ -292,24 +294,24 @@ export default function Presupuestos() {
                 placeholder="Nombre de la categoría"
                 autoFocus
                 maxLength={40}
-                className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500"
+                className="flex-1 bg-hundido border border-linea-fuerte rounded-lg px-3 py-2 text-sm text-tinta placeholder:text-tinta-3 focus:border-tinta-3"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
               <Pressable onPress={crearCategoria} disabled={!nuevaCat.trim()}
                 style={!nuevaCat.trim() ? { opacity: 0.5 } : undefined}
-                className="px-4 py-2 bg-emerald-600 active:bg-emerald-500 rounded-lg justify-center">
-                <Texto className="text-white text-sm font-medium">Crear</Texto>
+                className="px-4 py-2 bg-primario active:bg-primario/85 rounded-lg justify-center">
+                <Texto className="text-sobre-primario text-sm font-medium">Crear</Texto>
               </Pressable>
             </View>
-            {errorCat ? <Texto className="text-xs text-rose-400">{errorCat}</Texto> : null}
-            <Texto className="text-xs text-slate-500">
+            {errorCat ? <Texto className="text-xs text-peligro">{errorCat}</Texto> : null}
+            <Texto className="text-xs text-tinta-2">
               Se crea en esta cuenta. Podés renombrarla o borrarla desde Configuración.
             </Texto>
           </View>
         ) : null}
 
         {disponibles.length === 0 ? (
-          <Texto className="text-xs text-slate-500">
+          <Texto className="text-xs text-tinta-2">
             Ya tenés un presupuesto para cada categoría de gasto.
           </Texto>
         ) : null}
@@ -318,19 +320,21 @@ export default function Presupuestos() {
       {cargando ? (
         <View className="gap-2">
           {[0, 1, 2].map(i => (
-            <View key={i} className="bg-slate-900 border border-slate-800 rounded-xl h-20" />
+            <View key={i} className="bg-hundido rounded-lg h-16" />
           ))}
         </View>
       ) : budgets.length === 0 ? (
         <View className="items-center py-12">
-          <View style={{ opacity: 0.3 }}><Target size={40} color="#64748b" /></View>
-          <Texto className="text-slate-500 mt-3">Todavía no tenés presupuestos.</Texto>
-          <Texto className="text-sm text-slate-500 mt-1 text-center">
+          <View className="w-12 h-12 rounded-full bg-hundido items-center justify-center mb-3">
+            <Target size={20} color={paleta.tinta2} />
+          </View>
+          <Texto className="text-sm font-medium text-tinta">Todavía no tenés presupuestos</Texto>
+          <Texto className="text-sm text-tinta-2 mt-1 text-center">
             Ponele un tope a una categoría y te aviso cuando te acerques.
           </Texto>
         </View>
       ) : (
-        <View className="gap-2">
+        <View className="border-t border-linea">
           {budgets.map(b => (
             <Fila
               key={b.id}
@@ -344,7 +348,7 @@ export default function Presupuestos() {
         </View>
       )}
 
-      <Texto className="text-xs text-slate-500 text-center">
+      <Texto className="text-xs text-tinta-2 text-center">
         {currentLedger
           ? `El tope se compara contra los gastos del mes en ${currentLedger.name}, los tuyos y los de quien comparta la cuenta.`
           : 'Cada tope se compara contra los gastos del mes de su cuenta. Los que no tienen cuenta miden todas juntas.'}
@@ -367,6 +371,7 @@ function Fila({ budget, ledgers, mostrarCuenta, onEditar, onEliminar }: {
   onEditar: (cambios: { amount?: number; ledger_id?: string | null }) => Promise<boolean>;
   onEliminar: () => void;
 }) {
+  const paleta = useColores();
   const [editando, setEditando] = useState(false);
   const [monto, setMonto] = useState(String(budget.amount));
   const [cuenta, setCuenta] = useState(budget.ledger_id ?? '');
@@ -396,23 +401,23 @@ function Fila({ budget, ledgers, mostrarCuenta, onEditar, onEliminar }: {
 
   if (editando) {
     return (
-      <View className="bg-slate-900 border border-emerald-500/30 rounded-xl px-4 py-3.5 gap-3">
-        <Texto className="text-sm text-slate-300">{budget.category}</Texto>
+      <View className="bg-hundido rounded-lg px-3 py-3.5 my-1 gap-3">
+        <Texto className="text-sm text-tinta">{budget.category}</Texto>
 
         <View className="gap-1">
-          <Texto className="text-xs text-slate-500 leading-6">Tope mensual</Texto>
+          <Texto className="text-xs text-tinta-2 leading-6">Tope mensual</Texto>
           <TextInput
             value={monto}
             onChangeText={setMonto}
             keyboardType="decimal-pad"
             autoFocus
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-emerald-500"
+            className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta focus:border-tinta-3"
             style={{ fontFamily: 'Inter_400Regular' }}
           />
         </View>
 
         <View className="gap-1">
-          <Texto className="text-xs text-slate-500 leading-6">Cuenta</Texto>
+          <Texto className="text-xs text-tinta-2 leading-6">Cuenta</Texto>
           <Selector
             titulo="Cuenta"
             value={cuenta}
@@ -427,15 +432,15 @@ function Fila({ budget, ledgers, mostrarCuenta, onEditar, onEliminar }: {
 
         <View className="flex-row gap-2">
           <Pressable onPress={() => setEditando(false)}
-            className="flex-1 py-2.5 bg-slate-800 active:bg-slate-700 rounded-lg flex-row items-center justify-center gap-1.5">
-            <X size={16} color="#cbd5e1" />
-            <Texto className="text-slate-300 text-sm">Cancelar</Texto>
+            className="flex-1 py-2.5 bg-hundido active:bg-presionado rounded-lg flex-row items-center justify-center gap-1.5">
+            <X size={16} color={paleta.tinta} />
+            <Texto className="text-tinta text-sm">Cancelar</Texto>
           </Pressable>
           <Pressable onPress={guardar} disabled={guardando || !monto}
             style={guardando || !monto ? { opacity: 0.5 } : undefined}
-            className="flex-1 py-2.5 bg-emerald-600 active:bg-emerald-500 rounded-lg flex-row items-center justify-center gap-1.5">
-            {guardando ? <ActivityIndicator size="small" color="#fff" /> : <Check size={16} color="#fff" />}
-            <Texto className="text-white text-sm font-medium">Guardar</Texto>
+            className="flex-1 py-2.5 bg-primario active:bg-primario/85 rounded-lg flex-row items-center justify-center gap-1.5">
+            {guardando ? <ActivityIndicator size="small" color={paleta.sobrePrimario} /> : <Check size={16} color={paleta.sobrePrimario} />}
+            <Texto className="text-sobre-primario text-sm font-medium">Guardar</Texto>
           </Pressable>
         </View>
 
@@ -443,22 +448,23 @@ function Fila({ budget, ledgers, mostrarCuenta, onEditar, onEliminar }: {
             esconden con el puntero, y un tacho al lado del lápiz es un borrado
             a un toque de distancia. Además le devuelve ancho a la categoría. */}
         <Pressable onPress={onEliminar}
-          className="w-full py-2 active:bg-rose-500/10 rounded-lg flex-row items-center justify-center gap-1.5">
-          <Trash2 size={14} color="#fb7185" />
-          <Texto className="text-rose-400 text-xs">Eliminar este presupuesto</Texto>
+          className="w-full py-2 active:bg-peligro/10 rounded-lg flex-row items-center justify-center gap-1.5">
+          <Trash2 size={14} color={paleta.peligro} />
+          <Texto className="text-peligro text-xs">Eliminar este presupuesto</Texto>
         </Pressable>
       </View>
     );
   }
 
   return (
-    <View className={`bg-slate-900 border rounded-xl px-4 py-3.5 flex-row items-center gap-2 ${budgetTone(budget.percent).ring}`}>
+    // Una fila de la lista, como la web.
+    <View className="border-b border-linea py-3.5 flex-row items-center gap-2">
       <View className="flex-1">
         <BarraDePresupuesto budget={budget} />
         {/* Solo en "todas las cuentas": mirando una, decirlo en cada fila es
             repetir lo que ya dice el encabezado. */}
         {mostrarCuenta ? (
-          <Texto className="text-2xs text-slate-500 mt-1">
+          <Texto className="text-2xs text-tinta-2 mt-1">
             {budget.ledger_name ?? 'Todas las cuentas'}
           </Texto>
         ) : null}
@@ -467,8 +473,8 @@ function Fila({ budget, ledgers, mostrarCuenta, onEditar, onEliminar }: {
           cada uno le come ancho al nombre de la categoría de forma permanente. */}
       <Pressable onPress={abrir}
         accessibilityLabel={`Editar el presupuesto de ${budget.category}`}
-        className="p-1.5 active:bg-emerald-500/10 rounded-lg">
-        <Pencil size={14} color="#94a3b8" />
+        className="p-1.5 active:bg-hundido rounded-lg">
+        <Pencil size={14} color={paleta.tinta2} />
       </Pressable>
     </View>
   );

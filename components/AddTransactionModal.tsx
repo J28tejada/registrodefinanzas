@@ -189,16 +189,16 @@ export default function AddTransactionModal({
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full md:max-w-lg bg-slate-900 border border-slate-700 md:rounded-2xl rounded-t-2xl shadow-2xl max-h-[95vh] overflow-y-auto">
+      <div className="relative w-full md:max-w-lg bg-panel border border-linea-fuerte md:rounded-2xl rounded-t-2xl shadow-2xl max-h-[95vh] overflow-y-auto">
         {/* z-10: sin él la cabecera queda en el fondo del apilado y cualquier
             elemento posicionado del formulario —el botón "Hablar", que es
             `relative`— se pinta ENCIMA del título al desplazar el modal. Estar
             pegada arriba no alcanza: hay que estar adelante también. */}
-        <div className="sticky top-0 z-10 bg-slate-900 border-b border-slate-800 px-5 py-4 flex items-center justify-between">
-          <h2 className="font-semibold text-white">
+        <div className="sticky top-0 z-10 bg-panel border-b border-linea px-5 py-4 flex items-center justify-between">
+          <h2 className="font-semibold text-tinta">
             {editingTransaction ? 'Editar registro' : 'Nuevo registro'}
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+          <button onClick={onClose} className="text-tinta-2 hover:text-tinta transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -206,13 +206,13 @@ export default function AddTransactionModal({
         <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 sm:space-y-5">
           {/* Voice input */}
           {!editingTransaction && (
-            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 space-y-2">
-              <p className="text-xs text-slate-400 font-medium">ENTRADA DE VOZ</p>
-              <p className="text-xs text-slate-500">
+            <div className="bg-hundido border border-linea-fuerte rounded-xl p-4 space-y-2">
+              <p className="text-xs text-tinta-2 font-medium">Entrada de voz</p>
+              <p className="text-xs text-tinta-2">
                 Habla tu transacción y la IA rellenará el formulario automáticamente.
               </p>
               {interpreting ? (
-                <div className="flex items-center gap-2 text-sm text-slate-400">
+                <div className="flex items-center gap-2 text-sm text-tinta-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Interpretando con IA...
                 </div>
@@ -220,7 +220,7 @@ export default function AddTransactionModal({
                 <VoiceInput onTranscript={handleVoiceTranscript} />
               )}
               {interpretation && (
-                <div className="flex items-center gap-2 text-xs text-emerald-400 mt-2">
+                <div className="flex items-center gap-2 text-xs text-acento mt-2">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   IA completó el formulario (confianza: {Math.round(interpretation.confidence * 100)}%)
                 </div>
@@ -231,14 +231,14 @@ export default function AddTransactionModal({
           {/* Cada usuario arranca con una cuenta personal, así que esto casi
               nunca aparece: queda por si la borró y se quedó sin ninguna. */}
           {ledgers.length === 0 && (
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 space-y-3">
-              <p className="text-sm text-amber-200">
+            <div className="bg-aviso/10 border border-aviso/20 rounded-xl p-4 space-y-3">
+              <p className="text-sm text-aviso">
                 Te quedaste sin cuentas. Creá una para poder anotar movimientos.
               </p>
               <button
                 type="button"
                 onClick={() => { onClose(); setSelectorOpen(true); }}
-                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors"
+                className="w-full py-2.5 bg-primario hover:bg-primario/85 text-sobre-primario rounded-lg text-sm font-medium transition-colors"
               >
                 Crear mi primera cuenta
               </button>
@@ -248,12 +248,12 @@ export default function AddTransactionModal({
           {/* Ledger picker */}
           {ledgers.length > 0 && (
             <div className="space-y-1.5">
-              <label className="text-xs text-slate-400 font-medium">CUENTA</label>
+              <label className="text-xs text-tinta-2 font-medium">Cuenta</label>
               <div className="relative">
                 <select
                   value={form.ledger_id}
                   onChange={e => setForm(p => ({ ...p, ledger_id: e.target.value, category: '', subcategory: '' }))}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-9 pr-8 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm appearance-none"
+                  className="w-full bg-hundido border border-linea-fuerte rounded-lg pl-9 pr-8 py-2.5 text-tinta focus:outline-none focus:border-tinta-3 text-sm appearance-none"
                 >
                   {ledgers.map(l => (
                     <option key={l.id} value={l.id}>{l.name}</option>
@@ -268,14 +268,14 @@ export default function AddTransactionModal({
                     }}
                   />
                 )}
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tinta-2 pointer-events-none" />
               </div>
             </div>
           )}
 
           {/* Type toggle */}
           <div className="space-y-1.5">
-            <label className="text-xs text-slate-400 font-medium">TIPO</label>
+            <label className="text-xs text-tinta-2 font-medium">Tipo</label>
             <div className="grid grid-cols-2 gap-2">
               {(['expense', 'income'] as const).map(t => (
                 <button
@@ -289,9 +289,9 @@ export default function AddTransactionModal({
                   className={`py-2.5 rounded-lg text-sm font-medium transition-all ${
                     form.type === t
                       ? t === 'expense'
-                        ? 'bg-rose-500/20 border-2 border-rose-500 text-rose-300'
-                        : 'bg-emerald-500/20 border-2 border-emerald-500 text-emerald-300'
-                      : 'bg-slate-800 border-2 border-transparent text-slate-400 hover:border-slate-600'
+                        ? 'bg-peligro/20 border-2 border-peligro text-peligro'
+                        : 'bg-acento/20 border-2 border-acento text-acento'
+                      : 'bg-hundido border-2 border-transparent text-tinta-2 hover:border-linea-fuerte'
                   }`}
                 >
                   {t === 'expense' ? '− Gasto' : '+ Ingreso'}
@@ -302,9 +302,9 @@ export default function AddTransactionModal({
 
           {/* Amount */}
           <div className="space-y-1.5">
-            <label className="text-xs text-slate-400 font-medium">MONTO *</label>
+            <label className="text-xs text-tinta-2 font-medium">Monto *</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-tinta-2 text-sm">$</span>
               <input
                 type="number"
                 step="0.01"
@@ -312,7 +312,7 @@ export default function AddTransactionModal({
                 value={form.amount}
                 onChange={e => setForm(p => ({ ...p, amount: e.target.value }))}
                 placeholder="0.00"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-7 pr-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm"
+                className="w-full bg-hundido border border-linea-fuerte rounded-lg pl-7 pr-4 py-2.5 text-tinta placeholder-tinta-3 focus:outline-none focus:border-tinta-3 text-sm"
                 required
               />
             </div>
@@ -320,7 +320,7 @@ export default function AddTransactionModal({
 
           {/* Category */}
           <div className="space-y-1.5">
-            <label className="text-xs text-slate-400 font-medium">CATEGORÍA *</label>
+            <label className="text-xs text-tinta-2 font-medium">Categoría *</label>
 
             {/* Cerrada por defecto: la grilla se lleva media pantalla y empuja
                 fecha, descripción y medio de pago fuera de la vista. Se abre al
@@ -329,15 +329,15 @@ export default function AddTransactionModal({
               type="button"
               onClick={() => setCategoriasAbiertas(v => !v)}
               aria-expanded={categoriasAbiertas}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 flex items-center gap-2.5 text-left"
+              className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-tinta-3 flex items-center gap-2.5 text-left"
             >
               {elegida
                 ? <CategoryIcon icon={elegida.icon} color={elegida.color} type={elegida.type} size="sm" />
                 : <span className="w-8 h-8 flex-shrink-0" />}
-              <span className={`flex-1 min-w-0 truncate ${form.category ? 'text-white' : 'text-slate-500'}`}>
+              <span className={`flex-1 min-w-0 truncate ${form.category ? 'text-tinta' : 'text-tinta-2'}`}>
                 {form.category || 'Seleccionar categoría'}
               </span>
-              <ChevronDown className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ${categoriasAbiertas ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-4 h-4 text-tinta-2 flex-shrink-0 transition-transform ${categoriasAbiertas ? 'rotate-180' : ''}`} />
             </button>
 
             {categoriasAbiertas && (
@@ -356,12 +356,12 @@ export default function AddTransactionModal({
                       }}
                       aria-pressed={esta}
                       className={`flex flex-col items-center gap-1.5 rounded-lg py-1.5 transition-colors ${
-                        esta ? 'bg-emerald-500/10 ring-1 ring-emerald-500/40' : 'hover:bg-slate-800'
+                        esta ? 'bg-hundido ring-1 ring-linea-fuerte' : 'hover:bg-hundido'
                       }`}
                     >
                       <CategoryIcon icon={cat.icon} color={cat.color} type={cat.type} size="sm" />
                       <span className={`text-2xs leading-tight text-center line-clamp-2 w-full break-words hyphens-auto px-0.5 ${
-                        esta ? 'text-emerald-300' : 'text-slate-300'
+                        esta ? 'text-tinta font-medium' : 'text-tinta'
                       }`}>
                         {cat.name}
                       </span>
@@ -375,12 +375,12 @@ export default function AddTransactionModal({
                 <button
                   type="button"
                   onClick={() => { setCreandoCategoria(true); setCategoriasAbiertas(false); }}
-                  className="flex flex-col items-center gap-1.5 rounded-lg py-1.5 hover:bg-slate-800 transition-colors"
+                  className="flex flex-col items-center gap-1.5 rounded-lg py-1.5 hover:bg-hundido transition-colors"
                 >
-                  <span className="w-8 h-8 rounded-full border border-dashed border-slate-600 flex items-center justify-center">
-                    <Plus className="w-4 h-4 text-slate-500" />
+                  <span className="w-8 h-8 rounded-full border border-dashed border-linea-fuerte flex items-center justify-center">
+                    <Plus className="w-4 h-4 text-tinta-2" />
                   </span>
-                  <span className="text-2xs leading-tight text-center text-slate-400">Nueva</span>
+                  <span className="text-2xs leading-tight text-center text-tinta-2">Nueva</span>
                 </button>
               </div>
             )}
@@ -403,7 +403,7 @@ export default function AddTransactionModal({
                 puso la categoría de arriba—. */}
             {subcategorias.length > 0 && (
               <div className="pt-1 space-y-1.5">
-                <p className="text-2xs text-slate-500">Detalle (opcional)</p>
+                <p className="text-2xs text-tinta-2">Detalle (opcional)</p>
                 <div className="flex flex-wrap gap-1.5">
                   {subcategorias.map(sub => {
                     const esta = form.subcategory === sub.name;
@@ -419,8 +419,8 @@ export default function AddTransactionModal({
                         aria-pressed={esta}
                         className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
                           esta
-                            ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                            : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600'
+                            ? 'bg-elevado border-tinta-3 text-tinta font-medium'
+                            : 'bg-hundido border-linea-fuerte text-tinta hover:border-linea-fuerte'
                         }`}
                       >
                         {sub.name}
@@ -431,22 +431,22 @@ export default function AddTransactionModal({
               </div>
             )}
 
-            {errorCats && <p className="text-xs text-rose-400 mt-1">{errorCats}</p>}
+            {errorCats && <p className="text-xs text-peligro mt-1">{errorCats}</p>}
             {!errorCats && !cargandoCats && categories.length === 0 && (
-              <p className="text-xs text-amber-400 mt-1">
+              <p className="text-xs text-aviso mt-1">
                 Esta cuenta no tiene categorías. Creá una en Configuración → Categorías.
               </p>
             )}
 
             {interpretation?.suggestions && interpretation.suggestions.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-1">
-                <span className="text-xs text-slate-500">Sugerencias:</span>
+                <span className="text-xs text-tinta-2">Sugerencias:</span>
                 {interpretation.suggestions.map(s => (
                   <button
                     key={s}
                     type="button"
                     onClick={() => setForm(p => ({ ...p, category: s }))}
-                    className="text-xs px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-md transition-colors"
+                    className="text-xs px-2 py-0.5 bg-presionado hover:bg-presionado text-tinta rounded-md transition-colors"
                   >
                     {s}
                   </button>
@@ -459,24 +459,24 @@ export default function AddTransactionModal({
               al nombre de la categoría, y obligar a escribir algo termina en
               "Gasto" o "Varios", que no dicen más que la categoría sola. */}
           <div className="space-y-1.5">
-            <label className="text-xs text-slate-400 font-medium">DESCRIPCIÓN</label>
+            <label className="text-xs text-tinta-2 font-medium">Descripción</label>
             <input
               type="text"
               value={form.description}
               onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
               placeholder={form.category ? `Opcional — se anota como "${form.category}"` : 'Opcional'}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm"
+              className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-tinta placeholder-tinta-3 focus:outline-none focus:border-tinta-3 text-sm"
             />
           </div>
 
           {/* Date */}
           <div className="space-y-1.5">
-            <label className="text-xs text-slate-400 font-medium">FECHA *</label>
+            <label className="text-xs text-tinta-2 font-medium">Fecha *</label>
             <input
               type="date"
               value={form.date}
               onChange={e => setForm(p => ({ ...p, date: e.target.value }))}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm"
+              className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-tinta focus:outline-none focus:border-tinta-3 text-sm"
               required
             />
           </div>
@@ -490,12 +490,12 @@ export default function AddTransactionModal({
               así que en un ingreso el dato no alimentaría ninguna vista. */}
           {form.type === 'expense' && cards.length > 0 && (
             <div className="space-y-1.5">
-              <label className="text-xs text-slate-400 font-medium">PAGADO CON</label>
+              <label className="text-xs text-tinta-2 font-medium">Pagado con</label>
               <div className="relative">
                 <select
                   value={form.card_id}
                   onChange={e => setForm(p => ({ ...p, card_id: e.target.value }))}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 pr-8 text-white focus:outline-none focus:border-emerald-500 text-sm appearance-none"
+                  className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 pr-8 text-tinta focus:outline-none focus:border-tinta-3 text-sm appearance-none"
                 >
                   <option value="">Sin especificar</option>
                   {CARD_GROUPS.map(({ titulo, kinds }) => {
@@ -512,13 +512,13 @@ export default function AddTransactionModal({
                     );
                   })}
                 </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-tinta-2 pointer-events-none" />
               </div>
             </div>
           )}
 
           {error && (
-            <div className="flex items-center gap-2 text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
+            <div className="flex items-center gap-2 text-peligro text-sm bg-peligro/10 border border-peligro/20 rounded-lg px-3 py-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {error}
             </div>
@@ -528,14 +528,14 @@ export default function AddTransactionModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-colors"
+              className="flex-1 py-2.5 bg-hundido hover:bg-presionado text-tinta rounded-lg text-sm transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={saving || ledgers.length === 0}
-              className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-2.5 bg-primario hover:bg-primario/85 disabled:opacity-50 text-sobre-primario rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
             >
               {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Guardando...</> : 'Guardar'}
             </button>
@@ -587,7 +587,7 @@ function NuevaCategoriaEnLinea({
   };
 
   return (
-    <div className="border border-slate-800 rounded-lg p-2.5 space-y-2 bg-slate-950/40">
+    <div className="border border-linea rounded-lg p-2.5 space-y-2 bg-fondo">
       <div className="flex gap-2">
         <input
           type="text"
@@ -597,26 +597,26 @@ function NuevaCategoriaEnLinea({
           placeholder="Nombre de la categoría"
           autoFocus
           maxLength={40}
-          className="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+          className="flex-1 min-w-0 bg-hundido border border-linea-fuerte rounded-lg px-3 py-2 text-sm text-tinta placeholder:text-tinta-3 focus:outline-none focus:border-tinta-3"
         />
         <button
           type="button"
           onClick={crear}
           disabled={guardando || !nombre.trim()}
-          className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-sm transition-colors flex-shrink-0"
+          className="px-3 py-2 bg-primario hover:bg-primario/85 disabled:opacity-50 text-sobre-primario rounded-lg text-sm transition-colors flex-shrink-0"
         >
           {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Crear'}
         </button>
         <button
           type="button"
           onClick={onCancelar}
-          className="px-2 py-2 text-slate-400 hover:text-white transition-colors flex-shrink-0"
+          className="px-2 py-2 text-tinta-2 hover:text-tinta transition-colors flex-shrink-0"
           aria-label="Cancelar"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
-      {error && <p className="text-xs text-rose-400">{error}</p>}
+      {error && <p className="text-xs text-peligro">{error}</p>}
     </div>
   );
 }

@@ -15,6 +15,7 @@ import { db } from '../lib/datos';
 import { BASE, FALTA_LA_API, hayApi, llamarApi } from '../lib/api';
 import { createTransaction } from '@compartido/db';
 import { EmailTransaction, LEDGER_COLOR_MAP } from '@compartido/types';
+import { useColores } from '../lib/colores';
 
 interface Fila extends EmailTransaction {
   selected: boolean;
@@ -44,6 +45,7 @@ const VENTAJAS = [
  * misma función que usa la ruta de la web.
  */
 export default function Correo() {
+  const paleta = useColores();
   const { ledgers, refreshLedgers } = useCuenta();
   const { session } = useSesion();
   const fmt = useFormatters();
@@ -166,7 +168,7 @@ export default function Correo() {
   if (!statusLoaded) {
     return (
       <View className="flex-1 items-center justify-center">
-        <Loader2 size={24} color="#94a3b8" />
+        <Loader2 size={24} color={paleta.tinta2} />
       </View>
     );
   }
@@ -174,26 +176,26 @@ export default function Correo() {
   return (
     <Pantalla className="gap-6" keyboardShouldPersistTaps="handled">
       <View>
-        <Texto className="text-xl font-bold text-white">Correo electrónico</Texto>
-        <Texto className="text-slate-400 text-sm">Importa transacciones desde correos bancarios</Texto>
+        <Texto className="text-xl font-semibold text-tinta">Correo electrónico</Texto>
+        <Texto className="text-tinta-2 text-sm">Importa transacciones desde correos bancarios</Texto>
       </View>
 
       {error ? (
-        <View className="flex-row items-start gap-2 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
-          <View className="mt-0.5"><AlertCircle size={16} color="#fb7185" /></View>
-          <Texto className="text-rose-400 text-sm flex-1">{error}</Texto>
+        <View className="flex-row items-start gap-2 bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
+          <View className="mt-0.5"><AlertCircle size={16} color={paleta.peligro} /></View>
+          <Texto className="text-peligro text-sm flex-1">{error}</Texto>
         </View>
       ) : null}
 
       {!connected ? (
-        <View className="bg-slate-900 border border-slate-800 rounded-2xl p-5 gap-5">
+        <View className="bg-panel border border-linea rounded-xl p-5 gap-5">
           <View className="flex-row items-center gap-3">
-            <View className="w-12 h-12 bg-blue-500/10 rounded-xl items-center justify-center">
-              <Mail size={24} color="#60a5fa" />
+            <View className="w-12 h-12 bg-hundido rounded-xl items-center justify-center">
+              <Mail size={24} color={paleta.tinta2} />
             </View>
             <View className="flex-1">
-              <Texto className="font-semibold text-white">Conectar Gmail</Texto>
-              <Texto className="text-sm text-slate-400">
+              <Texto className="font-semibold text-tinta">Conectar Gmail</Texto>
+              <Texto className="text-sm text-tinta-2">
                 Escanea tus correos bancarios y extrae gastos automáticamente con IA
               </Texto>
             </View>
@@ -202,20 +204,20 @@ export default function Correo() {
           <View className="gap-2">
             {VENTAJAS.map(item => (
               <View key={item} className="flex-row items-center gap-2">
-                <CheckCircle2 size={16} color="#34d399" />
-                <Texto className="text-sm text-slate-400 flex-1">{item}</Texto>
+                <CheckCircle2 size={16} color={paleta.acento} />
+                <Texto className="text-sm text-tinta-2 flex-1">{item}</Texto>
               </View>
             ))}
           </View>
 
           <Pressable
             onPress={conectar}
-            className="w-full py-3 bg-blue-600 active:bg-blue-500 rounded-xl flex-row items-center justify-center gap-2"
+            className="w-full py-3 bg-primario active:bg-primario/85 rounded-lg flex-row items-center justify-center gap-2"
           >
-            <Mail size={16} color="#ffffff" />
-            <Texto className="text-white text-sm font-medium">Conectar con Gmail</Texto>
+            <Mail size={16} color={paleta.sobrePrimario} />
+            <Texto className="text-sobre-primario text-sm font-medium">Conectar con Gmail</Texto>
           </Pressable>
-          <Texto className="text-xs text-slate-500">
+          <Texto className="text-xs text-tinta-2">
             El permiso se da en el navegador, porque es la app web la que Google tiene registrada.
             Al volver acá la cuenta ya queda conectada para los dos lados.
           </Texto>
@@ -223,19 +225,19 @@ export default function Correo() {
       ) : (
         <>
           {/* La cuenta conectada */}
-          <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex-row items-center gap-3">
-            <View className="w-10 h-10 bg-emerald-500/10 rounded-xl items-center justify-center">
-              <Mail size={20} color="#34d399" />
+          <View className="bg-panel border border-linea rounded-xl p-4 flex-row items-center gap-3">
+            <View className="w-10 h-10 bg-hundido rounded-lg items-center justify-center">
+              <Mail size={20} color={paleta.tinta2} />
             </View>
             <View className="flex-1">
-              <Texto className="text-sm font-medium text-white" numberOfLines={1}>{connectedEmail}</Texto>
+              <Texto className="text-sm font-medium text-tinta" numberOfLines={1}>{connectedEmail}</Texto>
               <View className="flex-row items-center gap-1">
-                <CheckCircle2 size={12} color="#34d399" />
-                <Texto className="text-xs text-emerald-400">Conectado</Texto>
+                <CheckCircle2 size={12} color={paleta.acento} />
+                <Texto className="text-xs text-acento">Conectado</Texto>
               </View>
             </View>
             <Pressable onPress={desconectar} accessibilityLabel="Desconectar" className="p-2">
-              <Unlink size={16} color="#94a3b8" />
+              <Unlink size={16} color={paleta.tinta2} />
             </Pressable>
           </View>
 
@@ -243,18 +245,18 @@ export default function Correo() {
             onPress={escanear}
             disabled={scanning}
             style={scanning ? { opacity: 0.5 } : undefined}
-            className="w-full py-3 bg-emerald-600 active:bg-emerald-500 rounded-xl flex-row items-center justify-center gap-2"
+            className="w-full py-3 bg-primario active:bg-primario/85 rounded-lg flex-row items-center justify-center gap-2"
           >
-            {scanning ? <Loader2 size={16} color="#ffffff" /> : <RefreshCw size={16} color="#ffffff" />}
-            <Texto className="text-white text-sm font-medium">
+            {scanning ? <Loader2 size={16} color={paleta.sobrePrimario} /> : <RefreshCw size={16} color={paleta.sobrePrimario} />}
+            <Texto className="text-sobre-primario text-sm font-medium">
               {scanning ? 'Escaneando correos...' : 'Escanear últimos 30 días'}
             </Texto>
           </Pressable>
 
           {importResult ? (
-            <View className="flex-row items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3">
-              <CheckCircle2 size={16} color="#34d399" />
-              <Texto className="text-emerald-400 text-sm flex-1">
+            <View className="flex-row items-center gap-2 bg-acento/10 border border-acento/20 rounded-xl px-4 py-3">
+              <CheckCircle2 size={16} color={paleta.acento} />
+              <Texto className="text-acento text-sm flex-1">
                 {importResult.ok} transacciones importadas
                 {importResult.fail > 0 ? ` · ${importResult.fail} fallaron` : ''}
               </Texto>
@@ -263,28 +265,28 @@ export default function Correo() {
 
           {scannedCount !== null && rows.length === 0 && !scanning ? (
             <View className="items-center py-10">
-              <View style={{ opacity: 0.3 }}><Mail size={40} color="#64748b" /></View>
-              <Texto className="text-slate-500 mt-3">No se encontraron correos de transacciones</Texto>
-              <Texto className="text-xs text-slate-500 mt-1">Se escanearon {scannedCount} correos bancarios</Texto>
+              <View style={{ opacity: 0.3 }}><Mail size={40} color={paleta.tinta2} /></View>
+              <Texto className="text-tinta-2 mt-3">No se encontraron correos de transacciones</Texto>
+              <Texto className="text-xs text-tinta-2 mt-1">Se escanearon {scannedCount} correos bancarios</Texto>
             </View>
           ) : null}
 
           {rows.length > 0 ? (
             <View className="gap-3">
               <View className="flex-row items-center justify-between">
-                <Texto className="text-sm font-medium text-slate-300 flex-1">
+                <Texto className="text-sm font-medium text-tinta flex-1">
                   {rows.length} transacciones detectadas
                   {scannedCount !== null ? (
-                    <Texto className="text-sm text-slate-500"> · de {scannedCount} correos</Texto>
+                    <Texto className="text-sm text-tinta-2"> · de {scannedCount} correos</Texto>
                   ) : null}
                 </Texto>
                 <View className="flex-row gap-2">
                   <Pressable onPress={() => setRows(r => r.map(x => ({ ...x, selected: true })))}>
-                    <Texto className="text-xs text-slate-400">Seleccionar todo</Texto>
+                    <Texto className="text-xs text-tinta-2">Seleccionar todo</Texto>
                   </Pressable>
-                  <Texto className="text-xs text-slate-700">·</Texto>
+                  <Texto className="text-xs text-tinta-3">·</Texto>
                   <Pressable onPress={() => setRows(r => r.map(x => ({ ...x, selected: false })))}>
-                    <Texto className="text-xs text-slate-400">Ninguno</Texto>
+                    <Texto className="text-xs text-tinta-2">Ninguno</Texto>
                   </Pressable>
                 </View>
               </View>
@@ -298,8 +300,8 @@ export default function Correo() {
                   return (
                     <View
                       key={row.gmail_message_id}
-                      className={`bg-slate-900 border rounded-xl p-4 ${
-                        row.selected ? 'border-slate-700' : 'border-slate-800'
+                      className={`bg-panel border rounded-xl p-4 ${
+                        row.selected ? 'border-linea-fuerte' : 'border-linea'
                       }`}
                       style={row.selected ? undefined : { opacity: 0.5 }}
                     >
@@ -310,41 +312,41 @@ export default function Correo() {
                           accessibilityRole="checkbox"
                           accessibilityState={{ checked: row.selected }}
                           className={`w-4 h-4 mt-1 rounded border items-center justify-center ${
-                            row.selected ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600'
+                            row.selected ? 'bg-primario border-primario' : 'border-linea-fuerte'
                           }`}
                         >
-                          {row.selected ? <CheckCircle2 size={12} color="#ffffff" /> : null}
+                          {row.selected ? <CheckCircle2 size={12} color={paleta.sobrePrimario} /> : null}
                         </Pressable>
 
                         <View className="flex-1 gap-3">
                           <View className="flex-row items-start justify-between gap-2">
                             <View className="flex-1">
-                              <Texto className="text-sm font-medium text-white" numberOfLines={1}>
+                              <Texto className="text-sm font-medium text-tinta" numberOfLines={1}>
                                 {row.description}
                               </Texto>
-                              <Texto className="text-xs text-slate-500 mt-0.5" numberOfLines={1}>
+                              <Texto className="text-xs text-tinta-2 mt-0.5" numberOfLines={1}>
                                 {row.subject}
                               </Texto>
                             </View>
-                            <Texto className={`text-sm font-bold ${
-                              row.type === 'income' ? 'text-emerald-400' : 'text-rose-400'
-                            }`}>
+                            <Texto className={`text-sm font-medium ${
+                              row.type === 'income' ? 'text-acento' : 'text-tinta'
+                            }`} style={{ fontVariant: ['tabular-nums'] }}>
                               {row.type === 'income' ? '+' : '−'}{fmt.money(row.amount ?? 0)}
                             </Texto>
                           </View>
 
                           <View className="flex-row gap-2">
                             <View className="flex-1 gap-1">
-                              <Texto className="text-xs text-slate-500">Fecha</Texto>
+                              <Texto className="text-xs text-tinta-2">Fecha</Texto>
                               <CampoDeFecha
                                 value={row.date_override}
                                 onChange={v => cambiar({ date_override: v })}
-                                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5"
+                                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-2 py-1.5"
                               />
                             </View>
                             {ledgers.length > 0 ? (
                               <View className="flex-1 gap-1">
-                                <Texto className="text-xs text-slate-500">Cuenta</Texto>
+                                <Texto className="text-xs text-tinta-2">Cuenta</Texto>
                                 <Selector
                                   value={row.ledger_id}
                                   opciones={[
@@ -364,11 +366,11 @@ export default function Correo() {
 
                           <View className="flex-row items-center gap-2">
                             {row.category ? (
-                              <View className="px-2 py-0.5 bg-slate-800 rounded-md">
-                                <Texto className="text-xs text-slate-400">{row.category}</Texto>
+                              <View className="px-2 py-0.5 bg-hundido rounded-md">
+                                <Texto className="text-xs text-tinta-2">{row.category}</Texto>
                               </View>
                             ) : null}
-                            <Texto className="text-xs text-slate-600">
+                            <Texto className="text-xs text-tinta-3">
                               {Math.round((row.confidence ?? 0) * 100)}% confianza
                             </Texto>
                             {color ? (
@@ -386,10 +388,10 @@ export default function Correo() {
                 onPress={importar}
                 disabled={importing || seleccionadas === 0}
                 style={importing || seleccionadas === 0 ? { opacity: 0.5 } : undefined}
-                className="w-full py-3 bg-emerald-600 active:bg-emerald-500 rounded-xl flex-row items-center justify-center gap-2"
+                className="w-full py-3 bg-primario active:bg-primario/85 rounded-lg flex-row items-center justify-center gap-2"
               >
-                {importing ? <Loader2 size={16} color="#ffffff" /> : <Download size={16} color="#ffffff" />}
-                <Texto className="text-white text-sm font-medium">
+                {importing ? <Loader2 size={16} color={paleta.sobrePrimario} /> : <Download size={16} color={paleta.sobrePrimario} />}
+                <Texto className="text-sobre-primario text-sm font-medium">
                   {importing
                     ? 'Importando...'
                     : `Importar ${seleccionadas} transaccion${seleccionadas !== 1 ? 'es' : ''}`}

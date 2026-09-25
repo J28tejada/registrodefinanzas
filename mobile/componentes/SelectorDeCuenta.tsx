@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Check, Crown, LayoutGrid, Pencil, Plus, Trash2, Users, X } from 'lucide-react-native';
 import Texto from './Texto';
 import MiembrosDeCuenta from './MiembrosDeCuenta';
@@ -13,6 +12,7 @@ import {
   CamposDeCuenta, COLORES_DE_CUENTA, leerCambiosDeCuenta, leerCuentaNueva,
 } from '@compartido/cuentas-campos';
 import { Ledger, LedgerColor, LedgerWithStats, LEDGER_COLOR_MAP } from '@compartido/types';
+import { useColores } from '../lib/colores';
 
 /**
  * El gemelo de components/LedgerSelector.tsx.
@@ -26,6 +26,7 @@ import { Ledger, LedgerColor, LedgerWithStats, LEDGER_COLOR_MAP } from '@compart
  * dos abiertos a la vez se tapan entre ellos.
  */
 export default function SelectorDeCuenta() {
+  const paleta = useColores();
   const {
     currentLedger, setCurrentLedger, ledgers, refreshLedgers, selectorOpen, setSelectorOpen,
   } = useCuenta();
@@ -99,11 +100,11 @@ export default function SelectorDeCuenta() {
     <Modal visible transparent animationType="slide" onRequestClose={cerrar}>
       {/* La hoja sube desde abajo, como en la web debajo de 768px. */}
       <Pressable className="flex-1 bg-black/70" onPress={cerrar} />
-      <View className="bg-slate-900 border-t border-slate-700 rounded-t-2xl max-h-[90%]">
-        <View className="flex-row items-center justify-between px-5 py-4 border-b border-slate-800">
-          <Texto className="font-semibold text-white flex-1" numberOfLines={1}>{titulo}</Texto>
+      <View className="bg-panel border-t border-linea-fuerte rounded-t-2xl max-h-[90%]">
+        <View className="flex-row items-center justify-between px-5 py-4 border-b border-linea">
+          <Texto className="font-semibold text-tinta flex-1" numberOfLines={1}>{titulo}</Texto>
           <Pressable onPress={cerrar} accessibilityLabel="Cerrar">
-            <X size={20} color="#94a3b8" />
+            <X size={20} color={paleta.tinta2} />
           </Pressable>
         </View>
 
@@ -131,7 +132,7 @@ export default function SelectorDeCuenta() {
           {vista === 'lista' ? (
             <View className="gap-5">
               {errorBorrado ? (
-                <Texto className="text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
+                <Texto className="text-peligro text-sm bg-peligro/10 border border-peligro/20 rounded-lg px-3 py-2">
                   {errorBorrado}
                 </Texto>
               ) : null}
@@ -140,8 +141,8 @@ export default function SelectorDeCuenta() {
                   ofrecer es crear la primera. */}
               {ledgers.length === 0 ? (
                 <View className="items-center gap-3 py-2">
-                  <Texto className="text-sm text-white font-medium">Te quedaste sin cuentas</Texto>
-                  <Texto className="text-xs text-slate-400 text-center leading-relaxed">
+                  <Texto className="text-sm text-tinta font-medium">Te quedaste sin cuentas</Texto>
+                  <Texto className="text-xs text-tinta-2 text-center leading-relaxed">
                     Una cuenta agrupa tus movimientos: por ejemplo Hogar, Personal o Negocio.
                     Podés compartir cualquiera de ellas con otra persona.
                   </Texto>
@@ -159,19 +160,14 @@ export default function SelectorDeCuenta() {
                       className="rounded-2xl overflow-hidden w-full"
                       style={{ aspectRatio: 3 / 4 }}
                     >
-                      <LinearGradient
-                        colors={['#1e293b', '#0f172a']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-                      >
-                        <LayoutGrid size={32} color="#94a3b8" />
-                      </LinearGradient>
-                      {currentLedger === null ? <Tilde color="#1e293b" /> : null}
+                      <View className="flex-1 bg-hundido items-center justify-center">
+                        <LayoutGrid size={32} color={paleta.tinta2} />
+                      </View>
+                      {currentLedger === null ? <Tilde color={paleta.tinta} /> : null}
                     </Pressable>
                     <View className="px-0.5">
-                      <Texto className="text-sm font-medium text-white">Todas</Texto>
-                      <Texto className="text-xs text-slate-500">Vista global</Texto>
+                      <Texto className="text-sm font-medium text-tinta">Todas</Texto>
+                      <Texto className="text-xs text-tinta-2">Vista global</Texto>
                     </View>
                   </Celda>
                 ) : null}
@@ -191,12 +187,12 @@ export default function SelectorDeCuenta() {
                 <Celda>
                   <Pressable
                     onPress={() => setVista('crear')}
-                    className="w-full rounded-2xl border-2 border-dashed border-slate-700 items-center justify-center"
+                    className="w-full rounded-2xl border-2 border-dashed border-linea-fuerte items-center justify-center"
                     style={{ aspectRatio: 3 / 4 }}
                   >
-                    <Plus size={32} color="#64748b" />
+                    <Plus size={32} color={paleta.tinta2} />
                   </Pressable>
-                  <Texto className="text-sm text-slate-500 px-0.5">Nueva cuenta</Texto>
+                  <Texto className="text-sm text-tinta-2 px-0.5">Nueva cuenta</Texto>
                 </Celda>
               </View>
             </View>
@@ -219,7 +215,7 @@ function Celda({ children }: { children: React.ReactNode }) {
 /** El tilde de "esta es la activa". */
 function Tilde({ color }: { color: string }) {
   return (
-    <View className="absolute top-2 right-2 w-6 h-6 bg-white/90 rounded-full items-center justify-center">
+    <View className="absolute top-2 right-2 w-6 h-6 bg-panel/90 rounded-full items-center justify-center">
       <Check size={14} color={color} />
     </View>
   );
@@ -235,6 +231,7 @@ function TarjetaDeCuenta({
   onBorrar: () => void;
   onMiembros: () => void;
 }) {
+  const paleta = useColores();
   const color = LEDGER_COLOR_MAP[ledger.color];
   const fmt = useFormatters();
   const esDueno = ledger.role === 'owner';
@@ -264,15 +261,15 @@ function TarjetaDeCuenta({
 
         <View className="absolute bottom-2 right-2 flex-row gap-1">
           <Boton onPress={onMiembros} etiqueta="Personas con acceso">
-            <Users size={14} color="#ffffff" />
+            <Users size={14} color={paleta.tinta} />
           </Boton>
           {esDueno ? (
             <>
               <Boton onPress={onEditar} etiqueta="Editar">
-                <Pencil size={14} color="#ffffff" />
+                <Pencil size={14} color={paleta.tinta} />
               </Boton>
               <Boton onPress={onBorrar} etiqueta="Eliminar" peligroso>
-                <Trash2 size={14} color="#ffffff" />
+                <Trash2 size={14} color={paleta.tinta} />
               </Boton>
             </>
           ) : null}
@@ -281,13 +278,13 @@ function TarjetaDeCuenta({
 
       <View className="px-0.5">
         <View className="flex-row items-center gap-1">
-          <Texto className="text-sm font-medium text-white flex-1" numberOfLines={1}>{ledger.name}</Texto>
-          {esDueno ? <Crown size={12} color="#fbbf24" /> : null}
+          <Texto className="text-sm font-medium text-tinta flex-1" numberOfLines={1}>{ledger.name}</Texto>
+          {esDueno ? <Crown size={12} color={paleta.aviso} /> : null}
         </View>
-        <Texto className={`text-xs font-semibold ${ledger.balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+        <Texto className={`text-xs font-semibold ${ledger.balance >= 0 ? 'text-acento' : 'text-peligro'}`}>
           {fmt.money(ledger.balance)}
         </Texto>
-        <Texto className="text-xs text-slate-500">{ledger.transactionCount} transacciones</Texto>
+        <Texto className="text-xs text-tinta-2">{ledger.transactionCount} transacciones</Texto>
       </View>
     </Celda>
   );
@@ -313,7 +310,7 @@ function Boton({
       onPress={onPress}
       accessibilityLabel={etiqueta}
       className={`w-7 h-7 bg-black/40 rounded-lg items-center justify-center ${
-        peligroso ? 'active:bg-rose-500/70' : 'active:bg-black/60'
+        peligroso ? 'active:bg-peligro/70' : 'active:bg-black/60'
       }`}
     >
       {children}
@@ -328,6 +325,7 @@ function FormularioDeCuenta({
   onGuardar: (datos: CamposDeCuenta) => Promise<void>;
   onCancelar: () => void;
 }) {
+  const paleta = useColores();
   const [name, setName] = useState(inicial?.name ?? '');
   const [color, setColor] = useState<LedgerColor>(inicial?.color ?? 'green');
   const [type, setType] = useState<'personal' | 'business'>(inicial?.type ?? 'personal');
@@ -350,30 +348,28 @@ function FormularioDeCuenta({
   return (
     <View className="gap-4">
       <View className="gap-1.5">
-        <Texto className="text-xs text-slate-400 font-medium">NOMBRE *</Texto>
+        <Texto className="text-xs text-tinta-2 font-medium">Nombre *</Texto>
         <TextInput
           value={name}
           onChangeText={setName}
           placeholder="Ej: Personal, Negocio, Proyecto..."
-          placeholderTextColor="#64748b"
+          placeholderTextColor={paleta.tinta2}
           autoFocus
-          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-white text-sm"
+          className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-tinta text-sm"
         />
       </View>
 
       <View className="gap-1.5">
-        <Texto className="text-xs text-slate-400 font-medium">TIPO DE CATEGORÍAS</Texto>
+        <Texto className="text-xs text-tinta-2 font-medium">Tipo de categorías</Texto>
         <View className="flex-row gap-2">
           {(['personal', 'business'] as const).map(t => {
             const elegido = type === t;
             const caja = elegido
-              ? t === 'personal'
-                ? 'bg-violet-500/20 border-2 border-violet-500'
-                : 'bg-blue-500/20 border-2 border-blue-500'
-              : 'bg-slate-800 border-2 border-transparent';
+              ? 'bg-elevado border-2 border-tinta'
+              : 'bg-hundido border-2 border-transparent';
             const letra = elegido
-              ? t === 'personal' ? 'text-violet-300' : 'text-blue-300'
-              : 'text-slate-400';
+              ? 'text-tinta'
+              : 'text-tinta-2';
             return (
               <Pressable
                 key={t}
@@ -390,14 +386,14 @@ function FormularioDeCuenta({
       </View>
 
       <View className="gap-1.5">
-        <Texto className="text-xs text-slate-400 font-medium">COLOR</Texto>
+        <Texto className="text-xs text-tinta-2 font-medium">Color</Texto>
         <View className="flex-row flex-wrap gap-2">
           {COLORES_DE_CUENTA.map(c => (
             <Pressable
               key={c}
               onPress={() => setColor(c)}
               accessibilityLabel={`Color ${c}`}
-              className={`w-8 h-8 rounded-full ${color === c ? 'border-2 border-white' : ''}`}
+              className={`w-8 h-8 rounded-full ${color === c ? 'border-2 border-tinta' : ''}`}
               style={[
                 { backgroundColor: LEDGER_COLOR_MAP[c].main },
                 color === c ? { transform: [{ scale: 1.1 }] } : null,
@@ -408,32 +404,32 @@ function FormularioDeCuenta({
       </View>
 
       <View className="gap-1.5">
-        <Texto className="text-xs text-slate-400 font-medium">DESCRIPCIÓN</Texto>
+        <Texto className="text-xs text-tinta-2 font-medium">Descripción</Texto>
         <TextInput
           value={description}
           onChangeText={setDescription}
           placeholder="Opcional"
-          placeholderTextColor="#64748b"
-          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-white text-sm"
+          placeholderTextColor={paleta.tinta2}
+          className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-tinta text-sm"
         />
       </View>
 
-      {error ? <Texto className="text-rose-400 text-sm">{error}</Texto> : null}
+      {error ? <Texto className="text-peligro text-sm">{error}</Texto> : null}
 
       <View className="flex-row gap-3 pt-1">
         <Pressable
           onPress={onCancelar}
-          className="flex-1 py-2.5 bg-slate-800 active:bg-slate-700 rounded-lg items-center"
+          className="flex-1 py-2.5 bg-hundido active:bg-presionado rounded-lg items-center"
         >
-          <Texto className="text-slate-300 text-sm">Cancelar</Texto>
+          <Texto className="text-tinta text-sm">Cancelar</Texto>
         </Pressable>
         <Pressable
           onPress={guardar}
           disabled={guardando}
           style={guardando ? { opacity: 0.5 } : undefined}
-          className="flex-1 py-2.5 bg-emerald-600 active:bg-emerald-500 rounded-lg items-center"
+          className="flex-1 py-2.5 bg-primario active:bg-primario/85 rounded-lg items-center"
         >
-          <Texto className="text-white text-sm font-medium">
+          <Texto className="text-sobre-primario text-sm font-medium">
             {guardando ? 'Guardando...' : 'Guardar'}
           </Texto>
         </Pressable>

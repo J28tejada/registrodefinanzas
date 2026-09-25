@@ -24,9 +24,9 @@ t.igual('vacío también', iconoDeCategoria(''), ICONO_POR_DEFECTO);
 t.igual('una real devuelve la suya', iconoDeCategoria('casa'), ICONOS_CATEGORIA.casa);
 
 // ─── Colores ───
-t.igual('sin color, un gasto va gris', colorDeCategoria(null, 'expense'), '#64748b');
-t.igual('sin color, un ingreso va verde', colorDeCategoria(null, 'income'), '#10b981');
-t.igual('un color inventado cae al del tipo', colorDeCategoria('fucsia', 'expense'), '#64748b');
+t.igual('sin color, un gasto va gris', colorDeCategoria(null, 'expense'), '#858279');
+t.igual('sin color, un ingreso va verde', colorDeCategoria(null, 'income'), '#4A9469');
+t.igual('un color inventado cae al del tipo', colorDeCategoria('fucsia', 'expense'), '#858279');
 t.igual('uno válido manda', colorDeCategoria('blue', 'expense'), '#3b82f6');
 t.igual('la paleta tiene ocho', COLORES_CATEGORIA.length, 8);
 

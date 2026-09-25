@@ -11,6 +11,7 @@ import {
   Card, CardKind, CARD_GROUPS, CARD_KIND_LABEL, LedgerColor, LEDGER_COLOR_MAP,
   etiquetaUltimosDigitos, llevaSaldo,
 } from '@compartido/types';
+import { useColores } from '../lib/colores';
 
 const COLORES = Object.keys(LEDGER_COLOR_MAP) as LedgerColor[];
 
@@ -65,6 +66,7 @@ export default function FormularioDeTarjeta({
   onListo: () => void | Promise<void>;
   onCancelar: () => void;
 }) {
+  const paleta = useColores();
   const [borrador, setBorrador] = useState<Borrador>(
     card
       ? {
@@ -126,8 +128,8 @@ export default function FormularioDeTarjeta({
   };
 
   return (
-    <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-2.5">
-      <Texto className="text-sm font-medium text-slate-300">
+    <View className="bg-panel border border-linea rounded-xl p-4 gap-2.5">
+      <Texto className="text-sm font-medium text-tinta">
         {card ? 'Editar medio de pago' : 'Nuevo medio de pago'}
       </Texto>
 
@@ -135,10 +137,10 @@ export default function FormularioDeTarjeta({
         value={borrador.name}
         onChangeText={t => setBorrador(b => ({ ...b, name: t }))}
         placeholder="Nombre — ej: Visa Popular, Ahorros BHD"
-        placeholderTextColor="#64748b"
+        placeholderTextColor={paleta.tinta2}
         autoFocus
         maxLength={40}
-        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white"
+        className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
       />
 
       <View className="flex-row gap-2">
@@ -155,8 +157,8 @@ export default function FormularioDeTarjeta({
           value={borrador.last4}
           onChangeText={t => setBorrador(b => ({ ...b, last4: t.replace(/\D/g, '').slice(0, 4) }))}
           placeholder={etiquetaUltimosDigitos(borrador.kind)}
-          placeholderTextColor="#64748b"
-          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white"
+          placeholderTextColor={paleta.tinta2}
+          className="flex-1 bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
         />
       </View>
 
@@ -166,9 +168,9 @@ export default function FormularioDeTarjeta({
         placeholder={borrador.kind === 'checking' || borrador.kind === 'savings'
           ? 'Banco'
           : 'Banco (opcional)'}
-        placeholderTextColor="#64748b"
+        placeholderTextColor={paleta.tinta2}
         maxLength={40}
-        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white"
+        className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
       />
 
       {/* Lo propio de una tarjeta de crédito: el cupo y el ciclo. Solo acá,
@@ -176,74 +178,74 @@ export default function FormularioDeTarjeta({
           fecha de corte. Todo opcional: la tarjeta se puede cargar hoy y
           configurarse después. */}
       {llevaSaldo(borrador) ? (
-        <View className="border border-slate-800 rounded-xl p-3 gap-2.5 bg-slate-950/40">
-          <Texto className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+        <View className="border border-linea rounded-xl p-3 gap-2.5 bg-fondo">
+          <Texto className="text-xs font-medium text-tinta-2">
             Saldo y ciclo
           </Texto>
 
           <View className="gap-1">
-            <Texto className="text-xs text-slate-500 leading-6">Límite de crédito</Texto>
+            <Texto className="text-xs text-tinta-2 leading-6">Límite de crédito</Texto>
             <TextInput
               keyboardType="decimal-pad"
               value={borrador.credit_limit}
               onChangeText={t => setBorrador(b => ({ ...b, credit_limit: t }))}
               placeholder="Opcional — para ver cuánto llevás consumido"
-              placeholderTextColor="#64748b"
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white"
+              placeholderTextColor={paleta.tinta2}
+              className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
             />
           </View>
 
           <View className="flex-row gap-2">
             <View className="flex-1 gap-1">
-              <Texto className="text-xs text-slate-500 leading-6">Día de corte</Texto>
+              <Texto className="text-xs text-tinta-2 leading-6">Día de corte</Texto>
               <TextInput
                 keyboardType="number-pad"
                 value={borrador.statement_day}
                 onChangeText={t => setBorrador(b => ({ ...b, statement_day: t.replace(/\D/g, '').slice(0, 2) }))}
                 placeholder="25"
-                placeholderTextColor="#64748b"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white"
+                placeholderTextColor={paleta.tinta2}
+                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
               />
             </View>
             <View className="flex-1 gap-1">
-              <Texto className="text-xs text-slate-500 leading-6">Día de pago</Texto>
+              <Texto className="text-xs text-tinta-2 leading-6">Día de pago</Texto>
               <TextInput
                 keyboardType="number-pad"
                 value={borrador.due_day}
                 onChangeText={t => setBorrador(b => ({ ...b, due_day: t.replace(/\D/g, '').slice(0, 2) }))}
                 placeholder="10"
-                placeholderTextColor="#64748b"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white"
+                placeholderTextColor={paleta.tinta2}
+                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
               />
             </View>
           </View>
-          <Texto className="text-2xs text-slate-500">
+          <Texto className="text-2xs text-tinta-2">
             Si el día de pago es anterior al de corte, se entiende que vence el mes
             siguiente. En los meses cortos se corre al último día.
           </Texto>
 
           <View className="flex-row gap-2">
             <View className="flex-1 gap-1">
-              <Texto className="text-xs text-slate-500 leading-6">Ya debías</Texto>
+              <Texto className="text-xs text-tinta-2 leading-6">Ya debías</Texto>
               <TextInput
                 keyboardType="decimal-pad"
                 value={borrador.opening_balance}
                 onChangeText={t => setBorrador(b => ({ ...b, opening_balance: t }))}
                 placeholder="0"
-                placeholderTextColor="#64748b"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white"
+                placeholderTextColor={paleta.tinta2}
+                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
               />
             </View>
             <View className="flex-1 gap-1">
-              <Texto className="text-xs text-slate-500 leading-6">Desde</Texto>
+              <Texto className="text-xs text-tinta-2 leading-6">Desde</Texto>
               <CampoDeFecha
                 value={borrador.opening_date}
                 onChange={v => setBorrador(b => ({ ...b, opening_date: v }))}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5"
+                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5"
               />
             </View>
           </View>
-          <Texto className="text-2xs text-slate-500">
+          <Texto className="text-2xs text-tinta-2">
             Lo que ya debías cuando empezaste a seguirla acá. Los movimientos
             anteriores a esa fecha no se suman: ya están adentro de ese monto.
           </Texto>
@@ -258,13 +260,13 @@ export default function FormularioDeTarjeta({
             className="flex-row items-start gap-2 pt-0.5"
           >
             <View className={`w-4 h-4 mt-0.5 rounded border items-center justify-center ${
-              borrador.alerts ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600'
+              borrador.alerts ? 'bg-primario border-primario' : 'border-linea-fuerte'
             }`}>
-              {borrador.alerts ? <Check size={12} color="#ffffff" /> : null}
+              {borrador.alerts ? <Check size={12} color={paleta.sobrePrimario} /> : null}
             </View>
             <View className="flex-row items-center gap-1.5 flex-1">
-              <Bell size={14} color="#64748b" />
-              <Texto className="text-xs text-slate-400 flex-1">
+              <Bell size={14} color={paleta.tinta2} />
+              <Texto className="text-xs text-tinta-2 flex-1">
                 Avisarme tres días antes del corte y del pago
               </Texto>
             </View>
@@ -279,7 +281,7 @@ export default function FormularioDeTarjeta({
             onPress={() => setBorrador(b => ({ ...b, color: c }))}
             accessibilityLabel={`Color ${c}`}
             className={`w-7 h-7 rounded-md overflow-hidden flex-row ${
-              borrador.color === c ? 'border-2 border-white' : ''
+              borrador.color === c ? 'border-2 border-tinta' : ''
             }`}
             style={borrador.color === c ? { transform: [{ scale: 1.1 }] } : undefined}
           >
@@ -292,24 +294,24 @@ export default function FormularioDeTarjeta({
         ))}
       </View>
 
-      {error ? <Texto className="text-xs text-rose-400">{error}</Texto> : null}
+      {error ? <Texto className="text-xs text-peligro">{error}</Texto> : null}
 
       <View className="flex-row gap-2 pt-0.5">
         <Pressable
           onPress={onCancelar}
-          className="flex-1 py-2.5 bg-slate-800 active:bg-slate-700 rounded-lg flex-row items-center justify-center gap-1.5"
+          className="flex-1 py-2.5 bg-hundido active:bg-presionado rounded-lg flex-row items-center justify-center gap-1.5"
         >
-          <X size={16} color="#cbd5e1" />
-          <Texto className="text-slate-300 text-sm">Cancelar</Texto>
+          <X size={16} color={paleta.tinta} />
+          <Texto className="text-tinta text-sm">Cancelar</Texto>
         </Pressable>
         <Pressable
           onPress={guardar}
           disabled={guardando || !borrador.name.trim()}
           style={guardando || !borrador.name.trim() ? { opacity: 0.5 } : undefined}
-          className="flex-1 py-2.5 bg-emerald-600 active:bg-emerald-500 rounded-lg flex-row items-center justify-center gap-1.5"
+          className="flex-1 py-2.5 bg-primario active:bg-primario/85 rounded-lg flex-row items-center justify-center gap-1.5"
         >
-          {guardando ? <Loader2 size={16} color="#ffffff" /> : <Check size={16} color="#ffffff" />}
-          <Texto className="text-white text-sm font-medium">Guardar</Texto>
+          {guardando ? <Loader2 size={16} color={paleta.sobrePrimario} /> : <Check size={16} color={paleta.sobrePrimario} />}
+          <Texto className="text-sobre-primario text-sm font-medium">Guardar</Texto>
         </Pressable>
       </View>
     </View>

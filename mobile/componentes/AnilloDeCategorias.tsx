@@ -52,15 +52,15 @@ export default function AnilloDeCategorias({
         {/* El total al centro: es el número que se lee primero, y el hueco del
             anillo ya está ahí. */}
         <View className="absolute inset-0 items-center justify-center px-7" pointerEvents="none">
-          <Texto className="text-3xs uppercase tracking-wider text-slate-500 text-center" numberOfLines={1}>
+          <Texto className="text-3xs text-tinta-2 text-center" numberOfLines={1}>
             {enfocada ? enfocada.categoria : etiqueta}
           </Texto>
-          <Texto className="text-xs font-bold text-white leading-tight text-center"
+          <Texto className="text-xs font-bold text-tinta leading-tight text-center"
             numberOfLines={1} style={{ fontVariant: ['tabular-nums'] }}>
             {formatearMonto(enfocada ? enfocada.total : total)}
           </Texto>
           {enfocada ? (
-            <Texto className="text-3xs text-slate-400" style={{ fontVariant: ['tabular-nums'] }}>
+            <Texto className="text-3xs text-tinta-2" style={{ fontVariant: ['tabular-nums'] }}>
               {enfocada.porcentaje.toFixed(1)}%
             </Texto>
           ) : null}
@@ -77,8 +77,8 @@ export default function AnilloDeCategorias({
             style={{ opacity: activa === null || activa === i ? 1 : 0.4 }}
           >
             <View className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: p.color }} />
-            <Texto className="text-sm text-slate-300 flex-1" numberOfLines={1}>{p.categoria}</Texto>
-            <Texto className="text-sm text-slate-500" style={{ fontVariant: ['tabular-nums'] }}>
+            <Texto className="text-sm text-tinta flex-1" numberOfLines={1}>{p.categoria}</Texto>
+            <Texto className="text-sm text-tinta-2" style={{ fontVariant: ['tabular-nums'] }}>
               {p.porcentaje.toFixed(1)}%
             </Texto>
           </Pressable>

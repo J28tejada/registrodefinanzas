@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { TrendingUp, TrendingDown, Wallet, Plus, RefreshCw, ChevronLeft, ChevronRight, Target } from 'lucide-react';
-import SummaryCard from '@/components/SummaryCard';
+import { Plus, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import MonthSummary from '@/components/MonthSummary';
 import TransactionList from '@/components/TransactionList';
 import AddTransactionModal from '@/components/AddTransactionModal';
 import BudgetBar from '@/components/BudgetBar';
@@ -118,40 +118,36 @@ export default function DashboardPage() {
   const ledgerColor = currentLedger ? LEDGER_COLOR_MAP[currentLedger.color] : null;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pt-14 md:pt-0">
+    <div className="max-w-4xl mx-auto space-y-8 pt-14 md:pt-0">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {ledgerColor && (
-            <div
-              className="w-10 h-10 rounded-xl flex-shrink-0"
-              style={{ background: `linear-gradient(to right, ${ledgerColor.dark} 30%, ${ledgerColor.main} 30%)` }}
-            />
-          )}
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-white">
-              {currentLedger?.name ?? 'Dashboard'}
+            <h1 className="text-xl sm:text-2xl font-semibold text-tinta flex items-center gap-2">
+              {/* El color de la cuenta, chico: la identifica sin competir con los números. */}
+              {ledgerColor && <span className="w-3 h-3 rounded flex-shrink-0" style={{ background: ledgerColor.main }} />}
+              {currentLedger?.name ?? 'Inicio'}
             </h1>
             {/* Month navigator */}
             <div className="flex items-center gap-1 mt-0.5">
               <button
                 onClick={goToPrev}
-                className="p-0.5 text-slate-500 hover:text-white rounded transition-colors"
+                className="p-0.5 text-tinta-2 hover:text-tinta rounded transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="text-sm text-slate-400 capitalize min-w-[130px] text-center">{monthName}</span>
+              <span className="text-sm text-tinta-2 min-w-[130px] text-center">{monthName}</span>
               <button
                 onClick={goToNext}
                 disabled={isCurrentMonth}
-                className="p-0.5 text-slate-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors"
+                className="p-0.5 text-tinta-2 hover:text-tinta disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
               {!isCurrentMonth && (
                 <button
                   onClick={irAlMesActual}
-                  className="text-xs text-emerald-400 hover:text-emerald-300 ml-1 transition-colors"
+                  className="text-xs font-medium text-tinta hover:text-tinta-2 ml-1 transition-colors"
                 >
                   Hoy
                 </button>
@@ -162,13 +158,13 @@ export default function DashboardPage() {
         <div className="flex gap-2">
           <button
             onClick={load}
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 text-tinta-2 hover:text-tinta hover:bg-hundido rounded-lg transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
           <button
             onClick={() => { setEditing(null); setModalOpen(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-3.5 py-2 bg-primario hover:bg-primario/85 text-sobre-primario rounded-lg text-sm font-medium transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Registrar</span>
@@ -178,7 +174,7 @@ export default function DashboardPage() {
 
       {/* Error state */}
       {error && !loading && (
-        <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 text-rose-400 text-sm">
+        <div className="bg-peligro/10 border border-peligro/30 rounded-xl p-4 text-peligro text-sm">
           {error}
         </div>
       )}
@@ -188,61 +184,45 @@ export default function DashboardPage() {
           cuánto se gastó. */}
       <CardAlerts avisos={avisos} />
 
-      {/* Summary cards */}
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl h-28 animate-pulse" />
-          ))}
-        </div>
+        <div className="bg-hundido rounded-xl h-36 animate-pulse" />
       ) : summary ? (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <SummaryCard
-              title="Ingresos" subtitle="del mes"
-              amount={summary.totalIncome} icon={TrendingUp} variant="income"
-              href={`/transactions?type=income&startDate=${monthStart}&endDate=${monthEnd}${currentLedger ? `&ledger_id=${currentLedger.id}` : ''}`}
-            />
-            <SummaryCard
-              title="Gastos" subtitle="del mes"
-              amount={summary.totalExpenses} icon={TrendingDown} variant="expense"
-              href={`/transactions?type=expense&startDate=${monthStart}&endDate=${monthEnd}${currentLedger ? `&ledger_id=${currentLedger.id}` : ''}`}
-            />
-            <div className="col-span-2 md:col-span-1">
-              {/* Era la misma cifra dos veces: acá y en una tarjeta ancha
-                  debajo, las dos leyendo `totalBalance`. La de abajo se llamaba
-                  "Balance total" y quería ser el balance histórico, pero
-                  `Summary` nunca tuvo más que el del mes. */}
-              <SummaryCard title="Balance" subtitle="del mes" amount={summary.totalBalance} icon={Wallet} variant="balance" />
-            </div>
-          </div>
-
+          <MonthSummary
+            income={summary.totalIncome}
+            expenses={summary.totalExpenses}
+            balance={summary.totalBalance}
+            incomeHref={`/transactions?type=income&startDate=${monthStart}&endDate=${monthEnd}${currentLedger ? `&ledger_id=${currentLedger.id}` : ''}`}
+            expensesHref={`/transactions?type=expense&startDate=${monthStart}&endDate=${monthEnd}${currentLedger ? `&ledger_id=${currentLedger.id}` : ''}`}
+          />
 
           {/* Presupuestos del mes */}
           {budgets.length > 0 && (
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-slate-300 flex items-center gap-2">
-                  <Target className="w-4 h-4 text-emerald-400" /> Presupuestos del mes
-                </h3>
-                <Link href="/budgets" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors">
+            <section>
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-base font-semibold text-tinta">Presupuestos</h3>
+                <Link href="/budgets" className="text-sm text-tinta-2 hover:text-tinta transition-colors">
                   Ver todos
                 </Link>
               </div>
-              <div className="space-y-3">
-                {[...budgets]
-                  .sort((a, b) => b.percent - a.percent)
-                  .slice(0, 4)
-                  .map(b => <BudgetBar key={b.id} budget={b} compact />)}
-              </div>
-            </div>
+              {/* Filas separadas por una línea, sin tarjeta alrededor: es una
+                  lista, y una caja con borde no le agregaba nada. */}
+              {[...budgets]
+                .sort((a, b) => b.percent - a.percent)
+                .slice(0, 4)
+                .map(b => (
+                  <div key={b.id} className="py-3.5 border-t border-linea">
+                    <BudgetBar budget={b} compact />
+                  </div>
+                ))}
+            </section>
           )}
 
           {/* Category breakdown */}
           {summary.byCategory.length > 0 && (
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5">
-              <h3 className="text-sm font-medium text-slate-300 mb-4">Top categorías del mes</h3>
-              <div className="space-y-2.5">
+            <section>
+              <h3 className="text-base font-semibold text-tinta mb-1">Categorías del mes</h3>
+              <div>
                 {summary.byCategory.slice(0, 6).map(cat => {
                   const max = summary.byCategory[0].total;
                   const pct = Math.round((cat.total / max) * 100);
@@ -257,18 +237,18 @@ export default function DashboardPage() {
                     <Link
                       key={`${cat.category}-${cat.type}`}
                       href={`/transactions?${params}`}
-                      className="block space-y-1 group hover:bg-slate-800/50 rounded-lg px-2 py-1.5 transition-colors cursor-pointer"
+                      className="block py-3 border-t border-linea group hover:bg-hundido transition-colors"
                     >
-                      <div className="flex justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cat.type === 'income' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
-                          <span className="text-slate-300 group-hover:text-white transition-colors">{cat.category}</span>
-                        </div>
-                        <span className="text-slate-400 group-hover:text-slate-200 transition-colors">{fmt.money(cat.total)}</span>
+                      <div className="flex justify-between gap-2 text-sm">
+                        <span className="text-tinta truncate">{cat.category}</span>
+                        <span className={`tabular-nums flex-shrink-0 ${cat.type === 'income' ? 'text-acento' : 'text-tinta-2'}`}>
+                          {cat.type === 'income' ? '+' : ''}{fmt.money(cat.total)}
+                        </span>
                       </div>
-                      <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                      {/* La barra compara contra la categoría más grande del mes. */}
+                      <div className="h-1 bg-hundido rounded-full overflow-hidden mt-2">
                         <div
-                          className={`h-full rounded-full transition-all ${cat.type === 'income' ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                          className={`h-full rounded-full transition-all ${cat.type === 'income' ? 'bg-acento' : 'bg-tinta-3'}`}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -276,7 +256,7 @@ export default function DashboardPage() {
                   );
                 })}
               </div>
-            </div>
+            </section>
           )}
         </>
       ) : null}
@@ -284,20 +264,14 @@ export default function DashboardPage() {
       {/* Recent transactions */}
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-          <h3 className="text-sm font-medium text-slate-300">Transacciones del mes</h3>
-          <div className="flex gap-1 bg-slate-900 border border-slate-800 rounded-lg p-1 self-start sm:self-auto">
+          <h3 className="text-base font-semibold text-tinta">Movimientos del mes</h3>
+          <div className="flex gap-0.5 bg-hundido rounded-lg p-0.5 self-start sm:self-auto">
             {([['all', 'Todos'], ['income', 'Ingresos'], ['expense', 'Gastos']] as const).map(([val, label]) => (
               <button
                 key={val}
                 onClick={() => setTypeFilter(val)}
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                  typeFilter === val
-                    ? val === 'income'
-                      ? 'bg-emerald-500/20 text-emerald-300'
-                      : val === 'expense'
-                        ? 'bg-rose-500/20 text-rose-300'
-                        : 'bg-slate-700 text-white'
-                    : 'text-slate-400 hover:text-white'
+                  typeFilter === val ? 'bg-elevado text-tinta' : 'text-tinta-2 hover:text-tinta'
                 }`}
               >
                 {label}

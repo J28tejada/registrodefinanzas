@@ -6,6 +6,7 @@ import {
 import Texto from '../../componentes/Texto';
 import PanelDeVinculo, { FilaDeChat, Flecha } from '../../componentes/PanelDeVinculo';
 import { llamarApi } from '../../lib/api';
+import { useColores } from '../../lib/colores';
 
 /** Lo técnico: solo llega si sos admin. */
 interface Avanzado {
@@ -38,6 +39,7 @@ const COMO_SE_USA = [
 
 /** El gemelo de app/chat/telegram/page.tsx. */
 export default function Telegram() {
+  const paleta = useColores();
   const [estado, setEstado] = useState<Estado | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -82,7 +84,7 @@ export default function Telegram() {
   if (cargando) {
     return (
       <View className="flex-1 items-center justify-center">
-        <Loader2 size={24} color="#94a3b8" />
+        <Loader2 size={24} color={paleta.tinta2} />
       </View>
     );
   }
@@ -93,28 +95,28 @@ export default function Telegram() {
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-6" keyboardShouldPersistTaps="handled">
       {/* Sin título propio: la pestaña de arriba ya dice Telegram. */}
-      <Texto className="text-slate-400 text-sm">
+      <Texto className="text-tinta-2 text-sm">
         El mismo asistente, en tu Telegram: anotá gastos escribiendo, dictando o
         fotografiando el recibo.
       </Texto>
 
       {error ? (
-        <View className="flex-row items-start gap-2 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
-          <View className="mt-0.5"><AlertCircle size={16} color="#fb7185" /></View>
-          <Texto className="text-rose-400 text-sm flex-1">{error}</Texto>
+        <View className="flex-row items-start gap-2 bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
+          <View className="mt-0.5"><AlertCircle size={16} color={paleta.peligro} /></View>
+          <Texto className="text-peligro text-sm flex-1">{error}</Texto>
         </View>
       ) : null}
       {aviso ? (
-        <View className="flex-row items-start gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3">
-          <View className="mt-0.5"><CheckCircle2 size={16} color="#34d399" /></View>
-          <Texto className="text-emerald-400 text-sm flex-1">{aviso}</Texto>
+        <View className="flex-row items-start gap-2 bg-acento/10 border border-acento/20 rounded-xl px-4 py-3">
+          <View className="mt-0.5"><CheckCircle2 size={16} color={paleta.acento} /></View>
+          <Texto className="text-acento text-sm flex-1">{aviso}</Texto>
         </View>
       ) : null}
 
       {estado && !estado.listo ? (
-        <View className="flex-row items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
-          <View className="mt-0.5"><AlertCircle size={16} color="#fbbf24" /></View>
-          <Texto className="text-amber-400 text-sm flex-1">
+        <View className="flex-row items-start gap-2 bg-aviso/10 border border-aviso/20 rounded-xl px-4 py-3">
+          <View className="mt-0.5"><AlertCircle size={16} color={paleta.aviso} /></View>
+          <Texto className="text-aviso text-sm flex-1">
             El asistente de Telegram está fuera de línea en este momento. Podés dejar tu chat
             vinculado igual; va a empezar a responder en cuanto vuelva.
           </Texto>
@@ -129,11 +131,11 @@ export default function Telegram() {
         formatearId={id => `Chat ${id}`}
         onCambio={cargar}
         instrucciones={
-          <Texto className="text-xs text-slate-400">
+          <Texto className="text-xs text-tinta-2">
             Generá un código y mandáselo{' '}
             {estado?.bot ? (
               <Texto
-                className="text-xs text-sky-400"
+                className="text-xs text-info"
                 onPress={() => Linking.openURL(`https://t.me/${estado.bot!.username}`)}
               >
                 a @{estado.bot.username}
@@ -145,13 +147,13 @@ export default function Telegram() {
       />
 
       {/* Cómo se usa */}
-      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-3">
-        <Texto className="font-semibold text-white text-sm">Cómo se usa</Texto>
+      <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
+        <Texto className="font-semibold text-tinta text-sm">Cómo se usa</Texto>
         <View className="gap-2">
           {COMO_SE_USA.map(t => (
             <View key={t} className="flex-row items-start gap-2">
-              <View className="mt-0.5"><CheckCircle2 size={16} color="#34d399" /></View>
-              <Texto className="text-sm text-slate-400 flex-1">{t}</Texto>
+              <View className="mt-0.5"><CheckCircle2 size={16} color={paleta.acento} /></View>
+              <Texto className="text-sm text-tinta-2 flex-1">{t}</Texto>
             </View>
           ))}
         </View>
@@ -159,86 +161,86 @@ export default function Telegram() {
 
       {/* ─── De acá para abajo, solo para quien administra el bot ────────────── */}
       {av ? (
-        <View className="border border-slate-800 rounded-2xl overflow-hidden">
+        <View className="border border-linea rounded-2xl overflow-hidden">
           <Pressable
             onPress={() => setVerAvanzado(v => !v)}
-            className="w-full px-4 py-3 flex-row items-center gap-2 active:bg-slate-900"
+            className="w-full px-4 py-3 flex-row items-center gap-2 active:bg-panel"
           >
-            <Wrench size={16} color="#94a3b8" />
-            <Texto className="text-sm text-slate-400 flex-1">Conexión del asistente</Texto>
-            {!estado?.listo ? <View className="w-2 h-2 rounded-full bg-rose-500" /> : null}
+            <Wrench size={16} color={paleta.tinta2} />
+            <Texto className="text-sm text-tinta-2 flex-1">Conexión del asistente</Texto>
+            {!estado?.listo ? <View className="w-2 h-2 rounded-full bg-peligro" /> : null}
             <Flecha abierta={verAvanzado} />
           </Pressable>
 
           {verAvanzado ? (
             <View className="p-4 pt-0 gap-4">
-              <Texto className="text-xs text-slate-500">
+              <Texto className="text-xs text-tinta-2">
                 Esto lo ves porque administrás el bot. El resto de los usuarios solo ve el paso de arriba.
               </Texto>
 
               {av.faltantes.length > 0 ? (
-                <View className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 gap-3">
-                  <Texto className="text-amber-400 text-sm font-medium">Falta crear el bot</Texto>
+                <View className="bg-aviso/10 border border-aviso/20 rounded-xl p-4 gap-3">
+                  <Texto className="text-aviso text-sm font-medium">Falta crear el bot</Texto>
                   <View className="gap-1.5">
-                    <Texto className="text-xs text-slate-400">
+                    <Texto className="text-xs text-tinta-2">
                       1. Abrí{' '}
                       <Texto
-                        className="text-xs text-sky-400"
+                        className="text-xs text-info"
                         onPress={() => Linking.openURL('https://t.me/BotFather')}
                       >
                         @BotFather
                       </Texto>
                       {' '}en Telegram y mandale /newbot.
                     </Texto>
-                    <Texto className="text-xs text-slate-400">
+                    <Texto className="text-xs text-tinta-2">
                       2. Elegí un nombre y un usuario que termine en bot.
                     </Texto>
-                    <Texto className="text-xs text-slate-400">
+                    <Texto className="text-xs text-tinta-2">
                       3. Copiá el token que te devuelve y cargalo en Vercel.
                     </Texto>
                   </View>
-                  <View className="bg-slate-800 rounded-lg p-3 gap-1">
-                    {av.faltantes.map(v => <Texto key={v} className="text-xs text-slate-300">{v}</Texto>)}
+                  <View className="bg-hundido rounded-lg p-3 gap-1">
+                    {av.faltantes.map(v => <Texto key={v} className="text-xs text-tinta">{v}</Texto>)}
                   </View>
-                  <Texto className="text-xs text-slate-500">
+                  <Texto className="text-xs text-tinta-2">
                     TELEGRAM_WEBHOOK_SECRET es una cadena larga al azar que inventás vos: es lo que
                     impide que cualquiera le postee al webhook.
                   </Texto>
                 </View>
               ) : null}
 
-              <View className="bg-slate-900 border border-slate-800 rounded-xl p-4 gap-4">
+              <View className="bg-panel border border-linea rounded-xl p-4 gap-4">
                 <View className="flex-row items-center gap-3">
-                  <View className="w-10 h-10 bg-sky-500/10 rounded-xl items-center justify-center">
-                    <Send size={20} color="#38bdf8" />
+                  <View className="w-10 h-10 bg-hundido rounded-lg items-center justify-center">
+                    <Send size={20} color={paleta.tinta2} />
                   </View>
                   <View className="flex-1">
-                    <Texto className="text-sm font-medium text-white" numberOfLines={1}>
+                    <Texto className="text-sm font-medium text-tinta" numberOfLines={1}>
                       {estado?.bot ? `@${estado.bot.username}` : 'Bot sin configurar'}
                     </Texto>
-                    <Texto className={`text-xs ${webhookOk ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    <Texto className={`text-xs ${webhookOk ? 'text-acento' : 'text-aviso'}`}>
                       {webhookOk ? 'Recibiendo mensajes' : 'El webhook todavía no está registrado'}
                     </Texto>
                   </View>
                   <Pressable onPress={cargar} accessibilityLabel="Actualizar estado" className="p-2">
-                    <RefreshCw size={16} color="#94a3b8" />
+                    <RefreshCw size={16} color={paleta.tinta2} />
                   </Pressable>
                 </View>
 
-                {av.botError ? <Texto className="text-xs text-rose-400">{av.botError}</Texto> : null}
+                {av.botError ? <Texto className="text-xs text-peligro">{av.botError}</Texto> : null}
                 {av.webhook?.ultimoError ? (
-                  <Texto className="text-xs text-rose-400">
+                  <Texto className="text-xs text-peligro">
                     Último error de entrega: {av.webhook.ultimoError}
                   </Texto>
                 ) : null}
 
                 <View className="gap-2">
-                  <Dato clave="Modelo"><Texto className="text-xs text-slate-300">{av.modelo}</Texto></Dato>
-                  <Dato clave="Moneda"><Texto className="text-xs text-slate-300">{av.moneda}</Texto></Dato>
-                  <Dato clave="Zona horaria"><Texto className="text-xs text-slate-300">{av.zonaHoraria}</Texto></Dato>
+                  <Dato clave="Modelo"><Texto className="text-xs text-tinta">{av.modelo}</Texto></Dato>
+                  <Dato clave="Moneda"><Texto className="text-xs text-tinta">{av.moneda}</Texto></Dato>
+                  <Dato clave="Zona horaria"><Texto className="text-xs text-tinta">{av.zonaHoraria}</Texto></Dato>
                   {av.webhook && av.webhook.pendientes > 0 ? (
                     <Dato clave="Sin procesar">
-                      <Texto className="text-xs text-amber-400">{av.webhook.pendientes} mensajes en cola</Texto>
+                      <Texto className="text-xs text-aviso">{av.webhook.pendientes} mensajes en cola</Texto>
                     </Dato>
                   ) : null}
                 </View>
@@ -249,12 +251,12 @@ export default function Telegram() {
                       onPress={() => configurarWebhook('registrar')}
                       disabled={ocupado !== ''}
                       style={ocupado !== '' ? { opacity: 0.5 } : undefined}
-                      className="px-3 py-2 bg-sky-600 active:bg-sky-500 rounded-lg flex-row items-center gap-1.5"
+                      className="px-3 py-2 bg-primario active:bg-primario/85 rounded-lg flex-row items-center gap-1.5"
                     >
                       {ocupado === 'registrar'
-                        ? <Loader2 size={14} color="#ffffff" />
-                        : <Link2 size={14} color="#ffffff" />}
-                      <Texto className="text-white text-xs font-medium">
+                        ? <Loader2 size={14} color={paleta.sobrePrimario} />
+                        : <Link2 size={14} color={paleta.sobrePrimario} />}
+                      <Texto className="text-sobre-primario text-xs font-medium">
                         {webhookOk ? 'Volver a registrar webhook' : 'Registrar webhook'}
                       </Texto>
                     </Pressable>
@@ -263,9 +265,9 @@ export default function Telegram() {
                         onPress={() => configurarWebhook('borrar')}
                         disabled={ocupado !== ''}
                         style={ocupado !== '' ? { opacity: 0.5 } : undefined}
-                        className="px-3 py-2 bg-slate-800 active:bg-rose-600 rounded-lg"
+                        className="px-3 py-2 bg-hundido active:bg-peligro/85 rounded-lg"
                       >
-                        <Texto className="text-slate-200 text-xs font-medium">Desactivar</Texto>
+                        <Texto className="text-tinta text-xs font-medium">Desactivar</Texto>
                       </Pressable>
                     ) : null}
                   </View>
@@ -283,7 +285,7 @@ export default function Telegram() {
 function Dato({ clave, children }: { clave: string; children: React.ReactNode }) {
   return (
     <View className="flex-row gap-4">
-      <Texto className="text-xs text-slate-500" style={{ width: 96 }}>{clave}</Texto>
+      <Texto className="text-xs text-tinta-2" style={{ width: 96 }}>{clave}</Texto>
       <View className="flex-1">{children}</View>
     </View>
   );

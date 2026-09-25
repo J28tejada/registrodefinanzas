@@ -10,6 +10,7 @@ import { db } from '../lib/datos';
 import { borrarPagoTarjeta, registrarPagoTarjeta } from '@compartido/db';
 import { fechaValida } from '@compartido/format';
 import { Card, CardBalance, CardPayment } from '@compartido/types';
+import { useColores } from '../lib/colores';
 
 /**
  * El gemelo de components/CardStatement.tsx.
@@ -32,6 +33,7 @@ export default function EstadoDeCuenta({
   usuario: string;
   onCambio: () => void | Promise<void>;
 }) {
+  const paleta = useColores();
   const fmt = useFormatters();
   const [pagando, setPagando] = useState(false);
 
@@ -45,23 +47,23 @@ export default function EstadoDeCuenta({
   const tono = budgetTone(uso);
 
   return (
-    <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-4">
+    <View className="bg-panel border border-linea rounded-xl p-4 gap-4">
       <View className="flex-row items-start justify-between gap-3">
-        <Texto className="text-sm font-medium text-white">Estado de cuenta</Texto>
+        <Texto className="text-sm font-medium text-tinta">Estado de cuenta</Texto>
         {card.alerts && ciclo ? (
           <View className="flex-row items-center gap-1">
-            <Bell size={12} color="#64748b" />
-            <Texto className="text-2xs text-slate-500">avisos activos</Texto>
+            <Bell size={12} color={paleta.tinta2} />
+            <Texto className="text-2xs text-tinta-2">avisos activos</Texto>
           </View>
         ) : null}
       </View>
 
       {/* El saldo, que es a lo que se viene. */}
       <View>
-        <Texto className="text-2xs text-slate-400 uppercase tracking-wider">
+        <Texto className="text-2xs text-tinta-2">
           {balance.saldo < 0 ? 'A favor' : 'Debés'}
         </Texto>
-        <Texto className={`text-2xl font-bold mt-1 ${balance.saldo > 0 ? 'text-white' : 'text-emerald-400'}`}>
+        <Texto className={`text-2xl font-semibold mt-1 ${balance.saldo > 0 ? 'text-tinta' : 'text-acento'}`}>
           {fmt.money(Math.abs(balance.saldo))}
         </Texto>
       </View>
@@ -70,7 +72,7 @@ export default function EstadoDeCuenta({
           medir, y una barra sin escala no dice nada. */}
       {card.credit_limit != null ? (
         <View className="gap-1.5">
-          <View className="h-2 bg-slate-800 rounded-full overflow-hidden">
+          <View className="h-2 bg-hundido rounded-full overflow-hidden">
             <View className={`h-full rounded-full ${tono.bar}`} style={{ width: `${Math.min(uso, 100)}%` }} />
           </View>
           {/* Los dos textos se encogen, ninguno se recorta.
@@ -83,16 +85,16 @@ export default function EstadoDeCuenta({
               la segunda línea quedaba alineada al otro lado. */}
           <View className="flex-row items-center justify-between gap-2">
             <Texto className={`text-xs shrink ${tono.text}`}>{Math.round(uso)}% del límite</Texto>
-            <Texto className="text-xs text-slate-500 shrink">
+            <Texto className="text-xs text-tinta-2 shrink">
               {balance.disponible != null && balance.disponible >= 0
                 ? `${fmt.money(balance.disponible)} disponibles`
                 : `${fmt.money(Math.abs(balance.disponible ?? 0))} por encima del límite`}
-              <Texto className="text-xs text-slate-600"> de {fmt.money(card.credit_limit)}</Texto>
+              <Texto className="text-xs text-tinta-3"> de {fmt.money(card.credit_limit)}</Texto>
             </Texto>
           </View>
         </View>
       ) : (
-        <Texto className="text-xs text-slate-500">
+        <Texto className="text-xs text-tinta-2">
           Cargale el límite en «Editar» para ver cuánto llevás consumido.
         </Texto>
       )}
@@ -101,13 +103,13 @@ export default function EstadoDeCuenta({
       {ciclo ? (
         <View className="flex-row gap-2">
           <Fecha
-            icono={<Scissors size={14} color="#94a3b8" />}
+            icono={<Scissors size={14} color={paleta.tinta2} />}
             titulo="Corte"
             fecha={fmt.date(ciclo.nextStatement)}
             dias={ciclo.daysToStatement}
           />
           <Fecha
-            icono={<CalendarClock size={14} color="#94a3b8" />}
+            icono={<CalendarClock size={14} color={paleta.tinta2} />}
             titulo="Pago"
             fecha={fmt.date(ciclo.nextDue)}
             dias={ciclo.daysToDue}
@@ -115,7 +117,7 @@ export default function EstadoDeCuenta({
           />
         </View>
       ) : (
-        <Texto className="text-xs text-slate-500">
+        <Texto className="text-xs text-tinta-2">
           Poné el día de corte y el de pago en «Editar» y te aviso tres días antes
           de cada uno.
         </Texto>
@@ -124,26 +126,26 @@ export default function EstadoDeCuenta({
       {/* Lo facturado contra lo que todavía no cerró: son dos plata distintas y
           confundirlas es pagar de menos. */}
       {ciclo ? (
-        <View className="flex-row gap-2 pt-1 border-t border-slate-800">
+        <View className="flex-row gap-2 pt-1 border-t border-linea">
           <View className="flex-1 pt-3">
-            <Texto className="text-2xs text-slate-400 uppercase tracking-wider">A pagar</Texto>
-            <Texto className="text-base font-semibold text-white mt-0.5" numberOfLines={1}>
+            <Texto className="text-2xs text-tinta-2">A pagar</Texto>
+            <Texto className="text-base font-semibold text-tinta mt-0.5" numberOfLines={1}>
               {fmt.money(balance.aPagar)}
             </Texto>
-            <Texto className="text-2xs text-slate-500">ya facturado</Texto>
+            <Texto className="text-2xs text-tinta-2">ya facturado</Texto>
           </View>
           <View className="flex-1 pt-3">
-            <Texto className="text-2xs text-slate-400 uppercase tracking-wider">Este ciclo</Texto>
-            <Texto className="text-base font-semibold text-slate-300 mt-0.5" numberOfLines={1}>
+            <Texto className="text-2xs text-tinta-2">Este ciclo</Texto>
+            <Texto className="text-base font-semibold text-tinta mt-0.5" numberOfLines={1}>
               {fmt.money(balance.cycleCharged)}
             </Texto>
-            <Texto className="text-2xs text-slate-500">entra en el próximo corte</Texto>
+            <Texto className="text-2xs text-tinta-2">entra en el próximo corte</Texto>
           </View>
         </View>
       ) : null}
 
       {sinConfigurar ? (
-        <Texto className="text-xs text-slate-500 bg-slate-800/50 rounded-lg px-3 py-2">
+        <Texto className="text-xs text-tinta-2 bg-hundido rounded-lg px-3 py-2">
           El saldo ya se lleva solo: cada compra que anotes con esta tarjeta lo
           sube, y cada pago que registres acá lo baja.
         </Texto>
@@ -163,13 +165,13 @@ export default function EstadoDeCuenta({
       ) : (
         <Pressable
           onPress={() => setPagando(true)}
-          className="w-full py-2.5 bg-emerald-600 active:bg-emerald-500 rounded-lg items-center"
+          className="w-full py-2.5 bg-primario active:bg-primario/85 rounded-lg items-center"
         >
-          <Texto className="text-white text-sm font-medium">Registrar un pago</Texto>
+          <Texto className="text-sobre-primario text-sm font-medium">Registrar un pago</Texto>
         </Pressable>
       )}
 
-      <Texto className="text-2xs text-slate-500 leading-relaxed">
+      <Texto className="text-2xs text-tinta-2 leading-relaxed">
         Pagarle a la tarjeta no es un gasto nuevo: la compra ya se anotó el día que
         la hiciste. Por eso el pago baja este saldo y no aparece en los movimientos
         del mes — si no, la misma plata contaría dos veces.
@@ -199,14 +201,14 @@ function Fecha({
 }) {
   return (
     <View className={`flex-1 rounded-xl px-3 py-2.5 border ${
-      urgente ? 'bg-amber-500/10 border-amber-500/30' : 'bg-slate-800/50 border-slate-800'
+      urgente ? 'bg-aviso/10 border-aviso/30' : 'bg-hundido border-linea'
     }`}>
       <View className="flex-row items-center gap-1.5">
         {icono}
-        <Texto className="text-2xs text-slate-400 uppercase tracking-wider">{titulo}</Texto>
+        <Texto className="text-2xs text-tinta-2">{titulo}</Texto>
       </View>
-      <Texto className="text-sm font-semibold text-white mt-1" numberOfLines={1}>{fecha}</Texto>
-      <Texto className={`text-2xs ${urgente ? 'text-amber-400' : 'text-slate-500'}`}>
+      <Texto className="text-sm font-semibold text-tinta mt-1" numberOfLines={1}>{fecha}</Texto>
+      <Texto className={`text-2xs ${urgente ? 'text-aviso' : 'text-tinta-2'}`}>
         {dias === 0 ? 'es hoy' : dias === 1 ? 'mañana' : `en ${dias} días`}
       </Texto>
     </View>
@@ -226,6 +228,7 @@ function FormularioDePago({
 }) {
   // Se sugiere lo que hay que pagar, pero se puede pisar: pagar el mínimo o de
   // más son las dos cosas más comunes.
+  const paleta = useColores();
   const [monto, setMonto] = useState(sugerido > 0 ? sugerido.toFixed(2) : '');
   const [fecha, setFecha] = useState(hoy);
   const [origen, setOrigen] = useState('');
@@ -255,30 +258,30 @@ function FormularioDePago({
   const puede = Number(monto) > 0;
 
   return (
-    <View className="border border-slate-800 rounded-xl p-3 gap-2.5 bg-slate-950/40">
-      <Texto className="text-xs font-medium text-slate-400 uppercase tracking-wider">Pago a la tarjeta</Texto>
+    <View className="border border-linea rounded-xl p-3 gap-2.5 bg-fondo">
+      <Texto className="text-xs font-medium text-tinta-2">Pago a la tarjeta</Texto>
 
       <View className="flex-row gap-2">
         <View className="flex-1 gap-1">
-          <Texto className="text-xs text-slate-500 leading-6">Monto</Texto>
+          <Texto className="text-xs text-tinta-2 leading-6">Monto</Texto>
           <TextInput
             keyboardType="decimal-pad"
             value={monto} onChangeText={setMonto} autoFocus
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white"
+            className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
           />
         </View>
         <View className="flex-1 gap-1">
-          <Texto className="text-xs text-slate-500 leading-6">Fecha</Texto>
+          <Texto className="text-xs text-tinta-2 leading-6">Fecha</Texto>
           <CampoDeFecha
             value={fecha} onChange={setFecha}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5"
+            className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5"
           />
         </View>
       </View>
 
       {mediosDePago.length > 0 ? (
         <View className="gap-1">
-          <Texto className="text-xs text-slate-500 leading-6">De dónde salió (opcional)</Texto>
+          <Texto className="text-xs text-tinta-2 leading-6">De dónde salió (opcional)</Texto>
           <Selector
             value={origen}
             opciones={[
@@ -291,24 +294,24 @@ function FormularioDePago({
         </View>
       ) : null}
 
-      {error ? <Texto className="text-xs text-rose-400">{error}</Texto> : null}
+      {error ? <Texto className="text-xs text-peligro">{error}</Texto> : null}
 
       <View className="flex-row gap-2">
         <Pressable
           onPress={onCancelar}
-          className="flex-1 py-2.5 bg-slate-800 active:bg-slate-700 rounded-lg flex-row items-center justify-center gap-1.5"
+          className="flex-1 py-2.5 bg-hundido active:bg-presionado rounded-lg flex-row items-center justify-center gap-1.5"
         >
-          <X size={16} color="#cbd5e1" />
-          <Texto className="text-slate-300 text-sm">Cancelar</Texto>
+          <X size={16} color={paleta.tinta} />
+          <Texto className="text-tinta text-sm">Cancelar</Texto>
         </Pressable>
         <Pressable
           onPress={guardar}
           disabled={guardando || !puede}
           style={guardando || !puede ? { opacity: 0.5 } : undefined}
-          className="flex-1 py-2.5 bg-emerald-600 active:bg-emerald-500 rounded-lg flex-row items-center justify-center gap-1.5"
+          className="flex-1 py-2.5 bg-primario active:bg-primario/85 rounded-lg flex-row items-center justify-center gap-1.5"
         >
-          {guardando ? <Loader2 size={16} color="#ffffff" /> : null}
-          <Texto className="text-white text-sm font-medium">Guardar pago</Texto>
+          {guardando ? <Loader2 size={16} color={paleta.sobrePrimario} /> : null}
+          <Texto className="text-sobre-primario text-sm font-medium">Guardar pago</Texto>
         </Pressable>
       </View>
     </View>
@@ -323,6 +326,7 @@ function ListaDePagos({
   mediosDePago: { id: string; name: string }[];
   onCambio: () => void | Promise<void>;
 }) {
+  const paleta = useColores();
   const fmt = useFormatters();
   const [borrando, setBorrando] = useState<string | null>(null);
   const nombres = new Map(mediosDePago.map(m => [m.id, m.name]));
@@ -346,15 +350,15 @@ function ListaDePagos({
   };
 
   return (
-    <View className="gap-2 pt-1 border-t border-slate-800">
-      <Texto className="text-xs font-medium text-slate-400 uppercase tracking-wider pt-3">
+    <View className="gap-2 pt-1 border-t border-linea">
+      <Texto className="text-xs font-medium text-tinta-2 pt-3">
         Pagos · {payments.length}
       </Texto>
       {payments.map(p => (
-        <View key={p.id} className="flex-row items-center gap-3 bg-slate-800/40 rounded-lg px-3 py-2">
+        <View key={p.id} className="flex-row items-center gap-3 bg-hundido rounded-lg px-3 py-2">
           <View className="flex-1">
-            <Texto className="text-sm text-white">{fmt.money(p.amount)}</Texto>
-            <Texto className="text-2xs text-slate-500" numberOfLines={1}>
+            <Texto className="text-sm text-tinta">{fmt.money(p.amount)}</Texto>
+            <Texto className="text-2xs text-tinta-2" numberOfLines={1}>
               {fmt.date(p.date)}
               {p.source_card_id && nombres.has(p.source_card_id)
                 ? ` · desde ${nombres.get(p.source_card_id)}`
@@ -369,8 +373,8 @@ function ListaDePagos({
             style={borrando === p.id ? { opacity: 0.5 } : undefined}
           >
             {borrando === p.id
-              ? <Loader2 size={16} color="#475569" />
-              : <Trash2 size={16} color="#475569" />}
+              ? <Loader2 size={16} color={paleta.tinta3} />
+              : <Trash2 size={16} color={paleta.tinta3} />}
           </Pressable>
         </View>
       ))}

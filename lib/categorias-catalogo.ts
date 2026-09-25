@@ -125,7 +125,10 @@ export function colorDeCategoria(
   type: 'income' | 'expense',
 ): string {
   if (color && color in LEDGER_COLOR_MAP) return LEDGER_COLOR_MAP[color as LedgerColor].main;
-  return type === 'income' ? '#10b981' : '#64748b';
+  // Un hex y no un color del tema: se usa tal cual en los dos temas, y estos
+  // dos pasan el 3:1 de un ícono tanto sobre blanco como sobre el gris oscuro.
+  // El gris es cálido, de la misma familia que los grises de la app.
+  return type === 'income' ? '#4A9469' : '#858279';
 }
 
 /**

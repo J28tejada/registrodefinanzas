@@ -37,11 +37,11 @@ export default function CardStatement({
   const tono = budgetTone(uso);
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
+    <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 space-y-4">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-medium text-white">Estado de cuenta</p>
+        <p className="text-sm font-medium text-tinta">Estado de cuenta</p>
         {card.alerts && ciclo && (
-          <span className="flex items-center gap-1 text-2xs text-slate-500 flex-shrink-0">
+          <span className="flex items-center gap-1 text-2xs text-tinta-2 flex-shrink-0">
             <Bell className="w-3 h-3" /> avisos activos
           </span>
         )}
@@ -49,10 +49,10 @@ export default function CardStatement({
 
       {/* El saldo, que es a lo que se viene. */}
       <div>
-        <p className="text-2xs sm:text-xs text-slate-400 uppercase tracking-wider">
+        <p className="text-2xs sm:text-xs text-tinta-2">
           {balance.saldo < 0 ? 'A favor' : 'Debés'}
         </p>
-        <p className={`text-2xl sm:text-3xl font-bold mt-1 ${balance.saldo > 0 ? 'text-white' : 'text-emerald-400'}`}>
+        <p className={`text-2xl sm:text-3xl font-semibold mt-1 ${balance.saldo > 0 ? 'text-tinta' : 'text-acento'}`}>
           {fmt.money(Math.abs(balance.saldo))}
         </p>
       </div>
@@ -61,7 +61,7 @@ export default function CardStatement({
           medir, y una barra sin escala no dice nada. */}
       {card.credit_limit != null ? (
         <div className="space-y-1.5">
-          <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+          <div className="h-2 bg-hundido rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${tono.bar}`}
               style={{ width: `${Math.min(uso, 100)}%` }}
@@ -69,16 +69,16 @@ export default function CardStatement({
           </div>
           <div className="flex items-center justify-between gap-2 text-xs">
             <span className={tono.text}>{Math.round(uso)}% del límite</span>
-            <span className="text-slate-500 tabular-nums">
+            <span className="text-tinta-2 tabular-nums">
               {balance.disponible != null && balance.disponible >= 0
                 ? `${fmt.money(balance.disponible)} disponibles`
                 : `${fmt.money(Math.abs(balance.disponible ?? 0))} por encima del límite`}
-              <span className="text-slate-600"> de {fmt.money(card.credit_limit)}</span>
+              <span className="text-tinta-3"> de {fmt.money(card.credit_limit)}</span>
             </span>
           </div>
         </div>
       ) : (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-tinta-2">
           Cargale el límite en «Editar» para ver cuánto llevás consumido.
         </p>
       )}
@@ -101,7 +101,7 @@ export default function CardStatement({
           />
         </div>
       ) : (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-tinta-2">
           Poné el día de corte y el de pago en «Editar» y te aviso tres días antes
           de cada uno.
         </p>
@@ -110,26 +110,26 @@ export default function CardStatement({
       {/* Lo facturado contra lo que todavía no cerró: son dos plata distintas y
           confundirlas es pagar de menos. */}
       {ciclo && (
-        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800">
+        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-linea">
           <div className="min-w-0 pt-3">
-            <p className="text-2xs text-slate-400 uppercase tracking-wider">A pagar</p>
-            <p className="text-base font-semibold text-white mt-0.5 truncate">
+            <p className="text-2xs text-tinta-2">A pagar</p>
+            <p className="text-base font-semibold text-tinta mt-0.5 truncate">
               {fmt.money(balance.aPagar)}
             </p>
-            <p className="text-2xs text-slate-500">ya facturado</p>
+            <p className="text-2xs text-tinta-2">ya facturado</p>
           </div>
           <div className="min-w-0 pt-3">
-            <p className="text-2xs text-slate-400 uppercase tracking-wider">Este ciclo</p>
-            <p className="text-base font-semibold text-slate-300 mt-0.5 truncate">
+            <p className="text-2xs text-tinta-2">Este ciclo</p>
+            <p className="text-base font-semibold text-tinta mt-0.5 truncate">
               {fmt.money(balance.cycleCharged)}
             </p>
-            <p className="text-2xs text-slate-500">entra en el próximo corte</p>
+            <p className="text-2xs text-tinta-2">entra en el próximo corte</p>
           </div>
         </div>
       )}
 
       {sinConfigurar && (
-        <p className="text-xs text-slate-500 bg-slate-800/50 rounded-lg px-3 py-2">
+        <p className="text-xs text-tinta-2 bg-hundido rounded-lg px-3 py-2">
           El saldo ya se lleva solo: cada compra que anotes con esta tarjeta lo
           sube, y cada pago que registres acá lo baja.
         </p>
@@ -148,13 +148,13 @@ export default function CardStatement({
       ) : (
         <button
           onClick={() => setPagando(true)}
-          className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors"
+          className="w-full py-2.5 bg-primario hover:bg-primario/85 text-sobre-primario rounded-lg text-sm font-medium transition-colors"
         >
           Registrar un pago
         </button>
       )}
 
-      <p className="text-2xs text-slate-500 leading-relaxed">
+      <p className="text-2xs text-tinta-2 leading-relaxed">
         Pagarle a la tarjeta no es un gasto nuevo: la compra ya se anotó el día que
         la hiciste. Por eso el pago baja este saldo y no aparece en los movimientos
         del mes — si no, la misma plata contaría dos veces.
@@ -183,12 +183,12 @@ function Fecha({
   urgente?: boolean;
 }) {
   return (
-    <div className={`rounded-xl px-3 py-2.5 border min-w-0 ${urgente ? 'bg-amber-500/10 border-amber-500/30' : 'bg-slate-800/50 border-slate-800'}`}>
-      <p className="flex items-center gap-1.5 text-2xs text-slate-400 uppercase tracking-wider">
+    <div className={`rounded-xl px-3 py-2.5 border min-w-0 ${urgente ? 'bg-aviso/10 border-aviso/30' : 'bg-hundido border-linea'}`}>
+      <p className="flex items-center gap-1.5 text-2xs text-tinta-2">
         {icono} {titulo}
       </p>
-      <p className="text-sm font-semibold text-white mt-1 truncate">{fecha}</p>
-      <p className={`text-2xs ${urgente ? 'text-amber-400' : 'text-slate-500'}`}>
+      <p className="text-sm font-semibold text-tinta mt-1 truncate">{fecha}</p>
+      <p className={`text-2xs ${urgente ? 'text-aviso' : 'text-tinta-2'}`}>
         {dias === 0 ? 'es hoy' : dias === 1 ? 'mañana' : `en ${dias} días`}
       </p>
     </div>
@@ -237,33 +237,33 @@ function FormularioDePago({
   };
 
   return (
-    <div className="border border-slate-800 rounded-xl p-3 space-y-2.5 bg-slate-950/40">
-      <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Pago a la tarjeta</p>
+    <div className="border border-linea rounded-xl p-3 space-y-2.5 bg-fondo">
+      <p className="text-xs font-medium text-tinta-2">Pago a la tarjeta</p>
 
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1 min-w-0">
-          <label className="text-xs text-slate-500">Monto</label>
+          <label className="text-xs text-tinta-2">Monto</label>
           <input
             type="number" min="0" step="0.01" inputMode="decimal"
             value={monto} onChange={e => setMonto(e.target.value)} autoFocus
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+            className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta focus:outline-none focus:border-tinta-3"
           />
         </div>
         <div className="space-y-1 min-w-0">
-          <label className="text-xs text-slate-500">Fecha</label>
+          <label className="text-xs text-tinta-2">Fecha</label>
           <input
             type="date" value={fecha} onChange={e => setFecha(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+            className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta focus:outline-none focus:border-tinta-3"
           />
         </div>
       </div>
 
       {mediosDePago.length > 0 && (
         <div className="space-y-1">
-          <label className="text-xs text-slate-500">De dónde salió (opcional)</label>
+          <label className="text-xs text-tinta-2">De dónde salió (opcional)</label>
           <select
             value={origen} onChange={e => setOrigen(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+            className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta focus:outline-none focus:border-tinta-3"
           >
             <option value="">Sin especificar</option>
             {mediosDePago.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
@@ -271,19 +271,19 @@ function FormularioDePago({
         </div>
       )}
 
-      {error && <p className="text-xs text-rose-400">{error}</p>}
+      {error && <p className="text-xs text-peligro">{error}</p>}
 
       <div className="flex gap-2">
         <button
           onClick={onCancelar}
-          className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-colors flex items-center justify-center gap-1.5"
+          className="flex-1 py-2.5 bg-hundido hover:bg-presionado text-tinta rounded-lg text-sm transition-colors flex items-center justify-center gap-1.5"
         >
           <X className="w-4 h-4" /> Cancelar
         </button>
         <button
           onClick={guardar}
           disabled={guardando || !(Number(monto) > 0)}
-          className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
+          className="flex-1 py-2.5 bg-primario hover:bg-primario/85 disabled:opacity-50 text-sobre-primario rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
         >
           {guardando && <Loader2 className="w-4 h-4 animate-spin" />}
           Guardar pago
@@ -317,15 +317,15 @@ function ListaDePagos({
   };
 
   return (
-    <div className="space-y-2 pt-1 border-t border-slate-800">
-      <p className="text-xs font-medium text-slate-400 uppercase tracking-wider pt-3">
+    <div className="space-y-2 pt-1 border-t border-linea">
+      <p className="text-xs font-medium text-tinta-2 pt-3">
         Pagos · {payments.length}
       </p>
       {payments.map(p => (
-        <div key={p.id} className="flex items-center gap-3 bg-slate-800/40 rounded-lg px-3 py-2">
+        <div key={p.id} className="flex items-center gap-3 bg-hundido rounded-lg px-3 py-2">
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-white tabular-nums">{fmt.money(p.amount)}</p>
-            <p className="text-2xs text-slate-500 truncate">
+            <p className="text-sm text-tinta tabular-nums">{fmt.money(p.amount)}</p>
+            <p className="text-2xs text-tinta-2 truncate">
               {fmt.date(p.date)}
               {p.source_card_id && nombres.has(p.source_card_id) && ` · desde ${nombres.get(p.source_card_id)}`}
             </p>
@@ -333,7 +333,7 @@ function ListaDePagos({
           <button
             onClick={() => borrar(p.id)}
             disabled={borrando === p.id}
-            className="p-1.5 text-slate-600 hover:text-rose-400 disabled:opacity-50 transition-colors flex-shrink-0"
+            className="p-1.5 text-tinta-3 hover:text-peligro disabled:opacity-50 transition-colors flex-shrink-0"
             aria-label="Eliminar pago"
           >
             {borrando === p.id

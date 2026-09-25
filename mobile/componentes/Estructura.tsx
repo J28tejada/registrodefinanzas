@@ -28,10 +28,10 @@ export default function Estructura({ children }: { children: React.ReactNode }) 
    * bloques de la galería — un corrimiento parejo es siempre un contenedor de
    * más o de menos, no un problema de la pantalla.
    */
-  if (desnuda) return <View className="flex-1 bg-slate-950 p-4">{children}</View>;
+  if (desnuda) return <View className="flex-1 bg-fondo p-4">{children}</View>;
 
   return (
-    <View className="flex-1 bg-slate-950">
+    <View className="flex-1 bg-fondo">
       <View className="flex-1">{children}</View>
       <Navegacion />
     </View>

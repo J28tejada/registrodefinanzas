@@ -18,7 +18,7 @@ export default function TransactionsPage() {
   return (
     <Suspense fallback={
       <div className="max-w-4xl mx-auto pt-14 md:pt-0 flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        <Loader2 className="w-6 h-6 animate-spin text-tinta-2" />
       </div>
     }>
       <TransactionsInner />
@@ -112,18 +112,18 @@ function TransactionsInner() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white">
-            {currentLedger ? currentLedger.name : 'Todas las transacciones'}
+          <h1 className="text-xl sm:text-2xl font-semibold text-tinta">
+            {currentLedger ? currentLedger.name : 'Todos los movimientos'}
           </h1>
-          <p className="text-slate-400 text-sm">{transactions.length} registros</p>
+          <p className="text-tinta-2 text-sm">{transactions.length} {transactions.length === 1 ? 'movimiento' : 'movimientos'}</p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setShowFilters(v => !v)}
             className={`p-2 rounded-lg border transition-colors ${
               showFilters || hasDateFilter
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                : 'border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-hundido border-linea-fuerte text-tinta'
+                : 'border-linea-fuerte text-tinta-2 hover:text-tinta hover:bg-hundido'
             }`}
             title="Filtrar por fecha"
           >
@@ -131,7 +131,7 @@ function TransactionsInner() {
           </button>
           <button
             onClick={() => { setEditing(null); setModalOpen(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-primario hover:bg-primario/85 text-sobre-primario rounded-lg text-sm font-medium transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Nuevo</span>
@@ -141,26 +141,20 @@ function TransactionsInner() {
 
       {/* Error state */}
       {error && !loading && (
-        <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 text-rose-400 text-sm">
+        <div className="bg-peligro/10 border border-peligro/30 rounded-xl p-4 text-peligro text-sm">
           {error}
         </div>
       )}
 
       {/* Type filter tabs + search */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-        <div className="flex gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
+        <div className="flex gap-0.5 bg-hundido rounded-lg p-0.5">
           {TYPE_TABS.map(({ value, label }) => (
             <button
               key={value}
               onClick={() => setTypeFilter(value)}
-              className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
-                typeFilter === value
-                  ? value === 'income'
-                    ? 'bg-emerald-500/20 text-emerald-300'
-                    : value === 'expense'
-                      ? 'bg-rose-500/20 text-rose-300'
-                      : 'bg-slate-700 text-white'
-                  : 'text-slate-400 hover:text-white'
+              className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                typeFilter === value ? 'bg-elevado text-tinta' : 'text-tinta-2 hover:text-tinta'
               }`}
             >
               {label}
@@ -169,16 +163,16 @@ function TransactionsInner() {
         </div>
 
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tinta-2" />
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar..."
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-8 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm"
+            className="w-full bg-hundido border border-linea rounded-lg pl-9 pr-8 py-2 text-tinta placeholder-tinta-3 focus:outline-none focus:border-tinta-3 text-sm"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
+            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-tinta-2 hover:text-tinta">
               <X className="w-4 h-4" />
             </button>
           )}
@@ -189,25 +183,25 @@ function TransactionsInner() {
       {(categoryFilter || hasDateFilter) && (
         <div className="flex flex-wrap gap-2">
           {categoryFilter && (
-            <span className="flex items-center gap-1.5 px-3 py-1 bg-violet-500/10 border border-violet-500/20 text-violet-300 rounded-full text-xs">
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-hundido border border-linea-fuerte text-tinta rounded-full text-xs">
               Categoría: {categoryFilter}
-              <button onClick={() => setCategoryFilter('')} className="hover:text-white transition-colors">
+              <button onClick={() => setCategoryFilter('')} className="hover:text-tinta transition-colors">
                 <X className="w-3 h-3" />
               </button>
             </span>
           )}
           {startDate && (
-            <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 border border-slate-700 text-slate-300 rounded-full text-xs">
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-hundido border border-linea-fuerte text-tinta rounded-full text-xs">
               Desde: {startDate}
-              <button onClick={() => setStartDate('')} className="hover:text-white transition-colors">
+              <button onClick={() => setStartDate('')} className="hover:text-tinta transition-colors">
                 <X className="w-3 h-3" />
               </button>
             </span>
           )}
           {endDate && (
-            <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-800 border border-slate-700 text-slate-300 rounded-full text-xs">
+            <span className="flex items-center gap-1.5 px-3 py-1 bg-hundido border border-linea-fuerte text-tinta rounded-full text-xs">
               Hasta: {endDate}
-              <button onClick={() => setEndDate('')} className="hover:text-white transition-colors">
+              <button onClick={() => setEndDate('')} className="hover:text-tinta transition-colors">
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -217,32 +211,32 @@ function TransactionsInner() {
 
       {/* Date range filter (collapsible) */}
       {showFilters && (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
-          <p className="text-xs text-slate-400 font-medium">RANGO DE FECHAS</p>
+        <div className="bg-panel border border-linea rounded-xl p-4 space-y-3">
+          <p className="text-xs text-tinta-2 font-medium">Rango de fechas</p>
           <div className="grid grid-cols-2 gap-3">
             {/* min-w-0: sin esto el item de la grilla mide su contenido mínimo,
                 que en iOS es el ancho intrínseco del campo de fecha. */}
             <div className="space-y-1.5 min-w-0">
-              <label className="text-xs text-slate-500">Desde</label>
+              <label className="text-xs text-tinta-2">Desde</label>
               <input
                 type="date"
                 value={startDate}
                 onChange={e => setStartDate(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2 text-sm text-tinta focus:outline-none focus:border-tinta-3"
               />
             </div>
             <div className="space-y-1.5 min-w-0">
-              <label className="text-xs text-slate-500">Hasta</label>
+              <label className="text-xs text-tinta-2">Hasta</label>
               <input
                 type="date"
                 value={endDate}
                 onChange={e => setEndDate(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2 text-sm text-tinta focus:outline-none focus:border-tinta-3"
               />
             </div>
           </div>
           {hasDateFilter && (
-            <button onClick={clearDates} className="text-xs text-slate-400 hover:text-rose-400 flex items-center gap-1 transition-colors">
+            <button onClick={clearDates} className="text-xs text-tinta-2 hover:text-peligro flex items-center gap-1 transition-colors">
               <X className="w-3.5 h-3.5" /> Limpiar fechas
             </button>
           )}

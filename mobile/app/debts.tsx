@@ -18,9 +18,11 @@ import {
 import { fechaValida, limitesDelMes } from '@compartido/format';
 import { leerDeudaNueva } from '@compartido/deudas-campos';
 import { DebtProgress } from '@compartido/types';
+import { useColores } from '../lib/colores';
 
 /** El gemelo de app/debts/page.tsx. */
 export default function Deudas() {
+  const paleta = useColores();
   const fmt = useFormatters();
   const { ledgers, transactionVersion, notifyTransactionSaved } = useCuenta();
   const { categorias } = useCategorias();
@@ -69,51 +71,51 @@ export default function Deudas() {
     <Pantalla className="gap-6">
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
-          <Texto className="text-xl font-bold text-white">Deudas</Texto>
-          <Texto className="text-slate-400 text-sm">Préstamos y cuotas, con lo que falta de cada uno</Texto>
+          <Texto className="text-xl font-semibold text-tinta">Deudas</Texto>
+          <Texto className="text-tinta-2 text-sm">Préstamos y cuotas, con lo que falta de cada uno</Texto>
         </View>
         <Pressable
           onPress={() => setCreando(v => !v)}
-          className="px-3 py-2 bg-emerald-600 active:bg-emerald-500 rounded-xl flex-row items-center gap-1.5"
+          className="px-3 py-2 bg-primario active:bg-primario/85 rounded-lg flex-row items-center gap-1.5"
         >
-          <Plus size={16} color="#ffffff" />
+          <Plus size={16} color={paleta.sobrePrimario} />
         </Pressable>
       </View>
 
       {/* Mes */}
       <View className="flex-row items-center justify-center gap-1">
         <Pressable onPress={() => moverMes(-1)} accessibilityLabel="Mes anterior" className="p-1">
-          <ChevronLeft size={16} color="#64748b" />
+          <ChevronLeft size={16} color={paleta.tinta2} />
         </Pressable>
-        <Texto className="text-sm text-slate-300 capitalize text-center" style={{ minWidth: 140 }}>
+        <Texto className="text-sm text-tinta text-center" style={{ minWidth: 140 }}>
           {fmt.monthLabel(`${mes}-01`)}
         </Texto>
         <Pressable onPress={() => moverMes(1)} accessibilityLabel="Mes siguiente" className="p-1">
-          <ChevronRight size={16} color="#64748b" />
+          <ChevronRight size={16} color={paleta.tinta2} />
         </Pressable>
       </View>
 
       {error ? (
-        <View className="flex-row items-start gap-2 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
-          <View className="mt-0.5"><AlertCircle size={16} color="#fb7185" /></View>
-          <Texto className="text-rose-400 text-sm flex-1">{error}</Texto>
+        <View className="flex-row items-start gap-2 bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
+          <View className="mt-0.5"><AlertCircle size={16} color={paleta.peligro} /></View>
+          <Texto className="text-peligro text-sm flex-1">{error}</Texto>
         </View>
       ) : null}
 
       {/* Resumen del mes */}
       {activas.length > 0 ? (
-        <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex-row gap-3">
+        <View className="border-y border-linea py-4 flex-row gap-3">
           <View className="flex-1">
-            <Texto className="text-2xs text-slate-400 uppercase tracking-wider">Falta en total</Texto>
-            <Texto className="text-lg font-bold text-rose-400 mt-1" numberOfLines={1}>{fmt.money(totalRestante)}</Texto>
+            <Texto className="text-2xs text-tinta-2">Falta en total</Texto>
+            <Texto className="text-lg font-semibold text-tinta mt-1" numberOfLines={1} style={{ fontVariant: ['tabular-nums'] }}>{fmt.money(totalRestante)}</Texto>
           </View>
           <View className="flex-1">
-            <Texto className="text-2xs text-slate-400 uppercase tracking-wider">Cuotas del mes</Texto>
-            <Texto className="text-lg font-bold text-white mt-1" numberOfLines={1}>{fmt.money(cuotaDelMes)}</Texto>
+            <Texto className="text-2xs text-tinta-2">Cuotas del mes</Texto>
+            <Texto className="text-lg font-semibold text-tinta mt-1" numberOfLines={1}>{fmt.money(cuotaDelMes)}</Texto>
           </View>
           <View className="flex-1">
-            <Texto className="text-2xs text-slate-400 uppercase tracking-wider">Pagado</Texto>
-            <Texto className="text-lg font-bold text-emerald-400 mt-1" numberOfLines={1}>{fmt.money(pagadoDelMes)}</Texto>
+            <Texto className="text-2xs text-tinta-2">Pagado</Texto>
+            <Texto className="text-lg font-semibold text-acento mt-1" numberOfLines={1}>{fmt.money(pagadoDelMes)}</Texto>
           </View>
         </View>
       ) : null}
@@ -132,14 +134,16 @@ export default function Deudas() {
       {cargando ? (
         <View className="gap-2">
           {[0, 1].map(i => (
-            <View key={i} className="h-28 bg-slate-900 border border-slate-800 rounded-2xl" />
+            <View key={i} className="h-28 bg-hundido rounded-xl" />
           ))}
         </View>
       ) : debts.length === 0 ? (
-        <View className="items-center py-12 bg-slate-900 border border-slate-800 rounded-2xl">
-          <Landmark size={32} color="#475569" />
-          <Texto className="text-sm text-slate-500 mt-3">Todavía no cargaste ninguna deuda.</Texto>
-          <Texto className="text-xs text-slate-500 mt-1">Un préstamo, una tarjeta, una compra en cuotas.</Texto>
+        <View className="items-center py-12">
+          <View className="w-12 h-12 rounded-full bg-hundido items-center justify-center mb-3">
+            <Landmark size={20} color={paleta.tinta2} />
+          </View>
+          <Texto className="text-sm font-medium text-tinta">Todavía no cargaste ninguna deuda</Texto>
+          <Texto className="text-sm text-tinta-2 mt-1 text-center">Un préstamo, una tarjeta, una compra en cuotas.</Texto>
         </View>
       ) : (
         <View className="gap-3">
@@ -157,14 +161,14 @@ export default function Deudas() {
           ))}
 
           {saldadas.length > 0 ? (
-            <View className="gap-2 pt-2">
-              <Texto className="text-xs text-slate-500 uppercase tracking-wider">Saldadas</Texto>
+            <View className="pt-4">
+              <Texto className="text-sm font-medium text-tinta-2 mb-1">Saldadas</Texto>
               {saldadas.map(d => (
-                <View key={d.id} className="bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3 flex-row items-center gap-3">
-                  <Check size={16} color="#34d399" />
+                <View key={d.id} className="border-t border-linea py-3 flex-row items-center gap-3">
+                  <Check size={16} color={paleta.acento} />
                   <View className="flex-1">
-                    <Texto className="text-sm text-slate-300" numberOfLines={1}>{d.name}</Texto>
-                    <Texto className="text-xs text-slate-500">{fmt.money(d.total_amount)} · pagada</Texto>
+                    <Texto className="text-sm text-tinta" numberOfLines={1}>{d.name}</Texto>
+                    <Texto className="text-xs text-tinta-2">{fmt.money(d.total_amount)} · pagada</Texto>
                   </View>
                 </View>
               ))}
@@ -197,6 +201,7 @@ function TarjetaDeuda({
 }) {
   // Arranca con lo que falta del mes: es lo que se paga la mayoría de las veces,
   // pero se puede cambiar porque el pago real varía.
+  const paleta = useColores();
   const [monto, setMonto] = useState('');
   const [cuenta, setCuenta] = useState(deuda.ledger_id ?? ledgers[0]?.id ?? '');
   const [fecha, setFecha] = useState(fmt.today());
@@ -247,46 +252,46 @@ function TarjetaDeuda({
     );
   };
 
-  const tono = deuda.monthCovered ? 'bg-emerald-500' : deuda.paidThisMonth > 0 ? 'bg-amber-500' : 'bg-slate-600';
+  const tono = deuda.monthCovered ? 'bg-primario' : deuda.paidThisMonth > 0 ? 'bg-aviso' : 'bg-presionado';
 
   return (
-    <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-3">
+    <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
-          <Texto className="text-sm font-medium text-white" numberOfLines={1}>{deuda.name}</Texto>
-          <Texto className="text-xs text-slate-500">
+          <Texto className="text-sm font-medium text-tinta" numberOfLines={1}>{deuda.name}</Texto>
+          <Texto className="text-xs text-tinta-2">
             {deuda.creditor ? `${deuda.creditor} · ` : ''}
             {deuda.installmentsPaid.toFixed(1).replace('.0', '')} de {deuda.installments} cuotas · {deuda.category}
           </Texto>
         </View>
         <View className="items-end">
-          <Texto className="text-sm font-semibold text-rose-400">{fmt.money(deuda.remaining)}</Texto>
-          <Texto className="text-2xs text-slate-500">de {fmt.money(deuda.total_amount)}</Texto>
+          <Texto className="text-sm font-semibold text-peligro">{fmt.money(deuda.remaining)}</Texto>
+          <Texto className="text-2xs text-tinta-2">de {fmt.money(deuda.total_amount)}</Texto>
         </View>
       </View>
 
       {/* Avance total */}
       <View className="gap-1">
-        <View className="h-2 bg-slate-800 rounded-full overflow-hidden">
-          <View className="h-full bg-emerald-500 rounded-full" style={{ width: `${deuda.percent}%` }} />
+        <View className="h-2 bg-hundido rounded-full overflow-hidden">
+          <View className="h-full bg-primario rounded-full" style={{ width: `${deuda.percent}%` }} />
         </View>
-        <Texto className="text-2xs text-slate-500">{deuda.percent}% pagado</Texto>
+        <Texto className="text-2xs text-tinta-2">{deuda.percent}% pagado</Texto>
       </View>
 
       {/* Avance del mes: es lo que dice si vas al día */}
-      <View className="bg-slate-800/60 rounded-xl p-3 gap-1.5">
+      <View className="bg-hundido rounded-xl p-3 gap-1.5">
         <View className="flex-row items-center justify-between">
-          <Texto className="text-xs text-slate-400">Cuota de este mes</Texto>
-          <Texto className={`text-xs ${deuda.monthCovered ? 'text-emerald-400' : 'text-slate-300'}`}>
+          <Texto className="text-xs text-tinta-2">Cuota de este mes</Texto>
+          <Texto className={`text-xs ${deuda.monthCovered ? 'text-acento' : 'text-tinta'}`}>
             {fmt.money(deuda.paidThisMonth)} / {fmt.money(deuda.installment_amount)}
           </Texto>
         </View>
-        <View className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+        <View className="h-1.5 bg-presionado rounded-full overflow-hidden">
           <View className={`h-full rounded-full ${tono}`} style={{ width: `${deuda.monthPercent}%` }} />
         </View>
-        <Texto className="text-2xs text-slate-500">
+        <Texto className="text-2xs text-tinta-2">
           {deuda.monthCovered
-            ? '✅ Cuota cubierta'
+            ? 'Cuota cubierta'
             : `Faltan ${fmt.money(deuda.dueThisMonth)} para completarla`}
         </Texto>
       </View>
@@ -294,14 +299,14 @@ function TarjetaDeuda({
       <View className="flex-row gap-2">
         <Pressable
           onPress={onAbrir}
-          className="flex-1 py-2 bg-emerald-600 active:bg-emerald-500 rounded-lg items-center"
+          className="flex-1 py-2 bg-primario active:bg-primario/85 rounded-lg items-center"
         >
-          <Texto className="text-white text-sm font-medium">
+          <Texto className="text-sobre-primario text-sm font-medium">
             {abierta ? 'Cancelar' : 'Registrar pago'}
           </Texto>
         </Pressable>
         <Pressable onPress={eliminar} accessibilityLabel="Eliminar deuda" className="p-2">
-          <Trash2 size={16} color="#64748b" />
+          <Trash2 size={16} color={paleta.tinta2} />
         </Pressable>
       </View>
 
@@ -312,12 +317,12 @@ function TarjetaDeuda({
           <TextInput
             keyboardType="decimal-pad"
             value={monto} onChangeText={setMonto}
-            placeholder="Monto pagado" placeholderTextColor="#64748b" autoFocus
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
+            placeholder="Monto pagado" placeholderTextColor={paleta.tinta2} autoFocus
+            className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2 text-sm text-tinta"
           />
           <CampoDeFecha
             value={fecha} onChange={setFecha}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2"
+            className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2"
           />
           {ledgers.length > 1 ? (
             <Selector
@@ -327,18 +332,18 @@ function TarjetaDeuda({
               titulo="Cuenta donde se paga"
             />
           ) : null}
-          {error ? <Texto className="text-xs text-rose-400">{error}</Texto> : null}
+          {error ? <Texto className="text-xs text-peligro">{error}</Texto> : null}
           <Pressable
             onPress={pagar}
             disabled={guardando || !monto}
             style={guardando || !monto ? { opacity: 0.5 } : undefined}
-            className="w-full py-2 bg-emerald-600 active:bg-emerald-500 rounded-lg flex-row items-center justify-center gap-2"
+            className="w-full py-2 bg-primario active:bg-primario/85 rounded-lg flex-row items-center justify-center gap-2"
           >
-            {guardando ? <Loader2 size={16} color="#ffffff" /> : <Check size={16} color="#ffffff" />}
-            <Texto className="text-white text-sm font-medium">Guardar pago</Texto>
+            {guardando ? <Loader2 size={16} color={paleta.sobrePrimario} /> : <Check size={16} color={paleta.sobrePrimario} />}
+            <Texto className="text-sobre-primario text-sm font-medium">Guardar pago</Texto>
           </Pressable>
-          <Texto className="text-2xs text-slate-500">
-            Se anota como gasto en <Texto className="text-2xs text-slate-400">{deuda.category}</Texto>, así que
+          <Texto className="text-2xs text-tinta-2">
+            Se anota como gasto en <Texto className="text-2xs text-tinta-2">{deuda.category}</Texto>, así que
             cuenta para tu presupuesto.
           </Texto>
         </View>
@@ -359,6 +364,7 @@ function FormularioDeuda({
   onListo: () => void | Promise<void>;
   onCancelar: () => void;
 }) {
+  const paleta = useColores();
   const [nombre, setNombre] = useState('');
   const [acreedor, setAcreedor] = useState('');
   const [total, setTotal] = useState('');
@@ -415,60 +421,60 @@ function FormularioDeuda({
   const listo = Boolean(nombre.trim() && total && cuota && cuotas && categoria);
 
   return (
-    <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-3">
+    <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
       <View className="flex-row items-center gap-2">
-        <Landmark size={16} color="#34d399" />
-        <Texto className="text-sm font-medium text-slate-300">Nueva deuda</Texto>
+        <Landmark size={16} color={paleta.acento} />
+        <Texto className="text-sm font-medium text-tinta">Nueva deuda</Texto>
       </View>
 
       <TextInput
         value={nombre} onChangeText={setNombre}
-        placeholder="Nombre — ej: Préstamo del carro" placeholderTextColor="#64748b"
+        placeholder="Nombre — ej: Préstamo del carro" placeholderTextColor={paleta.tinta2}
         autoFocus maxLength={60}
-        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white"
+        className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
       />
       <TextInput
         value={acreedor} onChangeText={setAcreedor}
-        placeholder="A quién le debés (opcional)" placeholderTextColor="#64748b" maxLength={60}
-        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white"
+        placeholder="A quién le debés (opcional)" placeholderTextColor={paleta.tinta2} maxLength={60}
+        className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
       />
 
       <View className="flex-row gap-2">
         <View className="flex-1 gap-1">
-          <Texto className="text-xs text-slate-500 leading-6">Total</Texto>
+          <Texto className="text-xs text-tinta-2 leading-6">Total</Texto>
           <TextInput
             keyboardType="decimal-pad"
             value={total}
             onChangeText={t => { setTotal(t); sugerirCuota(t, cuotas); }}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white"
+            className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
           />
         </View>
         <View className="flex-1 gap-1">
-          <Texto className="text-xs text-slate-500 leading-6">Cuotas</Texto>
+          <Texto className="text-xs text-tinta-2 leading-6">Cuotas</Texto>
           <TextInput
             keyboardType="number-pad"
             value={cuotas}
             onChangeText={t => { setCuotas(t); sugerirCuota(total, t); }}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white"
+            className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
           />
         </View>
       </View>
 
       <View className="gap-1">
-        <Texto className="text-xs text-slate-500 leading-6">Cuota mensual</Texto>
+        <Texto className="text-xs text-tinta-2 leading-6">Cuota mensual</Texto>
         <TextInput
           keyboardType="decimal-pad"
           value={cuota} onChangeText={setCuota}
-          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white"
+          className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
         />
-        <Texto className="text-2xs text-slate-500">
+        <Texto className="text-2xs text-tinta-2">
           Se calcula sola, pero podés cambiarla si el préstamo tiene interés.
         </Texto>
       </View>
 
       <View className="flex-row gap-2">
         <View className="flex-1 gap-1">
-          <Texto className="text-xs text-slate-500 leading-6">Categoría del gasto</Texto>
+          <Texto className="text-xs text-tinta-2 leading-6">Categoría del gasto</Texto>
           <Selector
             value={categoria}
             opciones={categorias.map(c => ({ valor: c, etiqueta: c }))}
@@ -477,17 +483,17 @@ function FormularioDeuda({
           />
         </View>
         <View className="flex-1 gap-1">
-          <Texto className="text-xs text-slate-500 leading-6">Primera cuota</Texto>
+          <Texto className="text-xs text-tinta-2 leading-6">Primera cuota</Texto>
           <CampoDeFecha
             value={inicio} onChange={setInicio}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5"
+            className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5"
           />
         </View>
       </View>
 
       {ledgers.length > 1 ? (
         <View className="gap-1">
-          <Texto className="text-xs text-slate-500 leading-6">Cuenta donde se paga</Texto>
+          <Texto className="text-xs text-tinta-2 leading-6">Cuenta donde se paga</Texto>
           <Selector
             value={ledgerId}
             opciones={ledgers.map(l => ({ valor: l.id, etiqueta: l.name }))}
@@ -504,33 +510,33 @@ function FormularioDeuda({
         className="flex-row items-start gap-2"
       >
         <View className={`w-4 h-4 mt-0.5 rounded border items-center justify-center ${
-          enPresupuesto ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600'
+          enPresupuesto ? 'bg-primario border-primario' : 'border-linea-fuerte'
         }`}>
-          {enPresupuesto ? <Check size={12} color="#ffffff" /> : null}
+          {enPresupuesto ? <Check size={12} color={paleta.sobrePrimario} /> : null}
         </View>
-        <Texto className="text-xs text-slate-400 flex-1">
+        <Texto className="text-xs text-tinta-2 flex-1">
           Ponerla en el presupuesto: crea un tope mensual en{' '}
-          <Texto className="text-xs text-slate-300">{categoria || 'la categoría elegida'}</Texto> por el monto de la cuota.
+          <Texto className="text-xs text-tinta">{categoria || 'la categoría elegida'}</Texto> por el monto de la cuota.
         </Texto>
       </Pressable>
 
-      {error ? <Texto className="text-xs text-rose-400">{error}</Texto> : null}
+      {error ? <Texto className="text-xs text-peligro">{error}</Texto> : null}
 
       <View className="flex-row gap-2">
         <Pressable
           onPress={onCancelar}
-          className="flex-1 py-2.5 bg-slate-800 active:bg-slate-700 rounded-lg items-center"
+          className="flex-1 py-2.5 bg-hundido active:bg-presionado rounded-lg items-center"
         >
-          <Texto className="text-slate-300 text-sm">Cancelar</Texto>
+          <Texto className="text-tinta text-sm">Cancelar</Texto>
         </Pressable>
         <Pressable
           onPress={guardar}
           disabled={guardando || !listo}
           style={guardando || !listo ? { opacity: 0.5 } : undefined}
-          className="flex-1 py-2.5 bg-emerald-600 active:bg-emerald-500 rounded-lg flex-row items-center justify-center gap-2"
+          className="flex-1 py-2.5 bg-primario active:bg-primario/85 rounded-lg flex-row items-center justify-center gap-2"
         >
-          {guardando ? <Loader2 size={16} color="#ffffff" /> : <Plus size={16} color="#ffffff" />}
-          <Texto className="text-white text-sm font-medium">Crear deuda</Texto>
+          {guardando ? <Loader2 size={16} color={paleta.sobrePrimario} /> : <Plus size={16} color={paleta.sobrePrimario} />}
+          <Texto className="text-sobre-primario text-sm font-medium">Crear deuda</Texto>
         </Pressable>
       </View>
     </View>

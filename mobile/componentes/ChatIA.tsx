@@ -3,6 +3,7 @@ import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { Bot, Loader2, Send, Trash2, User } from 'lucide-react-native';
 import Texto from './Texto';
 import { FALTA_LA_API, hayApi, llamarApi } from '../lib/api';
+import { useColores } from '../lib/colores';
 
 interface Mensaje {
   role: 'user' | 'assistant';
@@ -29,6 +30,7 @@ const SUGERENCIAS = [
  *    modelo es un secreto del servidor. Es la única pantalla que lo necesita.
  */
 export default function ChatIA() {
+  const paleta = useColores();
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [entrada, setEntrada] = useState('');
   const [cargando, setCargando] = useState(false);
@@ -90,8 +92,8 @@ export default function ChatIA() {
             onPress={() => setMensajes([])}
             className="flex-row items-center gap-1.5"
           >
-            <Trash2 size={14} color="#64748b" />
-            <Texto className="text-slate-500 text-xs">Limpiar</Texto>
+            <Trash2 size={14} color={paleta.tinta2} />
+            <Texto className="text-tinta-2 text-xs">Limpiar</Texto>
           </Pressable>
         </View>
       ) : null}
@@ -104,12 +106,12 @@ export default function ChatIA() {
       >
         {mensajes.length === 0 ? (
           <View className="flex-1 items-center justify-center gap-4">
-            <View className="w-16 h-16 bg-emerald-500/10 rounded-2xl items-center justify-center">
-              <Bot size={32} color="#34d399" />
+            <View className="w-12 h-12 bg-hundido rounded-xl items-center justify-center">
+              <Bot size={24} color={paleta.tinta2} />
             </View>
             <View className="items-center">
-              <Texto className="text-white font-medium">Hola, soy tu asistente financiero</Texto>
-              <Texto className="text-slate-400 text-sm mt-1 text-center">
+              <Texto className="text-tinta font-medium">Hola, soy tu asistente financiero</Texto>
+              <Texto className="text-tinta-2 text-sm mt-1 text-center">
                 Pregúntame sobre tus gastos, ingresos o pide sugerencias de categorías.
               </Texto>
             </View>
@@ -118,14 +120,14 @@ export default function ChatIA() {
                 <Pressable
                   key={q}
                   onPress={() => enviar(q)}
-                  className="px-3 py-2 bg-slate-800 active:bg-slate-700 border border-slate-700 rounded-lg"
+                  className="px-3 py-2 bg-hundido active:bg-presionado border border-linea-fuerte rounded-lg"
                 >
-                  <Texto className="text-sm text-slate-300">{q}</Texto>
+                  <Texto className="text-sm text-tinta">{q}</Texto>
                 </Pressable>
               ))}
             </View>
             {!hayApi ? (
-              <Texto className="text-2xs text-amber-400 text-center">{FALTA_LA_API}</Texto>
+              <Texto className="text-2xs text-aviso text-center">{FALTA_LA_API}</Texto>
             ) : null}
           </View>
         ) : (
@@ -135,32 +137,32 @@ export default function ChatIA() {
               className={`flex-row gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {msg.role === 'assistant' ? (
-                <View className="w-7 h-7 bg-emerald-500/10 border border-emerald-500/20 rounded-lg items-center justify-center mt-0.5">
-                  <Bot size={14} color="#34d399" />
+                <View className="w-7 h-7 bg-hundido rounded-lg items-center justify-center mt-0.5">
+                  <Bot size={14} color={paleta.tinta2} />
                 </View>
               ) : null}
               <View
                 className={`rounded-2xl px-4 py-2.5 ${
                   msg.role === 'user'
-                    ? 'bg-emerald-600 rounded-br-sm'
-                    : 'bg-slate-800 rounded-bl-sm border border-slate-700'
+                    ? 'bg-hundido rounded-br-sm'
+                    : 'bg-panel rounded-bl-sm border border-linea'
                 }`}
                 style={{ maxWidth: '80%' }}
               >
                 {msg.content ? (
-                  <Texto className={`text-sm ${msg.role === 'user' ? 'text-white' : 'text-slate-200'}`}>
+                  <Texto className="text-sm text-tinta">
                     {msg.content}
                   </Texto>
                 ) : (
                   <View className="flex-row gap-1 items-center">
-                    <Loader2 size={14} color="#94a3b8" />
-                    <Texto className="text-sm text-slate-400">Pensando...</Texto>
+                    <Loader2 size={14} color={paleta.tinta2} />
+                    <Texto className="text-sm text-tinta-2">Pensando...</Texto>
                   </View>
                 )}
               </View>
               {msg.role === 'user' ? (
-                <View className="w-7 h-7 bg-slate-700 rounded-lg items-center justify-center mt-0.5">
-                  <User size={14} color="#cbd5e1" />
+                <View className="w-7 h-7 bg-presionado rounded-lg items-center justify-center mt-0.5">
+                  <User size={14} color={paleta.tinta} />
                 </View>
               ) : null}
             </View>
@@ -168,25 +170,25 @@ export default function ChatIA() {
         )}
       </ScrollView>
 
-      <View className="border-t border-slate-800 pt-4">
+      <View className="border-t border-linea pt-4">
         <View className="flex-row gap-2">
           <TextInput
             value={entrada}
             onChangeText={setEntrada}
             onSubmitEditing={() => enviar(entrada)}
             placeholder="Escribe una pregunta…"
-            placeholderTextColor="#64748b"
+            placeholderTextColor={paleta.tinta2}
             editable={!cargando}
-            className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm"
+            className="flex-1 bg-hundido border border-linea-fuerte rounded-xl px-4 py-2.5 text-tinta text-sm"
           />
           <Pressable
             onPress={() => enviar(entrada)}
             disabled={!entrada.trim() || cargando}
             accessibilityLabel="Enviar"
             style={!entrada.trim() || cargando ? { opacity: 0.4 } : undefined}
-            className="p-2.5 bg-emerald-600 active:bg-emerald-500 rounded-xl items-center justify-center"
+            className="p-2.5 bg-primario active:bg-primario/85 rounded-lg items-center justify-center"
           >
-            {cargando ? <Loader2 size={16} color="#ffffff" /> : <Send size={16} color="#ffffff" />}
+            {cargando ? <Loader2 size={16} color={paleta.sobrePrimario} /> : <Send size={16} color={paleta.sobrePrimario} />}
           </Pressable>
         </View>
       </View>

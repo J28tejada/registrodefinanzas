@@ -78,7 +78,7 @@ export default function VoiceInput({ onTranscript, onInterpreting, className = '
 
   if (!isSupported) {
     return (
-      <div className={`flex items-center gap-2 text-slate-400 text-sm ${className}`}>
+      <div className={`flex items-center gap-2 text-tinta-2 text-sm ${className}`}>
         <MicOff className="w-4 h-4" />
         <span>Tu navegador no soporta entrada de voz. Usa Chrome o Edge.</span>
       </div>
@@ -92,9 +92,9 @@ export default function VoiceInput({ onTranscript, onInterpreting, className = '
           <button
             onClick={startRecording}
             type="button"
-            className="relative flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-sm text-slate-300 transition-colors"
+            className="relative flex items-center gap-2 px-4 py-2 bg-hundido hover:bg-presionado border border-linea-fuerte rounded-lg text-sm text-tinta transition-colors"
           >
-            <Mic className="w-4 h-4 text-emerald-400" />
+            <Mic className="w-4 h-4 text-acento" />
             Hablar
           </button>
         )}
@@ -103,17 +103,17 @@ export default function VoiceInput({ onTranscript, onInterpreting, className = '
           <button
             onClick={stopRecording}
             type="button"
-            className="relative flex items-center gap-2 px-4 py-2 bg-rose-500/20 border border-rose-500/50 rounded-lg text-sm text-rose-300 transition-colors"
+            className="relative flex items-center gap-2 px-4 py-2 bg-peligro/20 border border-peligro/50 rounded-lg text-sm text-peligro transition-colors"
           >
             <span className="relative flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-peligro animate-pulse" />
               Grabando... (toca para detener)
             </span>
           </button>
         )}
 
         {state === 'processing' && (
-          <div className="flex items-center gap-2 text-sm text-slate-400">
+          <div className="flex items-center gap-2 text-sm text-tinta-2">
             <Loader2 className="w-4 h-4 animate-spin" />
             Interpretando...
           </div>
@@ -121,20 +121,20 @@ export default function VoiceInput({ onTranscript, onInterpreting, className = '
       </div>
 
       {transcript && (
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 space-y-2">
-          <p className="text-sm text-slate-300">{transcript}</p>
+        <div className="bg-hundido border border-linea-fuerte rounded-lg p-3 space-y-2">
+          <p className="text-sm text-tinta">{transcript}</p>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => handleSubmitTranscript(transcript)}
-              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded-md transition-colors"
+              className="px-3 py-1 bg-primario hover:bg-primario/85 text-sobre-primario text-xs rounded-md transition-colors"
             >
               Interpretar con IA
             </button>
             <button
               type="button"
               onClick={() => { setTranscript(''); setState('idle'); }}
-              className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs rounded-md transition-colors"
+              className="px-3 py-1 bg-presionado hover:bg-presionado text-tinta text-xs rounded-md transition-colors"
             >
               Cancelar
             </button>
@@ -143,7 +143,7 @@ export default function VoiceInput({ onTranscript, onInterpreting, className = '
       )}
 
       {error && (
-        <p className="text-xs text-rose-400 flex items-center gap-1">
+        <p className="text-xs text-peligro flex items-center gap-1">
           <Square className="w-3 h-3" /> {error}
         </p>
       )}

@@ -60,14 +60,14 @@ export default function CategoryDonut({
         {/* El total al centro: es el número que se lee primero, y el hueco del
             anillo ya está ahí. */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-7 text-center">
-          <p className="text-3xs uppercase tracking-wider text-slate-500 truncate max-w-full">
+          <p className="text-3xs text-tinta-2 truncate max-w-full">
             {enfocada ? enfocada.categoria : etiqueta}
           </p>
-          <p className="text-xs font-bold text-white leading-tight tabular-nums truncate max-w-full">
+          <p className="text-xs font-bold text-tinta leading-tight tabular-nums truncate max-w-full">
             {formatearMonto(enfocada ? enfocada.total : total)}
           </p>
           {enfocada && (
-            <p className="text-3xs text-slate-400 tabular-nums">{enfocada.porcentaje.toFixed(1)}%</p>
+            <p className="text-3xs text-tinta-2 tabular-nums">{enfocada.porcentaje.toFixed(1)}%</p>
           )}
         </div>
       </div>
@@ -89,8 +89,8 @@ export default function CategoryDonut({
                 style={{ backgroundColor: p.color }}
                 aria-hidden
               />
-              <span className="text-sm text-slate-300 flex-1 min-w-0 truncate">{p.categoria}</span>
-              <span className="text-sm text-slate-500 flex-shrink-0 tabular-nums">
+              <span className="text-sm text-tinta flex-1 min-w-0 truncate">{p.categoria}</span>
+              <span className="text-sm text-tinta-2 flex-shrink-0 tabular-nums">
                 {p.porcentaje.toFixed(1)}%
               </span>
             </button>

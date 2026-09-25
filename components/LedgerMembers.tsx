@@ -94,12 +94,12 @@ export default function LedgerMembers({ ledger, onBack, onChanged }: Props) {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
-        <Users className="w-4 h-4 text-slate-400" />
-        <h3 className="text-sm font-medium text-white">Personas con acceso</h3>
+        <Users className="w-4 h-4 text-tinta-2" />
+        <h3 className="text-sm font-medium text-tinta">Personas con acceso</h3>
       </div>
 
       {error && (
-        <p className="flex items-start gap-2 text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
+        <p className="flex items-start gap-2 text-peligro text-sm bg-peligro/10 border border-peligro/20 rounded-lg px-3 py-2">
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>{error}</span>
         </p>
@@ -108,7 +108,7 @@ export default function LedgerMembers({ ledger, onBack, onChanged }: Props) {
       {cargando ? (
         <div className="space-y-2">
           {[...Array(2)].map((_, i) => (
-            <div key={i} className="h-14 bg-slate-800 rounded-xl animate-pulse" />
+            <div key={i} className="h-14 bg-hundido rounded-xl animate-pulse" />
           ))}
         </div>
       ) : (
@@ -117,7 +117,7 @@ export default function LedgerMembers({ ledger, onBack, onChanged }: Props) {
             const soyYo = m.user_id === miId;
             const puedeQuitar = m.role !== 'owner' && (esDueno || soyYo);
             return (
-              <div key={m.user_id} className="flex items-center gap-3 bg-slate-800 rounded-xl px-3 py-2.5">
+              <div key={m.user_id} className="flex items-center gap-3 bg-hundido rounded-xl px-3 py-2.5">
                 {m.avatar_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -127,23 +127,23 @@ export default function LedgerMembers({ ledger, onBack, onChanged }: Props) {
                     className="w-8 h-8 rounded-full flex-shrink-0 object-cover"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-sm text-slate-300 flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-presionado flex items-center justify-center text-sm text-tinta flex-shrink-0">
                     {m.name.charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <p className="text-sm text-white truncate">{m.name}</p>
-                    {soyYo && <span className="text-xs text-slate-500 flex-shrink-0">(vos)</span>}
-                    {m.role === 'owner' && <Crown className="w-3 h-3 text-amber-400 flex-shrink-0" />}
+                    <p className="text-sm text-tinta truncate">{m.name}</p>
+                    {soyYo && <span className="text-xs text-tinta-2 flex-shrink-0">(vos)</span>}
+                    {m.role === 'owner' && <Crown className="w-3 h-3 text-aviso flex-shrink-0" />}
                   </div>
-                  <p className="text-xs text-slate-500 truncate">{m.email}</p>
+                  <p className="text-xs text-tinta-2 truncate">{m.email}</p>
                 </div>
                 {puedeQuitar && (
                   <button
                     onClick={() => quitar(m.user_id, soyYo)}
                     title={soyYo ? 'Salir de la cuenta' : 'Quitar de la cuenta'}
-                    className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors flex-shrink-0"
+                    className="p-1.5 text-tinta-2 hover:text-peligro hover:bg-peligro/10 rounded-lg transition-colors flex-shrink-0"
                   >
                     {soyYo ? <LogOut className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
                   </button>
@@ -160,37 +160,37 @@ export default function LedgerMembers({ ledger, onBack, onChanged }: Props) {
             <button
               onClick={generar}
               disabled={generando}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-primario hover:bg-primario/85 disabled:opacity-50 text-sobre-primario rounded-lg text-sm font-medium transition-colors"
             >
               {generando
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Generando...</>
                 : <><UserPlus className="w-4 h-4" /> Invitar a alguien</>}
             </button>
           ) : (
-            <div className="space-y-3 bg-slate-800 border border-slate-700 rounded-xl p-4">
+            <div className="space-y-3 bg-hundido border border-linea-fuerte rounded-xl p-4">
               <div className="text-center">
-                <p className="text-xs text-slate-400">Código de invitación</p>
-                <p className="text-xl sm:text-2xl font-mono tracking-[0.18em] sm:tracking-[0.25em] text-emerald-300 mt-1">{codigo}</p>
-                <p className="text-xs text-slate-500 mt-1.5">Vence en 7 días</p>
+                <p className="text-xs text-tinta-2">Código de invitación</p>
+                <p className="text-xl sm:text-2xl font-mono tracking-[0.18em] sm:tracking-[0.25em] text-acento mt-1">{codigo}</p>
+                <p className="text-xs text-tinta-2 mt-1.5">Vence en 7 días</p>
               </div>
 
               <button
                 onClick={copiar}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors"
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-presionado hover:bg-presionado text-tinta rounded-lg text-sm transition-colors"
               >
                 {copiado
-                  ? <><Check className="w-4 h-4 text-emerald-400" /> ¡Enlace copiado!</>
+                  ? <><Check className="w-4 h-4 text-acento" /> ¡Enlace copiado!</>
                   : <><Copy className="w-4 h-4" /> Copiar enlace para compartir</>}
               </button>
 
-              <p className="text-xs text-slate-500 text-center leading-relaxed">
+              <p className="text-xs text-tinta-2 text-center leading-relaxed">
                 Mandáselo por WhatsApp. Quien lo abra y entre con su cuenta
                 va a poder ver y cargar movimientos acá.
               </p>
 
               <button
                 onClick={generar}
-                className="w-full text-xs text-slate-400 hover:text-white transition-colors"
+                className="w-full text-xs text-tinta-2 hover:text-tinta transition-colors"
               >
                 Generar otro código (anula el anterior)
               </button>
@@ -198,14 +198,14 @@ export default function LedgerMembers({ ledger, onBack, onChanged }: Props) {
           )}
         </div>
       ) : (
-        <p className="text-xs text-slate-500 text-center">
+        <p className="text-xs text-tinta-2 text-center">
           Solo el dueño de la cuenta puede invitar a más personas.
         </p>
       )}
 
       <button
         onClick={onBack}
-        className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-colors"
+        className="w-full py-2.5 bg-hundido hover:bg-presionado text-tinta rounded-lg text-sm transition-colors"
       >
         Volver
       </button>

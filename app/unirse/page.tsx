@@ -8,7 +8,7 @@ export default function UnirsePage() {
   return (
     <Suspense fallback={
       <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        <Loader2 className="w-6 h-6 animate-spin text-tinta-2" />
       </div>
     }>
       <UnirseInner />
@@ -74,14 +74,14 @@ function UnirseInner() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4">
         <div className="text-center space-y-4">
-          <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mx-auto">
-            <Check className="w-8 h-8 text-white" />
+          <div className="w-16 h-16 bg-primario rounded-full flex items-center justify-center mx-auto">
+            <Check className="w-8 h-8 text-sobre-primario" />
           </div>
           <div>
-            <p className="text-white font-semibold text-lg">¡Listo!</p>
-            <p className="text-slate-400 text-sm mt-1">Ya tenés acceso a {cuenta}</p>
+            <p className="text-tinta font-semibold text-lg">¡Listo!</p>
+            <p className="text-tinta-2 text-sm mt-1">Ya tenés acceso a {cuenta}</p>
           </div>
-          <Loader2 className="w-4 h-4 animate-spin text-slate-500 mx-auto" />
+          <Loader2 className="w-4 h-4 animate-spin text-tinta-2 mx-auto" />
         </div>
       </div>
     );
@@ -91,12 +91,12 @@ function UnirseInner() {
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-3">
-          <div className="w-14 h-14 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto">
-            <Users className="w-7 h-7 text-emerald-400" />
+          <div className="w-12 h-12 bg-hundido rounded-xl flex items-center justify-center mx-auto">
+            <Users className="w-6 h-6 text-tinta-2" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">Unirse a una cuenta</h1>
-            <p className="text-slate-400 text-sm mt-1">
+            <h1 className="text-xl font-semibold text-tinta">Unirse a una cuenta</h1>
+            <p className="text-tinta-2 text-sm mt-1">
               Poné el código de 6 caracteres que te compartieron
             </p>
           </div>
@@ -110,25 +110,25 @@ function UnirseInner() {
             placeholder="ABC123"
             autoFocus
             autoCapitalize="characters"
-            className="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-4 text-white text-center text-xl sm:text-2xl font-mono tracking-[0.2em] sm:tracking-[0.3em] placeholder:text-slate-600 focus:outline-none focus:border-emerald-500 transition-colors"
+            className="w-full bg-panel border-2 border-linea-fuerte rounded-xl px-4 py-4 text-tinta text-center text-xl sm:text-2xl font-mono tracking-[0.2em] sm:tracking-[0.3em] placeholder:text-tinta-3 focus:outline-none focus:border-tinta-3 transition-colors"
           />
 
           {verificando && (
-            <p className="text-slate-500 text-sm flex items-center justify-center gap-2">
+            <p className="text-tinta-2 text-sm flex items-center justify-center gap-2">
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Verificando...
             </p>
           )}
 
           {error && (
-            <p className="text-rose-400 text-sm flex items-center justify-center gap-2">
+            <p className="text-peligro text-sm flex items-center justify-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" /> {error}
             </p>
           )}
 
           {cuenta && !error && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-center">
-              <p className="text-xs text-slate-400">Te invitaron a</p>
-              <p className="text-emerald-300 font-semibold mt-0.5">{cuenta}</p>
+            <div className="bg-acento/10 border border-acento/20 rounded-xl p-4 text-center">
+              <p className="text-xs text-tinta-2">Te invitaron a</p>
+              <p className="text-acento font-semibold mt-0.5">{cuenta}</p>
             </div>
           )}
         </div>
@@ -136,7 +136,7 @@ function UnirseInner() {
         <button
           onClick={unirse}
           disabled={!cuenta || uniendo || Boolean(error)}
-          className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+          className="w-full py-3 bg-primario hover:bg-primario/85 disabled:opacity-40 disabled:cursor-not-allowed text-sobre-primario rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
         >
           {uniendo ? <><Loader2 className="w-4 h-4 animate-spin" /> Uniéndose...</> : 'Unirme a esta cuenta'}
         </button>

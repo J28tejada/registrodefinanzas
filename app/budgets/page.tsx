@@ -150,28 +150,28 @@ export default function BudgetsPage() {
     <div className="max-w-2xl mx-auto space-y-6 pt-14 md:pt-0">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-white">Presupuestos</h1>
-          <p className="text-slate-400 text-sm truncate">
+          <h1 className="text-xl sm:text-2xl font-semibold text-tinta">Presupuestos</h1>
+          <p className="text-tinta-2 text-sm truncate">
             {currentLedger
               ? `Topes mensuales de ${currentLedger.name}`
               : 'Topes de todas tus cuentas'}
           </p>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 pt-1">
-          <button onClick={() => moverMes(-1)} className="p-1 text-slate-500 hover:text-white rounded transition-colors">
+          <button onClick={() => moverMes(-1)} className="p-1 text-tinta-2 hover:text-tinta rounded transition-colors">
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="text-sm text-slate-400 capitalize min-w-[120px] text-center">
+          <span className="text-sm text-tinta-2 min-w-[120px] text-center">
             {fmt.monthLabel(`${mes}-01`)}
           </span>
-          <button onClick={() => moverMes(1)} className="p-1 text-slate-500 hover:text-white rounded transition-colors">
+          <button onClick={() => moverMes(1)} className="p-1 text-tinta-2 hover:text-tinta rounded transition-colors">
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="flex items-start gap-2 text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
+        <div className="flex items-start gap-2 text-peligro text-sm bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>{error}</span>
         </div>
@@ -181,10 +181,10 @@ export default function BudgetsPage() {
           en vez de mostrarse acá: mezclarlos es justo lo que hacía que un tope
           del hogar apareciera en la cuenta personal. */}
       {currentLedger && sinCuenta.length > 0 && (
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 space-y-3">
+        <div className="bg-aviso/10 border border-aviso/20 rounded-2xl p-4 space-y-3">
           <div className="flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-amber-400">
+            <AlertCircle className="w-4 h-4 text-aviso mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-aviso">
               {sinCuenta.length === 1 ? 'Tenés un presupuesto' : `Tenés ${sinCuenta.length} presupuestos`} sin
               cuenta asignada. Miden lo que gastás en todas tus cuentas juntas — asignalos para que cada
               tope cuente solo lo suyo.
@@ -193,19 +193,19 @@ export default function BudgetsPage() {
           <div className="space-y-2">
             {sinCuenta.map(b => (
               <div key={b.id} className="flex items-center gap-2">
-                <span className="text-sm text-slate-300 flex-1 min-w-0 truncate">
+                <span className="text-sm text-tinta flex-1 min-w-0 truncate">
                   {b.category} · {fmt.money(b.amount)}
                 </span>
                 <div className="relative flex-shrink-0">
                   <select
                     defaultValue=""
                     onChange={e => { if (e.target.value) editar(b.id, { ledger_id: e.target.value }); }}
-                    className="bg-slate-800 border border-slate-700 rounded-lg pl-3 pr-7 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 appearance-none"
+                    className="bg-hundido border border-linea-fuerte rounded-lg pl-3 pr-7 py-1.5 text-xs text-tinta focus:outline-none focus:border-tinta-3 appearance-none"
                   >
                     <option value="">Asignar a…</option>
                     {ledgers.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                   </select>
-                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-tinta-2 pointer-events-none" />
                 </div>
               </div>
             ))}
@@ -215,50 +215,50 @@ export default function BudgetsPage() {
 
       {/* Totales */}
       {budgets.length > 0 && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
+        <div className="border-y border-linea py-4 space-y-3">
           {/* Apilado en móvil: "RD$14,114.00 / RD$31,224.00" no entra al lado de
               la etiqueta en una pantalla de teléfono, y como el monto no puede
               achicarse por debajo de su contenido, terminaba pisando al texto.
               Recién a partir de `sm` hay ancho para ponerlos en una línea. */}
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-1 sm:gap-3">
             <div className="min-w-0">
-              <p className="text-sm text-slate-300">Total presupuestado</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-sm text-tinta">Total presupuestado</p>
+              <p className="text-xs text-tinta-2">
                 {excedidos.length > 0
                   ? `${excedidos.length} categoría${excedidos.length > 1 ? 's' : ''} pasada${excedidos.length > 1 ? 's' : ''} del tope`
                   : 'Todo dentro del tope'}
               </p>
             </div>
-            <p className={`text-xl font-bold tabular-nums flex-shrink-0 ${budgetTone(totalTope > 0 ? Math.round((totalGastado / totalTope) * 100) : 0).text}`}>
+            <p className={`text-xl font-semibold tabular-nums flex-shrink-0 ${budgetTone(totalTope > 0 ? Math.round((totalGastado / totalTope) * 100) : 0).text}`}>
               {fmt.money(totalGastado)}
-              <span className="text-sm text-slate-500 font-normal"> / {fmt.money(totalTope)}</span>
+              <span className="text-sm text-tinta-2 font-normal"> / {fmt.money(totalTope)}</span>
             </p>
           </div>
         </div>
       )}
 
       {/* Alta */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
-        <p className="text-sm font-medium text-slate-300 flex items-center gap-2">
-          <Target className="w-4 h-4 text-emerald-400" /> Nuevo presupuesto
+      <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5 space-y-3">
+        <p className="text-sm font-medium text-tinta flex items-center gap-2">
+          <Target className="w-4 h-4 text-tinta-2" /> Nuevo presupuesto
         </p>
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <select
               value={categoria}
               onChange={e => setCategoria(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 pr-8 text-sm text-white focus:outline-none focus:border-emerald-500 appearance-none"
+              className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 pr-8 text-sm text-tinta focus:outline-none focus:border-tinta-3 appearance-none"
             >
               <option value="">Elegí una categoría</option>
               {disponibles.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-tinta-2 pointer-events-none" />
           </div>
           <button
             type="button"
             onClick={() => { setCreandoCat(v => !v); setErrorCat(''); }}
             title="Crear una categoría nueva"
-            className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-lg text-sm transition-colors flex items-center justify-center gap-1.5 flex-shrink-0"
+            className="px-3 py-2.5 bg-hundido hover:bg-presionado border border-linea-fuerte text-tinta rounded-lg text-sm transition-colors flex items-center justify-center gap-1.5 flex-shrink-0"
           >
             <Plus className="w-4 h-4" />
             <span className="sm:hidden">Nueva categoría</span>
@@ -271,12 +271,12 @@ export default function BudgetsPage() {
             value={monto}
             onChange={e => setMonto(e.target.value)}
             placeholder="Tope mensual"
-            className="sm:w-40 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+            className="sm:w-40 bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta placeholder:text-tinta-3 focus:outline-none focus:border-tinta-3"
           />
           <button
             onClick={guardar}
             disabled={guardando || !categoria || !monto}
-            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5 flex-shrink-0"
+            className="px-4 py-2.5 bg-primario hover:bg-primario/85 disabled:opacity-50 text-sobre-primario rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5 flex-shrink-0"
           >
             {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
             Agregar
@@ -284,8 +284,8 @@ export default function BudgetsPage() {
         </div>
 
         {creandoCat && (
-          <div className="bg-slate-800/60 border border-slate-700 rounded-lg p-3 space-y-2">
-            <label className="text-xs text-slate-400">Nombre de la categoría nueva</label>
+          <div className="bg-hundido border border-linea-fuerte rounded-lg p-3 space-y-2">
+            <label className="text-xs text-tinta-2">Nombre de la categoría nueva</label>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -295,25 +295,25 @@ export default function BudgetsPage() {
                 placeholder="Ej: Mascota, Gimnasio…"
                 autoFocus
                 maxLength={40}
-                className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+                className="flex-1 bg-hundido border border-linea-fuerte rounded-lg px-3 py-2 text-sm text-tinta placeholder:text-tinta-3 focus:outline-none focus:border-tinta-3"
               />
               <button
                 type="button"
                 onClick={crearCategoria}
                 disabled={!nuevaCat.trim()}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+                className="px-4 py-2 bg-primario hover:bg-primario/85 disabled:opacity-50 text-sobre-primario rounded-lg text-sm font-medium transition-colors"
               >
                 Crear
               </button>
             </div>
-            {errorCat && <p className="text-xs text-rose-400">{errorCat}</p>}
-            <p className="text-xs text-slate-500">
+            {errorCat && <p className="text-xs text-peligro">{errorCat}</p>}
+            <p className="text-xs text-tinta-2">
               Se crea en esta cuenta. Podés renombrarla o borrarla desde Configuración.
             </p>
           </div>
         )}
         {disponibles.length === 0 && (
-          <p className="text-xs text-slate-500">Ya tenés un presupuesto para cada categoría de gasto.</p>
+          <p className="text-xs text-tinta-2">Ya tenés un presupuesto para cada categoría de gasto.</p>
         )}
       </div>
 
@@ -321,17 +321,19 @@ export default function BudgetsPage() {
       {cargando ? (
         <div className="space-y-2">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl h-20 animate-pulse" />
+            <div key={i} className="bg-hundido rounded-lg h-16 animate-pulse" />
           ))}
         </div>
       ) : budgets.length === 0 ? (
-        <div className="text-center py-12 text-slate-500">
-          <Target className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p>Todavía no tenés presupuestos.</p>
-          <p className="text-sm mt-1">Ponele un tope a una categoría y te aviso cuando te acerques.</p>
+        <div className="flex flex-col items-center text-center py-12">
+          <div className="w-12 h-12 rounded-full bg-hundido flex items-center justify-center mb-3">
+            <Target className="w-5 h-5 text-tinta-2" />
+          </div>
+          <p className="text-sm font-medium text-tinta">Todavía no tenés presupuestos</p>
+          <p className="text-sm text-tinta-2 mt-1">Ponele un tope a una categoría y te aviso cuando te acerques.</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="border-t border-linea">
           {budgets.map(b => (
             <FilaPresupuesto
               key={b.id}
@@ -345,7 +347,7 @@ export default function BudgetsPage() {
         </div>
       )}
 
-      <p className="text-xs text-slate-500 text-center">
+      <p className="text-xs text-tinta-2 text-center">
         {currentLedger
           ? `El tope se compara contra los gastos del mes en ${currentLedger.name}, los tuyos y los de quien comparta la cuenta.`
           : 'Cada tope se compara contra los gastos del mes de su cuenta. Los que no tienen cuenta miden todas juntas.'}
@@ -399,47 +401,47 @@ function FilaPresupuesto({
 
   if (editando) {
     return (
-      <div className="bg-slate-900 border border-emerald-500/30 rounded-xl px-4 py-3.5 space-y-3">
-        <p className="text-sm text-slate-300">{budget.category}</p>
+      <div className="bg-hundido rounded-lg px-3 py-3.5 my-1 space-y-3">
+        <p className="text-sm text-tinta">{budget.category}</p>
 
         <div className="space-y-1">
-          <label className="text-xs text-slate-500">Tope mensual</label>
+          <label className="text-xs text-tinta-2">Tope mensual</label>
           <input
             type="number" min="0" step="0.01" inputMode="decimal"
             value={monto}
             onChange={e => setMonto(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') guardar(); if (e.key === 'Escape') setEditando(false); }}
             autoFocus
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+            className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta focus:outline-none focus:border-tinta-3"
           />
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs text-slate-500">Cuenta</label>
+          <label className="text-xs text-tinta-2">Cuenta</label>
           <div className="relative">
             <select
               value={cuenta}
               onChange={e => setCuenta(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 pr-8 text-sm text-white focus:outline-none focus:border-emerald-500 appearance-none"
+              className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 pr-8 text-sm text-tinta focus:outline-none focus:border-tinta-3 appearance-none"
             >
               <option value="">Sin cuenta — mide todas juntas</option>
               {ledgers.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-tinta-2 pointer-events-none" />
           </div>
         </div>
 
         <div className="flex gap-2">
           <button
             onClick={() => setEditando(false)}
-            className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-colors flex items-center justify-center gap-1.5"
+            className="flex-1 py-2.5 bg-hundido hover:bg-presionado text-tinta rounded-lg text-sm transition-colors flex items-center justify-center gap-1.5"
           >
             <X className="w-4 h-4" /> Cancelar
           </button>
           <button
             onClick={guardar}
             disabled={guardando || !monto}
-            className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
+            className="flex-1 py-2.5 bg-primario hover:bg-primario/85 disabled:opacity-50 text-sobre-primario rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
           >
             {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
             Guardar
@@ -451,7 +453,7 @@ function FilaPresupuesto({
             a un toque de distancia. Además le devuelve ancho a la categoría. */}
         <button
           onClick={onEliminar}
-          className="w-full py-2 text-rose-400 hover:bg-rose-500/10 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5"
+          className="w-full py-2 text-peligro hover:bg-peligro/10 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5"
         >
           <Trash2 className="w-3.5 h-3.5" /> Eliminar este presupuesto
         </button>
@@ -460,13 +462,15 @@ function FilaPresupuesto({
   }
 
   return (
-    <div className={`bg-slate-900 border rounded-xl px-4 py-3.5 flex items-center gap-2 ${budgetTone(budget.percent).ring}`}>
+    // Una fila de la lista y no una tarjeta: el estado ya lo dicen el
+    // porcentaje y la barra, el borde de color lo repetía.
+    <div className="border-b border-linea py-3.5 flex items-center gap-2">
       <div className="flex-1 min-w-0">
         <BudgetBar budget={budget} />
         {/* Solo en "todas las cuentas": mirando una, decirlo en cada fila es
             repetir lo que ya dice el encabezado. */}
         {mostrarCuenta && (
-          <p className="text-2xs text-slate-500 mt-1">
+          <p className="text-2xs text-tinta-2 mt-1">
             {budget.ledger_name ?? 'Todas las cuentas'}
           </p>
         )}
@@ -476,7 +480,7 @@ function FilaPresupuesto({
           Borrar está adentro de la edición. */}
       <button
         onClick={abrir}
-        className="p-1.5 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors flex-shrink-0"
+        className="p-1.5 text-tinta-2 hover:text-tinta hover:bg-hundido rounded-lg transition-colors flex-shrink-0"
         title="Editar presupuesto"
         aria-label={`Editar el presupuesto de ${budget.category}`}
       >

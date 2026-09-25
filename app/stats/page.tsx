@@ -95,35 +95,35 @@ export default function StatsPage() {
     <div className="max-w-2xl mx-auto space-y-5 pt-14 md:pt-0">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-white">Estadísticas</h1>
-          <p className="text-slate-400 text-sm truncate">
+          <h1 className="text-xl sm:text-2xl font-semibold text-tinta">Estadísticas</h1>
+          <p className="text-tinta-2 text-sm truncate">
             {currentLedger ? currentLedger.name : 'Todas las cuentas'}
           </p>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0 pt-1">
           <button onClick={() => moverMes(-1)} aria-label="Mes anterior"
-                  className="p-1 text-slate-500 hover:text-white rounded transition-colors">
+                  className="p-1 text-tinta-2 hover:text-tinta rounded transition-colors">
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="text-sm text-slate-400 capitalize min-w-[110px] text-center">
+          <span className="text-sm text-tinta-2 min-w-[110px] text-center">
             {fmt.monthLabel(`${mes}-01`)}
           </span>
           <button onClick={() => moverMes(1)} aria-label="Mes siguiente"
-                  className="p-1 text-slate-500 hover:text-white rounded transition-colors">
+                  className="p-1 text-tinta-2 hover:text-tinta rounded transition-colors">
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {/* Gastos / Ingresos */}
-      <div className="grid grid-cols-2 gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
+      <div className="grid grid-cols-2 gap-1 bg-panel border border-linea rounded-xl p-1">
         {(['expense', 'income'] as const).map(t => (
           <button
             key={t}
             onClick={() => setTipo(t)}
             aria-pressed={tipo === t}
             className={`py-2 rounded-lg text-sm font-medium transition-colors ${
-              tipo === t ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'
+              tipo === t ? 'bg-presionado text-tinta' : 'text-tinta-2 hover:text-tinta'
             }`}
           >
             {t === 'expense' ? 'Gastos' : 'Ingresos'}
@@ -132,22 +132,22 @@ export default function StatsPage() {
       </div>
 
       {error && (
-        <div className="flex items-start gap-2 text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
+        <div className="flex items-start gap-2 text-peligro text-sm bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {cargando ? (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl h-52 animate-pulse" />
+        <div className="bg-hundido rounded-xl h-52 animate-pulse" />
       ) : filas.length === 0 ? (
-        <div className="text-center py-12 text-slate-500 bg-slate-900 border border-slate-800 rounded-2xl">
-          <PieChart className="w-8 h-8 mx-auto mb-3 text-slate-600" />
+        <div className="text-center py-12 text-tinta-2 bg-panel border border-linea rounded-xl">
+          <PieChart className="w-8 h-8 mx-auto mb-3 text-tinta-3" />
           <p className="text-sm">No hay {etiqueta.toLowerCase()} en este mes.</p>
         </div>
       ) : (
         <>
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5">
+          <div className="bg-panel border border-linea rounded-xl p-4 sm:p-5">
             <CategoryDonut
               porciones={porciones}
               total={total}
@@ -165,26 +165,26 @@ export default function StatsPage() {
                 <Link
                   key={c.category}
                   href={`/transactions?type=${tipo}&category=${encodeURIComponent(c.category)}&startDate=${start}&endDate=${end}${cuenta}`}
-                  className="block bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl px-4 py-3 transition-colors"
+                  className="block bg-panel border border-linea hover:border-linea-fuerte rounded-xl px-4 py-3 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} aria-hidden />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white truncate">{c.category}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-sm text-tinta truncate">{c.category}</p>
+                      <p className="text-xs text-tinta-2">
                         {c.porcentaje.toFixed(1)}% · {c.count} {c.count === 1 ? 'movimiento' : 'movimientos'}
                       </p>
                     </div>
                     <p className={`text-sm font-semibold flex-shrink-0 tabular-nums ${
-                      tipo === 'expense' ? 'text-rose-400' : 'text-emerald-400'
+                      tipo === 'expense' ? 'text-tinta' : 'text-acento'
                     }`}>
                       {tipo === 'expense' ? '−' : '+'}{fmt.money(c.total)}
                     </p>
-                    <Flecha className="w-4 h-4 text-slate-600 flex-shrink-0" />
+                    <Flecha className="w-4 h-4 text-tinta-3 flex-shrink-0" />
                   </div>
                   {/* La barra repite la proporción a lo largo, donde sí se pueden
                       comparar dos categorías parecidas: en el anillo no se puede. */}
-                  <div className="h-1 bg-slate-800 rounded-full overflow-hidden mt-2">
+                  <div className="h-1 bg-hundido rounded-full overflow-hidden mt-2">
                     <div className="h-full rounded-full" style={{ width: `${c.porcentaje}%`, backgroundColor: color }} />
                   </div>
                 </Link>
@@ -192,7 +192,7 @@ export default function StatsPage() {
             })}
           </div>
 
-          <p className="text-xs text-slate-500 text-center">
+          <p className="text-xs text-tinta-2 text-center">
             Tocá una categoría para ver sus movimientos del mes.
           </p>
         </>

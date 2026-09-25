@@ -11,11 +11,12 @@ import { useCuenta } from './ContextoDeCuenta';
 import { useSesion } from './ContextoDeSesion';
 import { supabase } from '../lib/supabase';
 import { LEDGER_COLOR_MAP } from '@compartido/types';
+import { useColores } from '../lib/colores';
 
 /** Las mismas pantallas y en el mismo orden que components/Navigation.tsx. */
 const navItems = [
-  { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/transactions', icon: Receipt, label: 'Transacciones' },
+  { href: '/', icon: LayoutDashboard, label: 'Inicio' },
+  { href: '/transactions', icon: Receipt, label: 'Movimientos' },
   { href: '/stats', icon: PieChart, label: 'Estadísticas' },
   { href: '/shopping', icon: ShoppingCart, label: 'Supermercado' },
   { href: '/budgets', icon: Target, label: 'Presupuestos' },
@@ -49,6 +50,7 @@ function esActiva(ruta: string, href: string): boolean {
  * conservar.
  */
 export default function Navegacion() {
+  const paleta = useColores();
   const ruta = usePathname();
   const router = useRouter();
   const { currentLedger, setSelectorOpen, setGlobalAddOpen } = useCuenta();
@@ -72,55 +74,53 @@ export default function Navegacion() {
     <>
       {/* Barra de arriba, con el selector de cuenta. */}
       <View
-        className="absolute top-0 left-0 right-0 bg-slate-900 border-b border-slate-800 z-20 px-4 py-3 flex-row items-center gap-2"
-        style={{ paddingTop: insets.top + 12 }}
+        className="absolute top-0 left-0 right-0 bg-fondo border-b border-linea z-20 px-3 py-2.5 flex-row items-center gap-1"
+        style={{ paddingTop: insets.top + 10 }}
       >
         <Pressable
           onPress={() => setMenuAbierto(true)}
           accessibilityLabel="Abrir el menú"
-          className="w-8 h-8 bg-emerald-500 rounded-lg items-center justify-center active:bg-emerald-600"
+          className="w-9 h-9 rounded-lg items-center justify-center active:bg-hundido"
         >
-          <Menu size={16} color="#ffffff" />
+          <Menu size={20} color={paleta.tinta} />
         </Pressable>
+        {/* Se lee como el título de la pantalla y se toca para cambiar de
+            cuenta: sin caja alrededor, que la hacía parecer un campo de texto. */}
         <Pressable
           onPress={() => setSelectorOpen(true)}
-          className="flex-1 flex-row items-center gap-2 bg-slate-800 active:bg-slate-700 rounded-lg px-3 py-1.5"
+          className="flex-row items-center gap-2 active:bg-hundido rounded-lg px-2 py-1.5 flex-shrink"
         >
           {colorDeCuenta ? (
-            <View
-              className="w-3.5 h-3.5 rounded-sm"
-              style={{ backgroundColor: colorDeCuenta.main }}
-            />
+            <View className="w-3 h-3 rounded" style={{ backgroundColor: colorDeCuenta.main }} />
           ) : (
-            <LayoutGrid size={14} color="#94a3b8" />
+            <LayoutGrid size={14} color={paleta.tinta2} />
           )}
-          <Texto className="text-sm text-slate-200 flex-1" numberOfLines={1}>
+          <Texto className="text-sm font-medium text-tinta flex-shrink" numberOfLines={1}>
             {currentLedger?.name ?? 'Todas las cuentas'}
           </Texto>
-          <ChevronDown size={14} color="#64748b" />
+          <ChevronDown size={14} color={paleta.tinta2} />
         </Pressable>
       </View>
 
-      {/* Barra de abajo: cinco lugares con el botón central. */}
+      {/* Barra de abajo: cuatro lugares y el botón de registrar al medio. */}
       <View
-        className="absolute bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 z-20 flex-row items-end"
+        className="absolute bottom-0 left-0 right-0 bg-fondo border-t border-linea z-20 flex-row items-center"
         style={{ paddingBottom: insets.bottom }}
       >
-        <Lugar href="/" icono={LayoutDashboard} texto="Dashboard" activa={ruta === '/'} />
-        <Lugar href="/transactions" icono={Receipt} texto="Transacciones" activa={ruta === '/transactions'} />
+        <Lugar href="/" icono={LayoutDashboard} texto="Inicio" activa={ruta === '/'} />
+        <Lugar href="/transactions" icono={Receipt} texto="Movimientos" activa={ruta === '/transactions'} />
 
-        <View className="flex-1 items-center justify-end pb-2">
+        <View className="flex-1 items-center py-2">
           <Pressable
             onPress={() => setGlobalAddOpen(true)}
-            accessibilityLabel="Registrar transacción"
-            className="w-14 h-14 bg-emerald-500 active:bg-emerald-600 rounded-full items-center justify-center shadow-lg shadow-emerald-500/30 -mt-7"
+            accessibilityLabel="Registrar movimiento"
+            className="w-11 h-11 bg-primario active:bg-primario/85 rounded-lg items-center justify-center"
           >
-            <Plus size={28} color="#ffffff" />
+            <Plus size={24} color={paleta.sobrePrimario} />
           </Pressable>
         </View>
 
-        {/* El asistente, destacado: va en verde apagado aunque no sea la activa. */}
-        <Lugar href="/chat" icono={Bot} texto="Asistente" activa={ruta.startsWith('/chat')} destacada />
+        <Lugar href="/chat" icono={Bot} texto="Asistente" activa={ruta.startsWith('/chat')} />
         <Lugar href="/stats" icono={PieChart} texto="Estadísticas" activa={ruta === '/stats'} />
       </View>
 
@@ -131,21 +131,21 @@ export default function Navegacion() {
       <Modal visible={menuAbierto} transparent animationType="fade" onRequestClose={() => setMenuAbierto(false)}>
         <Pressable className="flex-1 bg-black/60" onPress={() => setMenuAbierto(false)} />
         <View
-          className="absolute top-0 left-0 bottom-0 w-[272px] max-w-[82%] bg-slate-900 border-r border-slate-800"
+          className="absolute top-0 left-0 bottom-0 w-[272px] max-w-[82%] bg-panel border-r border-linea"
           style={{ maxWidth: '82%' }}
         >
-          <View className="bg-emerald-500 px-5" style={{ paddingTop: insets.top }}>
-            <View className="flex-row items-center gap-2 py-5">
-              <Wallet size={20} color="#ffffff" />
-              <Texto className="text-lg text-white flex-1">
-                <Texto className="text-lg text-white font-bold">Jobidai</Texto> Wallet
-              </Texto>
+          <View className="px-5 border-b border-linea" style={{ paddingTop: insets.top }}>
+            <View className="flex-row items-center gap-2 py-4">
+              <View className="w-6 h-6 bg-primario rounded-md items-center justify-center">
+                <Wallet size={14} color={paleta.sobrePrimario} />
+              </View>
+              <Texto className="text-base font-semibold text-tinta flex-1">Jobidai Wallet</Texto>
               <Pressable
                 onPress={() => setMenuAbierto(false)}
                 accessibilityLabel="Cerrar el menú"
                 className="p-1 -mr-1"
               >
-                <X size={20} color="rgba(255,255,255,0.8)" />
+                <X size={20} color={paleta.tinta2} />
               </Pressable>
             </View>
           </View>
@@ -159,11 +159,11 @@ export default function Navegacion() {
                   <Pressable
                     onPress={() => setMenuAbierto(false)}
                     className={`flex-row items-center gap-3 px-3 py-3 rounded-lg ${
-                      activa ? 'bg-emerald-500/10' : 'active:bg-slate-800'
+                      activa ? 'bg-hundido' : 'active:bg-hundido'
                     }`}
                   >
-                    <Icono size={20} color={activa ? '#34d399' : '#cbd5e1'} />
-                    <Texto className={`text-sm ${activa ? 'text-emerald-400 font-medium' : 'text-slate-300'}`}>
+                    <Icono size={20} color={activa ? paleta.tinta : paleta.tinta2} />
+                    <Texto className={`text-sm ${activa ? 'text-tinta font-medium' : 'text-tinta-2'}`}>
                       {label}
                     </Texto>
                   </Pressable>
@@ -173,18 +173,18 @@ export default function Navegacion() {
           </ScrollView>
 
           <View
-            className="p-3 border-t border-slate-800 gap-2"
+            className="p-3 border-t border-linea gap-2"
             style={{ paddingBottom: insets.bottom + 12 }}
           >
             <Pressable
               onPress={salir}
-              className="w-full py-3 bg-emerald-500 active:bg-emerald-600 rounded-lg flex-row items-center justify-center gap-2"
+              className="w-full py-3 active:bg-hundido rounded-lg flex-row items-center justify-center gap-2"
             >
-              <LogOut size={16} color="#ffffff" />
-              <Texto className="text-white text-sm font-medium">Cerrar sesión</Texto>
+              <LogOut size={16} color={paleta.tinta2} />
+              <Texto className="text-tinta-2 text-sm font-medium">Cerrar sesión</Texto>
             </Pressable>
             {email ? (
-              <Texto className="text-xs text-slate-500 text-center" numberOfLines={1}>{email}</Texto>
+              <Texto className="text-xs text-tinta-2 text-center" numberOfLines={1}>{email}</Texto>
             ) : null}
           </View>
         </View>
@@ -193,20 +193,20 @@ export default function Navegacion() {
   );
 }
 
-/** Un lugar de la barra de abajo. */
-function Lugar({ href, icono: Icono, texto, activa, destacada }: {
+/** Un lugar de la barra de abajo: activo en tinta, el resto en gris. */
+function Lugar({ href, icono: Icono, texto, activa }: {
   href: string;
   icono: typeof LayoutDashboard;
   texto: string;
   activa: boolean;
-  destacada?: boolean;
 }) {
-  const color = activa ? '#34d399' : destacada ? 'rgba(110,231,183,0.7)' : '#94a3b8';
+  const paleta = useColores();
+  const color = activa ? paleta.tinta : paleta.tinta2;
   return (
     <Link href={href as never} asChild>
-      <Pressable className="flex-1 items-center justify-center py-3 gap-1">
+      <Pressable className="flex-1 items-center justify-center py-2.5 gap-1">
         <Icono size={20} color={color} />
-        <Texto className="text-xs" style={{ color }}>{texto}</Texto>
+        <Texto className="text-2xs font-medium" style={{ color }}>{texto}</Texto>
       </Pressable>
     </Link>
   );

@@ -1,7 +1,6 @@
 import { ScrollView, View } from 'react-native';
 import Texto from '../componentes/Texto';
-import { TrendingDown, TrendingUp, Wallet } from 'lucide-react-native';
-import TarjetaDeResumen from '../componentes/TarjetaDeResumen';
+import ResumenDelMes from '../componentes/ResumenDelMes';
 import BarraDePresupuesto from '../componentes/BarraDePresupuesto';
 import IconoDeCategoria from '../componentes/IconoDeCategoria';
 import ListaDeMovimientos from '../componentes/ListaDeMovimientos';
@@ -20,7 +19,6 @@ import { DEFAULT_SETTINGS } from '@compartido/types';
  * Mismas piezas, mismos datos, mismos anchos. Lo que cambia es de qué paquete
  * salen los componentes — y justamente eso es lo que la comparación mide.
  */
-const ICONO_RESUMEN = { income: TrendingUp, expense: TrendingDown, balance: Wallet } as const;
 
 export default function Galeria() {
   // Con la configuración fija, no la del usuario: la galería tiene que dibujar
@@ -28,19 +26,16 @@ export default function Galeria() {
   return (
     <ProveedorDeAjustes settings={DEFAULT_SETTINGS}>
       <ProveedorDeCategorias>
-      <ScrollView className="flex-1 bg-slate-950" contentContainerClassName="p-6">
+      <ScrollView className="flex-1 bg-fondo" contentContainerClassName="p-6">
         <View className="max-w-3xl mx-auto w-full gap-8">
           <View>
-            <Texto className="text-xl font-bold text-white">Galería · teléfono</Texto>
-            <Texto className="text-slate-400 text-sm">{PIEZAS.length} piezas para comparar con la web</Texto>
+            <Texto className="text-xl font-semibold text-tinta">Galería · teléfono</Texto>
+            <Texto className="text-tinta-2 text-sm">{PIEZAS.length} piezas para comparar con la web</Texto>
           </View>
 
           {RESUMENES.map(p => (
             <Pieza key={p.id} id={p.id} titulo={p.titulo} ancho={p.ancho}>
-              <TarjetaDeResumen
-                title={p.title} subtitle={p.subtitle} amount={p.amount}
-                variant={p.variant} icon={ICONO_RESUMEN[p.variant]}
-              />
+              <ResumenDelMes income={p.income} expenses={p.expenses} balance={p.balance} />
             </Pieza>
           ))}
 
@@ -92,7 +87,7 @@ function Pieza({ id, titulo, ancho, children }: {
 }) {
   return (
     <View>
-      <Texto className="text-xs text-slate-500 mb-2">{titulo}</Texto>
+      <Texto className="text-xs text-tinta-2 mb-2">{titulo}</Texto>
       <View nativeID={id} style={{ width: ancho }}>{children}</View>
     </View>
   );

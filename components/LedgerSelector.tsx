@@ -39,7 +39,7 @@ function LedgerCard({ ledger, isActive, onSelect, onEdit, onDelete, onManageMemb
 
         {/* Active checkmark */}
         {isActive && (
-          <div className="absolute top-2 right-2 w-6 h-6 bg-white/90 rounded-full flex items-center justify-center shadow-md">
+          <div className="absolute top-2 right-2 w-6 h-6 bg-panel/90 rounded-full flex items-center justify-center shadow-md">
             <Check className="w-3.5 h-3.5" style={{ color: color.main }} />
           </div>
         )}
@@ -73,7 +73,7 @@ function LedgerCard({ ledger, isActive, onSelect, onEdit, onDelete, onManageMemb
               <button
                 onClick={e => { e.stopPropagation(); onDelete(); }}
                 title="Eliminar"
-                className="w-7 h-7 bg-black/40 hover:bg-rose-500/70 rounded-lg flex items-center justify-center transition-colors"
+                className="w-7 h-7 bg-black/40 hover:bg-peligro/70 rounded-lg flex items-center justify-center transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5 text-white" />
               </button>
@@ -84,13 +84,13 @@ function LedgerCard({ ledger, isActive, onSelect, onEdit, onDelete, onManageMemb
 
       <div className="px-0.5">
         <div className="flex items-center gap-1">
-          <p className="text-sm font-medium text-white truncate">{ledger.name}</p>
-          {esDueno && <Crown className="w-3 h-3 text-amber-400 flex-shrink-0" />}
+          <p className="text-sm font-medium text-tinta truncate">{ledger.name}</p>
+          {esDueno && <Crown className="w-3 h-3 text-aviso flex-shrink-0" />}
         </div>
-        <p className={`text-xs font-semibold ${ledger.balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+        <p className={`text-xs font-semibold ${ledger.balance >= 0 ? 'text-acento' : 'text-peligro'}`}>
           {fmt.money(ledger.balance)}
         </p>
-        <p className="text-xs text-slate-500">{ledger.transactionCount} transacciones</p>
+        <p className="text-xs text-tinta-2">{ledger.transactionCount} transacciones</p>
       </div>
     </div>
   );
@@ -126,19 +126,19 @@ function LedgerForm({ initial, onSave, onCancel }: LedgerFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
-        <label className="text-xs text-slate-400 font-medium">NOMBRE *</label>
+        <label className="text-xs text-tinta-2 font-medium">Nombre *</label>
         <input
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="Ej: Personal, Negocio, Proyecto..."
-          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm"
+          className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-tinta placeholder-tinta-3 focus:outline-none focus:border-tinta-3 text-sm"
           autoFocus
         />
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs text-slate-400 font-medium">TIPO DE CATEGORÍAS</label>
+        <label className="text-xs text-tinta-2 font-medium">Tipo de categorías</label>
         <div className="grid grid-cols-2 gap-2">
           {(['personal', 'business'] as const).map(t => (
             <button
@@ -147,10 +147,8 @@ function LedgerForm({ initial, onSave, onCancel }: LedgerFormProps) {
               onClick={() => setType(t)}
               className={`py-2 rounded-lg text-sm font-medium transition-all ${
                 type === t
-                  ? t === 'personal'
-                    ? 'bg-violet-500/20 border-2 border-violet-500 text-violet-300'
-                    : 'bg-blue-500/20 border-2 border-blue-500 text-blue-300'
-                  : 'bg-slate-800 border-2 border-transparent text-slate-400 hover:border-slate-600'
+                  ? 'bg-elevado border-2 border-tinta text-tinta'
+                  : 'bg-hundido border-2 border-transparent text-tinta-2 hover:border-linea-fuerte'
               }`}
             >
               {t === 'personal' ? 'Personal' : 'Negocio'}
@@ -160,7 +158,7 @@ function LedgerForm({ initial, onSave, onCancel }: LedgerFormProps) {
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs text-slate-400 font-medium">COLOR</label>
+        <label className="text-xs text-tinta-2 font-medium">Color</label>
         <div className="flex flex-wrap gap-2">
           {COLOR_OPTIONS.map(c => {
             const col = LEDGER_COLOR_MAP[c];
@@ -169,7 +167,7 @@ function LedgerForm({ initial, onSave, onCancel }: LedgerFormProps) {
                 key={c}
                 type="button"
                 onClick={() => setColor(c)}
-                className={`w-8 h-8 rounded-full transition-all ${color === c ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110' : ''}`}
+                className={`w-8 h-8 rounded-full transition-all ${color === c ? 'ring-2 ring-tinta ring-offset-2 ring-offset-slate-900 scale-110' : ''}`}
                 style={{ backgroundColor: col.main }}
                 title={c}
               />
@@ -179,30 +177,30 @@ function LedgerForm({ initial, onSave, onCancel }: LedgerFormProps) {
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs text-slate-400 font-medium">DESCRIPCIÓN</label>
+        <label className="text-xs text-tinta-2 font-medium">Descripción</label>
         <input
           type="text"
           value={description}
           onChange={e => setDescription(e.target.value)}
           placeholder="Opcional"
-          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 text-sm"
+          className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-tinta placeholder-tinta-3 focus:outline-none focus:border-tinta-3 text-sm"
         />
       </div>
 
-      {error && <p className="text-rose-400 text-sm">{error}</p>}
+      {error && <p className="text-peligro text-sm">{error}</p>}
 
       <div className="flex gap-3 pt-1">
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-colors"
+          className="flex-1 py-2.5 bg-hundido hover:bg-presionado text-tinta rounded-lg text-sm transition-colors"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={saving}
-          className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+          className="flex-1 py-2.5 bg-primario hover:bg-primario/85 disabled:opacity-50 text-sobre-primario rounded-lg text-sm font-medium transition-colors"
         >
           {saving ? 'Guardando...' : 'Guardar'}
         </button>
@@ -280,16 +278,16 @@ export default function LedgerSelector() {
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={handleClose} />
 
-      <div className="relative w-full md:max-w-md bg-slate-900 border border-slate-700 md:rounded-2xl rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col">
+      <div className="relative w-full md:max-w-md bg-panel border border-linea-fuerte md:rounded-2xl rounded-t-2xl shadow-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
-          <h2 className="font-semibold text-white">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-linea">
+          <h2 className="font-semibold text-tinta">
             {view === 'create' ? 'Nueva cuenta'
               : view === 'edit' ? 'Editar cuenta'
               : view === 'members' ? membersLedger?.name
               : 'Seleccionar cuenta'}
           </h2>
-          <button onClick={handleClose} className="text-slate-400 hover:text-white transition-colors">
+          <button onClick={handleClose} className="text-tinta-2 hover:text-tinta transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -321,7 +319,7 @@ export default function LedgerSelector() {
           {view === 'list' && (
             <div className="space-y-5">
               {deleteError && (
-                <p className="text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
+                <p className="text-peligro text-sm bg-peligro/10 border border-peligro/20 rounded-lg px-3 py-2">
                   {deleteError}
                 </p>
               )}
@@ -330,8 +328,8 @@ export default function LedgerSelector() {
                   ofrecer es crear la primera. */}
               {ledgers.length === 0 && (
                 <div className="text-center space-y-3 py-2">
-                  <p className="text-sm text-white font-medium">Te quedaste sin cuentas</p>
-                  <p className="text-xs text-slate-400 leading-relaxed">
+                  <p className="text-sm text-tinta font-medium">Te quedaste sin cuentas</p>
+                  <p className="text-xs text-tinta-2 leading-relaxed">
                     Una cuenta agrupa tus movimientos: por ejemplo Hogar, Personal o Negocio.
                     Podés compartir cualquiera de ellas con otra persona.
                   </p>
@@ -344,21 +342,21 @@ export default function LedgerSelector() {
                 <div className="flex flex-col gap-2">
                   <div
                     className="rounded-2xl overflow-hidden cursor-pointer relative"
-                    style={{ aspectRatio: '3/4', background: 'linear-gradient(135deg, #1e293b, #0f172a)' }}
+                    style={{ aspectRatio: '3/4', background: 'rgb(var(--c-hundido))' }}
                     onClick={() => handleSelect(null)}
                   >
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <LayoutGrid className="w-8 h-8 text-slate-400" />
+                      <LayoutGrid className="w-8 h-8 text-tinta-2" />
                     </div>
                     {currentLedger === null && (
-                      <div className="absolute top-2 right-2 w-6 h-6 bg-white/90 rounded-full flex items-center justify-center shadow-md">
-                        <Check className="w-3.5 h-3.5 text-slate-800" />
+                      <div className="absolute top-2 right-2 w-6 h-6 bg-panel/90 rounded-full flex items-center justify-center shadow-md">
+                        <Check className="w-3.5 h-3.5 text-tinta" />
                       </div>
                     )}
                   </div>
                   <div className="px-0.5">
-                    <p className="text-sm font-medium text-white">Todas</p>
-                    <p className="text-xs text-slate-500">Vista global</p>
+                    <p className="text-sm font-medium text-tinta">Todas</p>
+                    <p className="text-xs text-tinta-2">Vista global</p>
                   </div>
                 </div>
                 )}
@@ -380,12 +378,12 @@ export default function LedgerSelector() {
                 <div className="flex flex-col gap-2">
                   <button
                     onClick={() => setView('create')}
-                    className="rounded-2xl border-2 border-dashed border-slate-700 hover:border-slate-500 hover:bg-slate-800/50 transition-colors flex items-center justify-center cursor-pointer"
+                    className="rounded-2xl border-2 border-dashed border-linea-fuerte hover:border-linea-fuerte hover:bg-hundido transition-colors flex items-center justify-center cursor-pointer"
                     style={{ aspectRatio: '3/4' }}
                   >
-                    <Plus className="w-8 h-8 text-slate-500" />
+                    <Plus className="w-8 h-8 text-tinta-2" />
                   </button>
-                  <p className="text-sm text-slate-500 px-0.5">Nueva cuenta</p>
+                  <p className="text-sm text-tinta-2 px-0.5">Nueva cuenta</p>
                 </div>
               </div>
             </div>

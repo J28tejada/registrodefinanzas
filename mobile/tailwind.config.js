@@ -1,17 +1,21 @@
 /**
  * La misma configuración que la web, extensión por extensión.
  *
- * Que los dos lados usen la paleta por defecto de Tailwind, sin tocar, es lo que
- * hace que `bg-slate-900` sea exactamente el mismo gris en el teléfono y en el
- * navegador. Lo que se extiende acá tiene que estar extendido IGUAL en
- * `tailwind.config.ts`: en el momento en que uno de los dos agregue algo por su
- * cuenta, dejan de verse iguales sin que nada avise.
+ * Los colores salen de `lib/tema-tailwind.js`, el mismo archivo que carga la
+ * web: `bg-fondo` es el mismo gris en el teléfono y en el navegador porque los
+ * dos lo leen del mismo lugar. Lo demás que se extiende acá tiene que estar
+ * extendido IGUAL en `tailwind.config.ts`: en el momento en que uno de los dos
+ * agregue algo por su cuenta, dejan de verse iguales sin que nada avise.
  */
+const { colores, plugin: tema } = require('../lib/tema-tailwind.js');
+
 module.exports = {
   content: ['./app/**/*.{js,jsx,ts,tsx}', './componentes/**/*.{js,jsx,ts,tsx}'],
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
+      // Los de `lib/tema.json`, que cambian solos entre claro y oscuro.
+      colors: colores,
       /*
        * La misma tipografía que la web, que carga Inter con next/font.
        *
@@ -54,5 +58,5 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  plugins: [tema],
 };

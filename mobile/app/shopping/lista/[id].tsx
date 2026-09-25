@@ -17,6 +17,7 @@ import {
 import { leerArticuloNuevo, leerCambiosDeArticulo } from '@compartido/compras-campos';
 import { agruparPorPasillo } from '@compartido/compras';
 import { PASILLOS, ShoppingItem, ShoppingListDetail, UNIDADES } from '@compartido/types';
+import { useColores } from '../../../lib/colores';
 
 /**
  * El gemelo de app/shopping/lista/[id]/page.tsx.
@@ -26,6 +27,7 @@ import { PASILLOS, ShoppingItem, ShoppingListDetail, UNIDADES } from '@compartid
  * comprar y a cuánto salía la última vez.
  */
 export default function Lista() {
+  const paleta = useColores();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const fmt = useFormatters();
@@ -74,7 +76,7 @@ export default function Lista() {
   if (cargando) {
     return (
       <View className="flex-1 items-center justify-center">
-        <Loader2 size={24} color="#94a3b8" />
+        <Loader2 size={24} color={paleta.tinta2} />
       </View>
     );
   }
@@ -83,7 +85,7 @@ export default function Lista() {
     return (
       <Pantalla className="gap-4">
         <Volver />
-        <Texto className="text-sm text-rose-400">{error || 'Esa lista no existe.'}</Texto>
+        <Texto className="text-sm text-peligro">{error || 'Esa lista no existe.'}</Texto>
       </Pantalla>
     );
   }
@@ -93,27 +95,27 @@ export default function Lista() {
       <Volver />
 
       <View>
-        <Texto className="text-xl font-bold text-white" numberOfLines={1}>{lista.name}</Texto>
-        <Texto className="text-slate-400 text-sm">
+        <Texto className="text-xl font-semibold text-tinta" numberOfLines={1}>{lista.name}</Texto>
+        <Texto className="text-tinta-2 text-sm">
           Lista · {lista.items} {lista.items === 1 ? 'artículo' : 'artículos'}
         </Texto>
       </View>
 
       {error ? (
-        <View className="flex-row items-start gap-2 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
-          <View className="mt-0.5"><AlertCircle size={16} color="#fb7185" /></View>
-          <Texto className="text-rose-400 text-sm flex-1">{error}</Texto>
+        <View className="flex-row items-start gap-2 bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
+          <View className="mt-0.5"><AlertCircle size={16} color={paleta.peligro} /></View>
+          <Texto className="text-peligro text-sm flex-1">{error}</Texto>
         </View>
       ) : null}
 
-      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex-row items-end justify-between gap-3">
+      <View className="bg-panel border border-linea rounded-xl p-4 flex-row items-end justify-between gap-3">
         <View className="flex-1">
-          <Texto className="text-2xs uppercase tracking-wider text-slate-500">Costaría</Texto>
-          <Texto className="text-xl font-bold text-white" numberOfLines={1}>{fmt.money(lista.total)}</Texto>
+          <Texto className="text-2xs text-tinta-2">Costaría</Texto>
+          <Texto className="text-xl font-semibold text-tinta" numberOfLines={1}>{fmt.money(lista.total)}</Texto>
         </View>
         <View>
-          <Texto className="text-xs text-slate-500 text-right">A precios de referencia.</Texto>
-          <Texto className="text-xs text-slate-500 text-right">En el súper puede cambiar.</Texto>
+          <Texto className="text-xs text-tinta-2 text-right">A precios de referencia.</Texto>
+          <Texto className="text-xs text-tinta-2 text-right">En el súper puede cambiar.</Texto>
         </View>
       </View>
 
@@ -122,19 +124,19 @@ export default function Lista() {
       ) : null}
 
       {lista.articulos.length === 0 ? (
-        <View className="items-center py-10 bg-slate-900 border border-slate-800 rounded-2xl">
-          <ClipboardList size={32} color="#475569" />
-          <Texto className="text-sm text-slate-500 mt-3">La lista está vacía.</Texto>
+        <View className="items-center py-10 bg-panel border border-linea rounded-xl">
+          <ClipboardList size={32} color={paleta.tinta3} />
+          <Texto className="text-sm text-tinta-2 mt-3">La lista está vacía.</Texto>
         </View>
       ) : (
         <View className="gap-4">
           {porCategoria.map(([categoria, articulos]) => (
             <View key={categoria} className="gap-1.5">
               <View className="flex-row items-end justify-between gap-2 px-1">
-                <Texto className="text-xs font-medium text-slate-400 uppercase tracking-wider flex-1" numberOfLines={1}>
+                <Texto className="text-xs font-medium text-tinta-2 flex-1" numberOfLines={1}>
                   {categoria}
                 </Texto>
-                <Texto className="text-xs text-slate-600">
+                <Texto className="text-xs text-tinta-3">
                   {fmt.money(articulos.reduce((s, a) => s + a.quantity * a.unit_price, 0))}
                 </Texto>
               </View>
@@ -171,19 +173,20 @@ export default function Lista() {
         }}
         className="w-full py-2 rounded-lg flex-row items-center justify-center gap-1.5"
       >
-        <Trash2 size={14} color="#fb7185" />
-        <Texto className="text-rose-400 text-xs">Eliminar esta lista</Texto>
+        <Trash2 size={14} color={paleta.peligro} />
+        <Texto className="text-peligro text-xs">Eliminar esta lista</Texto>
       </Pressable>
     </Pantalla>
   );
 }
 
 function Volver() {
+  const paleta = useColores();
   return (
     <Link href="/shopping" asChild>
       <Pressable className="flex-row items-center gap-1.5 self-start">
-        <ArrowLeft size={16} color="#94a3b8" />
-        <Texto className="text-sm text-slate-400">Supermercado</Texto>
+        <ArrowLeft size={16} color={paleta.tinta2} />
+        <Texto className="text-sm text-tinta-2">Supermercado</Texto>
       </Pressable>
     </Link>
   );
@@ -197,6 +200,7 @@ function FilaPlantilla({
   onEditar: (cambios: Record<string, unknown>) => Promise<boolean>;
   onBorrar: () => void;
 }) {
+  const paleta = useColores();
   const [abierta, setAbierta] = useState(false);
   const [cantidad, setCantidad] = useState(String(item.quantity));
   const [precio, setPrecio] = useState(String(item.unit_price));
@@ -218,36 +222,36 @@ function FilaPlantilla({
   };
 
   return (
-    <View className="bg-slate-900 border border-slate-800 rounded-xl">
+    <View className="bg-panel border border-linea rounded-xl">
       <Pressable
         onPress={() => abierta ? setAbierta(false) : abrir()}
         className="w-full flex-row items-center gap-3 px-3 py-2.5"
       >
         <View className="flex-1">
-          <Texto className="text-sm text-white" numberOfLines={1}>{item.name}</Texto>
-          <Texto className="text-xs text-slate-500">
+          <Texto className="text-sm text-tinta" numberOfLines={1}>{item.name}</Texto>
+          <Texto className="text-xs text-tinta-2">
             {item.quantity} {item.unit}
             {item.unit_price > 0 ? ` × ${fmt.money(item.unit_price)}` : ''}
           </Texto>
         </View>
-        <Texto className="text-sm text-slate-300">
+        <Texto className="text-sm text-tinta">
           {fmt.money(item.quantity * item.unit_price)}
         </Texto>
       </Pressable>
 
       {abierta ? (
-        <View className="px-3 pb-3 gap-2 border-t border-slate-800 pt-3">
+        <View className="px-3 pb-3 gap-2 border-t border-linea pt-3">
           <View className="flex-row gap-2">
             <View className="flex-1 gap-1">
-              <Texto className="text-2xs text-slate-500">Cantidad</Texto>
+              <Texto className="text-2xs text-tinta-2">Cantidad</Texto>
               <TextInput
                 keyboardType="decimal-pad"
                 value={cantidad} onChangeText={setCantidad}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-sm text-white"
+                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-2 py-2 text-sm text-tinta"
               />
             </View>
             <View className="flex-1 gap-1">
-              <Texto className="text-2xs text-slate-500">Unidad</Texto>
+              <Texto className="text-2xs text-tinta-2">Unidad</Texto>
               <Selector
                 value={unidad}
                 opciones={UNIDADES.map(u => ({ valor: u, etiqueta: u }))}
@@ -256,11 +260,11 @@ function FilaPlantilla({
               />
             </View>
             <View className="flex-1 gap-1">
-              <Texto className="text-2xs text-slate-500">Precio c/u</Texto>
+              <Texto className="text-2xs text-tinta-2">Precio c/u</Texto>
               <TextInput
                 keyboardType="decimal-pad"
                 value={precio} onChangeText={setPrecio}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-sm text-white"
+                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-2 py-2 text-sm text-tinta"
               />
             </View>
           </View>
@@ -269,17 +273,17 @@ function FilaPlantilla({
               onPress={onBorrar}
               className="px-3 py-2 rounded-lg flex-row items-center gap-1.5"
             >
-              <Trash2 size={14} color="#fb7185" />
-              <Texto className="text-rose-400 text-xs">Quitar</Texto>
+              <Trash2 size={14} color={paleta.peligro} />
+              <Texto className="text-peligro text-xs">Quitar</Texto>
             </Pressable>
             <Pressable
               onPress={guardar}
               disabled={guardando}
               style={guardando ? { opacity: 0.5 } : undefined}
-              className="flex-1 py-2 bg-emerald-600 active:bg-emerald-500 rounded-lg flex-row items-center justify-center gap-1.5"
+              className="flex-1 py-2 bg-primario active:bg-primario/85 rounded-lg flex-row items-center justify-center gap-1.5"
             >
-              {guardando ? <Loader2 size={14} color="#ffffff" /> : <Check size={14} color="#ffffff" />}
-              <Texto className="text-white text-xs font-medium">Guardar</Texto>
+              {guardando ? <Loader2 size={14} color={paleta.sobrePrimario} /> : <Check size={14} color={paleta.sobrePrimario} />}
+              <Texto className="text-sobre-primario text-xs font-medium">Guardar</Texto>
             </Pressable>
           </View>
         </View>
@@ -296,6 +300,7 @@ function AgregarArticulo({
   onListo: () => Promise<void>;
   onError: (m: string) => void;
 }) {
+  const paleta = useColores();
   const [nombre, setNombre] = useState('');
   const [categoria, setCategoria] = useState<string>(PASILLOS[0]);
   const [guardando, setGuardando] = useState(false);
@@ -320,25 +325,25 @@ function AgregarArticulo({
   };
 
   return (
-    <View className="bg-slate-900 border border-slate-800 rounded-2xl p-3 gap-2">
+    <View className="bg-panel border border-linea rounded-xl p-3 gap-2">
       <View className="flex-row gap-2">
         <TextInput
           value={nombre}
           onChangeText={setNombre}
           onSubmitEditing={agregar}
           placeholder="Agregar artículo…"
-          placeholderTextColor="#64748b"
+          placeholderTextColor={paleta.tinta2}
           maxLength={60}
-          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white"
+          className="flex-1 bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
         />
         <Pressable
           onPress={agregar}
           disabled={guardando || !nombre.trim()}
           accessibilityLabel="Agregar"
           style={guardando || !nombre.trim() ? { opacity: 0.5 } : undefined}
-          className="px-4 bg-emerald-600 active:bg-emerald-500 rounded-lg items-center justify-center"
+          className="px-4 bg-primario active:bg-primario/85 rounded-lg items-center justify-center"
         >
-          {guardando ? <Loader2 size={16} color="#ffffff" /> : <Plus size={16} color="#ffffff" />}
+          {guardando ? <Loader2 size={16} color={paleta.sobrePrimario} /> : <Plus size={16} color={paleta.sobrePrimario} />}
         </Pressable>
       </View>
       <Selector

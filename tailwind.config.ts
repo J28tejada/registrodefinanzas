@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import { colores, plugin as tema } from './lib/tema-tailwind.js';
 
 const config: Config = {
   content: [
@@ -8,6 +9,8 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      // Los de `lib/tema.json`, que cambian solos entre claro y oscuro.
+      colors: colores,
       /*
        * Los tres tamaños chicos que la app usa debajo de `text-xs`.
        *
@@ -35,7 +38,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [tema],
 };
 
 export default config;

@@ -23,8 +23,8 @@ export default function CardAlerts({ avisos }: { avisos: AvisoDeTarjeta[] }) {
         // El pago urge y el corte solo informa: dejar pasar una fecha de pago
         // cuesta plata, un corte no.
         const tono = esPago
-          ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-          : 'bg-slate-800/60 border-slate-700 text-slate-300';
+          ? 'bg-aviso/10 border-aviso/30 text-aviso'
+          : 'bg-hundido border-linea-fuerte text-tinta';
 
         return (
           <Link

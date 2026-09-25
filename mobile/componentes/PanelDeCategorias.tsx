@@ -12,6 +12,7 @@ import { createCategory, deleteCategory, updateCategory } from '@compartido/db';
 import { leerIconoYColor } from '@compartido/categorias-campos';
 import { sugerirIcono } from '@compartido/categorias-catalogo';
 import { CategoryWithUsage, TransactionType } from '@compartido/types';
+import { useColores } from '../lib/colores';
 
 /** Ya no hay ámbito: la cuenta lo define, y cada cuenta tiene su lista. */
 const GRUPOS: { type: TransactionType; titulo: string }[] = [
@@ -36,6 +37,7 @@ type Edicion =
  * no la usa ninguno. Por eso cada tarjeta muestra en cuántos se usa.
  */
 export default function PanelDeCategorias() {
+  const paleta = useColores();
   const { cargando, error: errorCarga, refrescar, para, subDe } = useCategorias();
   const { currentLedger, ledgers } = useCuenta();
   const { session } = useSesion();
@@ -51,28 +53,28 @@ export default function PanelDeCategorias() {
 
   if (cargando) {
     return (
-      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 items-center">
-        <Loader2 size={20} color="#64748b" />
+      <View className="bg-panel border border-linea rounded-xl p-4 items-center">
+        <Loader2 size={20} color={paleta.tinta2} />
       </View>
     );
   }
 
   return (
-    <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-5">
+    <View className="bg-panel border border-linea rounded-xl p-4 gap-5">
       <View>
         <View className="flex-row items-center gap-2">
-          <Tags size={16} color="#34d399" />
-          <Texto className="font-semibold text-white text-sm">Categorías</Texto>
+          <Tags size={16} color={paleta.acento} />
+          <Texto className="font-semibold text-tinta text-sm">Categorías</Texto>
         </View>
-        <Texto className="text-xs text-slate-400 mt-0.5">
+        <Texto className="text-xs text-tinta-2 mt-0.5">
           Tocá una para cambiarle el nombre, el ícono o el color.
         </Texto>
       </View>
 
       {aMostrar ? (
-        <View className="flex-row items-start gap-2 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
-          <View className="mt-0.5"><AlertCircle size={16} color="#fb7185" /></View>
-          <Texto className="text-rose-400 text-sm flex-1">{aMostrar}</Texto>
+        <View className="flex-row items-start gap-2 bg-peligro/10 border border-peligro/20 rounded-lg px-3 py-2">
+          <View className="mt-0.5"><AlertCircle size={16} color={paleta.peligro} /></View>
+          <Texto className="text-peligro text-sm flex-1">{aMostrar}</Texto>
         </View>
       ) : null}
 
@@ -86,7 +88,7 @@ export default function PanelDeCategorias() {
 
         return (
           <View key={type} className="gap-3">
-            <Texto className="text-xs text-slate-400 font-medium uppercase tracking-wider">{titulo}</Texto>
+            <Texto className="text-xs text-tinta-2 font-medium">{titulo}</Texto>
 
             {/* Tres columnas en el teléfono, igual que la web: con cuatro la
                 celda queda en 58px y "Combustible" se parte al medio. La web lo
@@ -99,12 +101,12 @@ export default function PanelDeCategorias() {
                     {/* Cuántas cuelgan. Sin esto no hay forma de saber cuáles
                         tienen segundo nivel sin abrirlas una por una. */}
                     {subDe(cat.id).length > 0 ? (
-                      <View className="absolute -bottom-0.5 -right-0.5 h-4 px-1 rounded-full bg-slate-700 border border-slate-900 items-center justify-center" style={{ minWidth: 16 }}>
-                        <Texto className="text-4xs text-slate-300">{subDe(cat.id).length}</Texto>
+                      <View className="absolute -bottom-0.5 -right-0.5 h-4 px-1 rounded-full bg-presionado border border-linea items-center justify-center" style={{ minWidth: 16 }}>
+                        <Texto className="text-4xs text-tinta">{subDe(cat.id).length}</Texto>
                       </View>
                     ) : null}
                   </View>
-                  <Texto className="text-2xs text-slate-300 text-center w-full" numberOfLines={2}>
+                  <Texto className="text-2xs text-tinta text-center w-full" numberOfLines={2}>
                     {cat.name}
                   </Texto>
                 </Celda>
@@ -113,10 +115,10 @@ export default function PanelDeCategorias() {
               {/* Agregar, como una más de la grilla: es donde la mano ya está
                   mirando, en vez de un botón arriba a la derecha. */}
               <Celda onPress={() => { setEdicion({ modo: 'nueva', type }); setError(''); }}>
-                <View className="w-11 h-11 rounded-full border border-dashed border-slate-600 items-center justify-center">
-                  <Plus size={20} color="#64748b" />
+                <View className="w-11 h-11 rounded-full border border-dashed border-linea-fuerte items-center justify-center">
+                  <Plus size={20} color={paleta.tinta2} />
                 </View>
-                <Texto className="text-2xs text-slate-400">Agregar</Texto>
+                <Texto className="text-2xs text-tinta-2">Agregar</Texto>
               </Celda>
             </View>
 
@@ -149,11 +151,11 @@ export default function PanelDeCategorias() {
       ) : null}
 
       <View className="gap-1.5">
-        <Texto className="text-xs text-slate-500">
+        <Texto className="text-xs text-tinta-2">
           Las categorías son de la cuenta, no tuyas: en una cuenta compartida las
           ven los dos y alcanza con crearlas una vez.
         </Texto>
-        <Texto className="text-xs text-slate-500">
+        <Texto className="text-xs text-tinta-2">
           Una categoría con movimientos no se puede borrar —quedarían con un
           nombre que ya no existe—, pero sí renombrar: los movimientos se
           renombran con ella.
@@ -191,6 +193,7 @@ function EditorDeCategoria({
   onCancelar: () => void;
   onError: (m: string) => void;
 }) {
+  const paleta = useColores();
   const [nombre, setNombre] = useState(cat?.name ?? '');
   const [elegido, setElegido] = useState<string | null>(cat?.icon ?? null);
   const [color, setColor] = useState<string | null>(cat?.color ?? null);
@@ -256,7 +259,7 @@ function EditorDeCategoria({
   };
 
   return (
-    <View className="border border-slate-800 rounded-xl p-3 gap-3 bg-slate-950/40">
+    <View className="border border-linea rounded-xl p-3 gap-3 bg-fondo">
       {/* La vista previa al lado del nombre: se ve cómo va a quedar mientras se
           elige, sin tener que guardar para enterarse. */}
       <View className="flex-row items-center gap-3">
@@ -266,10 +269,10 @@ function EditorDeCategoria({
           onChangeText={setNombre}
           onSubmitEditing={guardar}
           placeholder="Nombre de la categoría"
-          placeholderTextColor="#64748b"
+          placeholderTextColor={paleta.tinta2}
           autoFocus
           maxLength={40}
-          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white"
+          className="flex-1 bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta"
         />
       </View>
 
@@ -298,26 +301,26 @@ function EditorDeCategoria({
             disabled={ocupado}
             accessibilityLabel="Eliminar"
             style={ocupado ? { opacity: 0.5 } : undefined}
-            className="px-3 py-2.5 bg-slate-800 active:bg-rose-600 rounded-lg"
+            className="px-3 py-2.5 bg-hundido active:bg-peligro/85 rounded-lg"
           >
-            <Trash2 size={16} color="#cbd5e1" />
+            <Trash2 size={16} color={paleta.tinta} />
           </Pressable>
         ) : null}
         <Pressable
           onPress={onCancelar}
-          className="flex-1 py-2.5 bg-slate-800 active:bg-slate-700 rounded-lg flex-row items-center justify-center gap-1.5"
+          className="flex-1 py-2.5 bg-hundido active:bg-presionado rounded-lg flex-row items-center justify-center gap-1.5"
         >
-          <X size={16} color="#cbd5e1" />
-          <Texto className="text-slate-300 text-sm">Cancelar</Texto>
+          <X size={16} color={paleta.tinta} />
+          <Texto className="text-tinta text-sm">Cancelar</Texto>
         </Pressable>
         <Pressable
           onPress={guardar}
           disabled={ocupado || !nombre.trim()}
           style={ocupado || !nombre.trim() ? { opacity: 0.5 } : undefined}
-          className="flex-1 py-2.5 bg-emerald-600 active:bg-emerald-500 rounded-lg flex-row items-center justify-center gap-1.5"
+          className="flex-1 py-2.5 bg-primario active:bg-primario/85 rounded-lg flex-row items-center justify-center gap-1.5"
         >
-          {ocupado ? <Loader2 size={16} color="#ffffff" /> : <Check size={16} color="#ffffff" />}
-          <Texto className="text-white text-sm font-medium">Guardar</Texto>
+          {ocupado ? <Loader2 size={16} color={paleta.sobrePrimario} /> : <Check size={16} color={paleta.sobrePrimario} />}
+          <Texto className="text-sobre-primario text-sm font-medium">Guardar</Texto>
         </Pressable>
       </View>
     </View>
@@ -340,6 +343,7 @@ function Subcategorias({
   onCambio: () => Promise<void>;
   onError: (m: string) => void;
 }) {
+  const paleta = useColores();
   const [nueva, setNueva] = useState('');
   const [ocupado, setOcupado] = useState('');
 
@@ -383,13 +387,13 @@ function Subcategorias({
   };
 
   return (
-    <View className="gap-2 pt-1 border-t border-slate-800">
-      <Texto className="text-2xs text-slate-500 uppercase tracking-wider pt-2">
+    <View className="gap-2 pt-1 border-t border-linea">
+      <Texto className="text-2xs text-tinta-2 pt-2">
         Detalle de {padre.name}
       </Texto>
 
       {lista.length === 0 ? (
-        <Texto className="text-xs text-slate-600">
+        <Texto className="text-xs text-tinta-3">
           Sin detalle todavía. Al anotar un gasto en {padre.name} vas a poder
           elegir entre lo que agregues acá.
         </Texto>
@@ -399,9 +403,9 @@ function Subcategorias({
         {lista.map(sub => (
           <View
             key={sub.id}
-            className="flex-row items-center gap-1 bg-slate-800 border border-slate-700 rounded-lg pl-2.5 pr-1 py-1"
+            className="flex-row items-center gap-1 bg-hundido border border-linea-fuerte rounded-lg pl-2.5 pr-1 py-1"
           >
-            <Texto className="text-xs text-slate-200">{sub.name}</Texto>
+            <Texto className="text-xs text-tinta">{sub.name}</Texto>
             <Pressable
               onPress={() => borrar(sub)}
               disabled={ocupado === sub.id}
@@ -410,8 +414,8 @@ function Subcategorias({
               className="p-0.5"
             >
               {ocupado === sub.id
-                ? <Loader2 size={12} color="#64748b" />
-                : <X size={12} color="#64748b" />}
+                ? <Loader2 size={12} color={paleta.tinta2} />
+                : <X size={12} color={paleta.tinta2} />}
             </Pressable>
           </View>
         ))}
@@ -423,17 +427,17 @@ function Subcategorias({
           onChangeText={setNueva}
           onSubmitEditing={agregar}
           placeholder={`Agregar a ${padre.name}`}
-          placeholderTextColor="#64748b"
+          placeholderTextColor={paleta.tinta2}
           maxLength={40}
-          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
+          className="flex-1 bg-hundido border border-linea-fuerte rounded-lg px-3 py-2 text-sm text-tinta"
         />
         <Pressable
           onPress={agregar}
           disabled={ocupado === 'nueva' || !nueva.trim()}
           style={ocupado === 'nueva' || !nueva.trim() ? { opacity: 0.5 } : undefined}
-          className="px-3 py-2 bg-slate-800 active:bg-slate-700 rounded-lg justify-center"
+          className="px-3 py-2 bg-hundido active:bg-presionado rounded-lg justify-center"
         >
-          {ocupado === 'nueva' ? <Loader2 size={16} color="#e2e8f0" /> : <Plus size={16} color="#e2e8f0" />}
+          {ocupado === 'nueva' ? <Loader2 size={16} color={paleta.tinta} /> : <Plus size={16} color={paleta.tinta} />}
         </Pressable>
       </View>
     </View>

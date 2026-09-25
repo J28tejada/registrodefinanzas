@@ -85,8 +85,11 @@ function formatearFecha(iso: string, c: FormatConfig): string {
 function etiquetaDeMes(iso: string, c: FormatConfig): string {
   const [y, m] = iso.split('-').map(Number);
   try {
-    return new Intl.DateTimeFormat(c.locale, { month: 'long', year: 'numeric', timeZone: 'UTC' })
+    // Mayúscula solo en la primera letra. Con `capitalize` de CSS quedaba
+    // "Septiembre De 2026": esa clase sube la inicial de CADA palabra.
+    const texto = new Intl.DateTimeFormat(c.locale, { month: 'long', year: 'numeric', timeZone: 'UTC' })
       .format(new Date(Date.UTC(y, m - 1, 1)));
+    return texto.charAt(0).toUpperCase() + texto.slice(1);
   } catch {
     return iso.slice(0, 7);
   }
@@ -157,4 +160,17 @@ export function zonasHorarias(): string[] {
     'Europe/Berlin', 'Europe/Paris', 'Africa/Lagos', 'Asia/Dubai', 'Asia/Kolkata',
     'Asia/Shanghai', 'Asia/Tokyo', 'Australia/Sydney', 'UTC',
   ];
+}
+
+/**
+ * `RD$4,002.00` -> [`RD$4,002`, `.00`], para dibujar los centavos más apagados.
+ *
+ * En el número grande del balance los centavos casi nunca importan y compiten
+ * con lo que sí. Se corta sobre el texto ya formateado y no sobre el número:
+ * así respeta la moneda y el locale que eligió el usuario (`4.002,00 €` da
+ * `4.002` y `,00 €`). Si el formato no trae centavos, no se corta nada.
+ */
+export function separarCentavos(monto: string): [string, string] {
+  const m = monto.match(/^(.*\d)([.,]\d{2})(\D*)$/);
+  return m ? [m[1], m[2] + m[3]] : [monto, ''];
 }

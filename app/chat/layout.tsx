@@ -45,7 +45,7 @@ export default function AsistenteLayout({ children }: { children: React.ReactNod
     <div className={`max-w-3xl mx-auto pt-14 md:pt-0 ${encuadre}`}>
       {/* `flex-shrink-0` para que el encuadre de la conversación no aplaste
           esta barra en vez de achicar la conversación. */}
-      <div className="flex gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1 mb-4 flex-shrink-0">
+      <div className="flex gap-1 bg-panel border border-linea rounded-xl p-1 mb-4 flex-shrink-0">
         {CANALES.map(({ href, icon: Icon, label }) => {
           // Exacto y no por prefijo: `/chat` es prefijo de los otros dos, y por
           // prefijo quedarían las tres marcadas a la vez.
@@ -56,8 +56,8 @@ export default function AsistenteLayout({ children }: { children: React.ReactNod
               href={href}
               className={`flex-1 flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2 rounded-lg text-sm whitespace-nowrap transition-colors ${
                 activo
-                  ? 'bg-emerald-500/15 text-emerald-400'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  ? 'bg-hundido text-tinta font-medium'
+                  : 'text-tinta-2 hover:text-tinta hover:bg-hundido'
               }`}
             >
               {/* El ícono se va en pantalla angosta: en un iPhone SE, con los

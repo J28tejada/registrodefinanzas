@@ -46,7 +46,7 @@ export default function RaizDelLayout() {
           </ProveedorDeCuenta>
         </ProveedorDeAjustes>
       </ProveedorDeSesion>
-      <StatusBar style="light" />
+      <StatusBar style="auto" />
     </SafeAreaProvider>
   );
 }
@@ -101,8 +101,11 @@ function Guardia() {
   return (
     <Estructura>
       {/* Sin cabecera propia: la app web dibuja la suya y hay que reproducir
-          esa, no la de iOS. `contentStyle` pone el mismo slate-950 del <body>. */}
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0f172a' } }} />
+          esa, no la de iOS. El fondo transparente deja ver el `bg-fondo` de
+          Estructura: con un color puesto acá desde JavaScript, al pasar el
+          teléfono de claro a oscuro con la app abierta el fondo se quedaba en
+          el tema anterior mientras todo lo demás cambiaba. */}
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }} />
     </Estructura>
   );
 }

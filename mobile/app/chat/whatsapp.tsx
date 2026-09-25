@@ -7,6 +7,7 @@ import {
 import Texto from '../../componentes/Texto';
 import PanelDeVinculo, { FilaDeChat, Flecha } from '../../componentes/PanelDeVinculo';
 import { llamarApi } from '../../lib/api';
+import { useColores } from '../../lib/colores';
 
 /** Lo técnico: solo llega si sos admin. */
 interface Avanzado {
@@ -33,11 +34,11 @@ interface Estado {
 }
 
 const ESTADO_TEXTO: Record<string, { texto: string; clase: string }> = {
-  open: { texto: 'Conectado', clase: 'text-emerald-400' },
-  connecting: { texto: 'Conectando…', clase: 'text-amber-400' },
-  close: { texto: 'Desconectado — hay que re-vincular', clase: 'text-rose-400' },
-  error: { texto: 'No responde', clase: 'text-rose-400' },
-  'sin-configurar': { texto: 'Sin configurar', clase: 'text-slate-400' },
+  open: { texto: 'Conectado', clase: 'text-acento' },
+  connecting: { texto: 'Conectando…', clase: 'text-aviso' },
+  close: { texto: 'Desconectado — hay que re-vincular', clase: 'text-peligro' },
+  error: { texto: 'No responde', clase: 'text-peligro' },
+  'sin-configurar': { texto: 'Sin configurar', clase: 'text-tinta-2' },
 };
 
 const COMO_SE_USA = [
@@ -50,6 +51,7 @@ const COMO_SE_USA = [
 
 /** El gemelo de app/chat/whatsapp/page.tsx. */
 export default function Whatsapp() {
+  const paleta = useColores();
   const [estado, setEstado] = useState<Estado | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -111,34 +113,34 @@ export default function Whatsapp() {
   if (cargando) {
     return (
       <View className="flex-1 items-center justify-center">
-        <Loader2 size={24} color="#94a3b8" />
+        <Loader2 size={24} color={paleta.tinta2} />
       </View>
     );
   }
 
   const av = estado?.avanzado;
   const conexion = ESTADO_TEXTO[av?.state ?? 'sin-configurar']
-    ?? { texto: av?.state ?? '—', clase: 'text-slate-400' };
+    ?? { texto: av?.state ?? '—', clase: 'text-tinta-2' };
 
   return (
     <ScrollView className="flex-1" contentContainerClassName="gap-6" keyboardShouldPersistTaps="handled">
       {/* Sin título propio: la pestaña de arriba ya dice WhatsApp, y repetirlo
           dos renglones más abajo no agrega nada. */}
-      <Texto className="text-slate-400 text-sm">
+      <Texto className="text-tinta-2 text-sm">
         El mismo asistente, en tu WhatsApp: anotá gastos e ingresos escribiendo,
         dictando o fotografiando el recibo.
       </Texto>
 
       {error ? (
-        <View className="flex-row items-start gap-2 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
-          <View className="mt-0.5"><AlertCircle size={16} color="#fb7185" /></View>
-          <Texto className="text-rose-400 text-sm flex-1">{error}</Texto>
+        <View className="flex-row items-start gap-2 bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
+          <View className="mt-0.5"><AlertCircle size={16} color={paleta.peligro} /></View>
+          <Texto className="text-peligro text-sm flex-1">{error}</Texto>
         </View>
       ) : null}
       {aviso ? (
-        <View className="flex-row items-start gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3">
-          <View className="mt-0.5"><CheckCircle2 size={16} color="#34d399" /></View>
-          <Texto className="text-emerald-400 text-sm flex-1">{aviso}</Texto>
+        <View className="flex-row items-start gap-2 bg-acento/10 border border-acento/20 rounded-xl px-4 py-3">
+          <View className="mt-0.5"><CheckCircle2 size={16} color={paleta.acento} /></View>
+          <Texto className="text-acento text-sm flex-1">{aviso}</Texto>
         </View>
       ) : null}
 
@@ -146,9 +148,9 @@ export default function Whatsapp() {
           a un chat mudo y cree que hizo algo mal. Sin explicar por qué: eso es
           asunto de quien administra. */}
       {estado && !estado.listo ? (
-        <View className="flex-row items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
-          <View className="mt-0.5"><AlertCircle size={16} color="#fbbf24" /></View>
-          <Texto className="text-amber-400 text-sm flex-1">
+        <View className="flex-row items-start gap-2 bg-aviso/10 border border-aviso/20 rounded-xl px-4 py-3">
+          <View className="mt-0.5"><AlertCircle size={16} color={paleta.aviso} /></View>
+          <Texto className="text-aviso text-sm flex-1">
             El asistente está fuera de línea en este momento. Podés dejar tu chat vinculado igual;
             va a empezar a responder en cuanto vuelva.
           </Texto>
@@ -163,7 +165,7 @@ export default function Whatsapp() {
         formatearId={id => `+${id}`}
         onCambio={cargarEstado}
         instrucciones={
-          <Texto className="text-xs text-slate-400">
+          <Texto className="text-xs text-tinta-2">
             Generá un código y mandáselo por WhatsApp al asistente. Así ese número queda atado a tu
             cuenta y nadie más puede anotar movimientos en tus finanzas.
           </Texto>
@@ -176,13 +178,13 @@ export default function Whatsapp() {
       />
 
       {/* Cómo se usa */}
-      <View className="bg-slate-900 border border-slate-800 rounded-2xl p-4 gap-3">
-        <Texto className="font-semibold text-white text-sm">Cómo se usa</Texto>
+      <View className="bg-panel border border-linea rounded-xl p-4 gap-3">
+        <Texto className="font-semibold text-tinta text-sm">Cómo se usa</Texto>
         <View className="gap-2">
           {COMO_SE_USA.map(t => (
             <View key={t} className="flex-row items-start gap-2">
-              <View className="mt-0.5"><CheckCircle2 size={16} color="#34d399" /></View>
-              <Texto className="text-sm text-slate-400 flex-1">{t}</Texto>
+              <View className="mt-0.5"><CheckCircle2 size={16} color={paleta.acento} /></View>
+              <Texto className="text-sm text-tinta-2 flex-1">{t}</Texto>
             </View>
           ))}
         </View>
@@ -190,65 +192,65 @@ export default function Whatsapp() {
 
       {/* ─── De acá para abajo, solo para quien administra la conexión ───────── */}
       {av ? (
-        <View className="border border-slate-800 rounded-2xl overflow-hidden">
+        <View className="border border-linea rounded-2xl overflow-hidden">
           <Pressable
             onPress={() => setVerAvanzado(v => !v)}
-            className="w-full px-4 py-3 flex-row items-center gap-2 active:bg-slate-900"
+            className="w-full px-4 py-3 flex-row items-center gap-2 active:bg-panel"
           >
-            <Wrench size={16} color="#94a3b8" />
-            <Texto className="text-sm text-slate-400 flex-1">Conexión del asistente</Texto>
-            {!estado?.listo ? <View className="w-2 h-2 rounded-full bg-rose-500" /> : null}
+            <Wrench size={16} color={paleta.tinta2} />
+            <Texto className="text-sm text-tinta-2 flex-1">Conexión del asistente</Texto>
+            {!estado?.listo ? <View className="w-2 h-2 rounded-full bg-peligro" /> : null}
             <Flecha abierta={verAvanzado} />
           </Pressable>
 
           {verAvanzado ? (
             <View className="p-4 pt-0 gap-4">
-              <Texto className="text-xs text-slate-500">
+              <Texto className="text-xs text-tinta-2">
                 Esto lo ves porque administrás la instancia. El resto de los usuarios solo ve
                 el paso de arriba.
               </Texto>
 
               {av.faltantes.length > 0 ? (
-                <View className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 gap-2">
-                  <Texto className="text-amber-400 text-sm font-medium">Faltan variables de entorno</Texto>
-                  <View className="bg-slate-800 rounded-lg p-3 gap-1">
-                    {av.faltantes.map(v => <Texto key={v} className="text-xs text-slate-300">{v}</Texto>)}
+                <View className="bg-aviso/10 border border-aviso/20 rounded-xl p-4 gap-2">
+                  <Texto className="text-aviso text-sm font-medium">Faltan variables de entorno</Texto>
+                  <View className="bg-hundido rounded-lg p-3 gap-1">
+                    {av.faltantes.map(v => <Texto key={v} className="text-xs text-tinta">{v}</Texto>)}
                   </View>
-                  <Texto className="text-xs text-slate-500">
+                  <Texto className="text-xs text-tinta-2">
                     Cargalas en Vercel (Settings → Environment Variables) y volvé a desplegar.
                     Los detalles están en docs/whatsapp.md.
                   </Texto>
                 </View>
               ) : null}
 
-              <View className="bg-slate-900 border border-slate-800 rounded-xl p-4 gap-4">
+              <View className="bg-panel border border-linea rounded-xl p-4 gap-4">
                 <View className="flex-row items-center gap-3">
-                  <View className="w-10 h-10 bg-emerald-500/10 rounded-xl items-center justify-center">
-                    <MessageCircle size={20} color="#34d399" />
+                  <View className="w-10 h-10 bg-hundido rounded-lg items-center justify-center">
+                    <MessageCircle size={20} color={paleta.tinta2} />
                   </View>
                   <View className="flex-1">
-                    <Texto className="text-sm font-medium text-white">Instancia {av.instancia ?? '—'}</Texto>
+                    <Texto className="text-sm font-medium text-tinta">Instancia {av.instancia ?? '—'}</Texto>
                     <Texto className={`text-xs ${conexion.clase}`}>{conexion.texto}</Texto>
                   </View>
                   <Pressable onPress={cargarEstado} accessibilityLabel="Actualizar estado" className="p-2">
-                    <RefreshCw size={16} color="#94a3b8" />
+                    <RefreshCw size={16} color={paleta.tinta2} />
                   </Pressable>
                 </View>
 
-                {av.stateError ? <Texto className="text-xs text-rose-400">{av.stateError}</Texto> : null}
+                {av.stateError ? <Texto className="text-xs text-peligro">{av.stateError}</Texto> : null}
 
                 <View className="gap-2">
                   <Dato clave="Webhook">
-                    <Texto className={`text-xs ${av.webhookConfigurado ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    <Texto className={`text-xs ${av.webhookConfigurado ? 'text-acento' : 'text-aviso'}`}>
                       {av.webhookConfigurado === null ? 'no se pudo verificar'
                         : av.webhookConfigurado ? 'configurado' : 'sin configurar'}
                     </Texto>
                   </Dato>
-                  <Dato clave="Modelo"><Texto className="text-xs text-slate-300">{av.modelo}</Texto></Dato>
-                  <Dato clave="Moneda"><Texto className="text-xs text-slate-300">{av.moneda}</Texto></Dato>
-                  <Dato clave="Zona horaria"><Texto className="text-xs text-slate-300">{av.zonaHoraria}</Texto></Dato>
+                  <Dato clave="Modelo"><Texto className="text-xs text-tinta">{av.modelo}</Texto></Dato>
+                  <Dato clave="Moneda"><Texto className="text-xs text-tinta">{av.moneda}</Texto></Dato>
+                  <Dato clave="Zona horaria"><Texto className="text-xs text-tinta">{av.zonaHoraria}</Texto></Dato>
                   {av.webhookUrl ? (
-                    <Dato clave="URL"><Texto className="text-3xs text-slate-400">{av.webhookUrl}</Texto></Dato>
+                    <Dato clave="URL"><Texto className="text-3xs text-tinta-2">{av.webhookUrl}</Texto></Dato>
                   ) : null}
                 </View>
 
@@ -258,14 +260,14 @@ export default function Whatsapp() {
                       onPress={() => accionInstancia('crear')}
                       ocupado={ocupado !== ''}
                       cargando={ocupado === 'crear'}
-                      icono={<Link2 size={14} color="#e2e8f0" />}
+                      icono={<Link2 size={14} color={paleta.tinta} />}
                       texto="Crear instancia + webhook"
                     />
                     <Accion
                       onPress={() => accionInstancia('webhook')}
                       ocupado={ocupado !== ''}
                       cargando={ocupado === 'webhook'}
-                      icono={<RefreshCw size={14} color="#e2e8f0" />}
+                      icono={<RefreshCw size={14} color={paleta.tinta} />}
                       texto="Reconfigurar webhook"
                     />
                     {av.state === 'open' ? (
@@ -273,7 +275,7 @@ export default function Whatsapp() {
                         onPress={() => accionInstancia('salir')}
                         ocupado={ocupado !== ''}
                         cargando={false}
-                        icono={<Unlink size={14} color="#e2e8f0" />}
+                        icono={<Unlink size={14} color={paleta.tinta} />}
                         texto="Cerrar sesión"
                         peligrosa
                       />
@@ -284,10 +286,10 @@ export default function Whatsapp() {
 
               {/* Emparejar el teléfono del bot con Evolution */}
               {av.configurado && av.state !== 'open' ? (
-                <View className="bg-slate-900 border border-slate-800 rounded-xl p-4 gap-4">
+                <View className="bg-panel border border-linea rounded-xl p-4 gap-4">
                   <View>
-                    <Texto className="font-semibold text-white text-sm">Vincular el teléfono del asistente</Texto>
-                    <Texto className="text-xs text-slate-400 mt-0.5">
+                    <Texto className="font-semibold text-tinta text-sm">Vincular el teléfono del asistente</Texto>
+                    <Texto className="text-xs text-tinta-2 mt-0.5">
                       Si estás en el mismo teléfono no podés escanear tu propia pantalla: usá el código de emparejamiento.
                     </Texto>
                   </View>
@@ -297,21 +299,21 @@ export default function Whatsapp() {
                       value={telefono}
                       onChangeText={setTelefono}
                       placeholder="Número del bot con código de país"
-                      placeholderTextColor="#64748b"
+                      placeholderTextColor={paleta.tinta2}
                       keyboardType="phone-pad"
-                      className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
+                      className="flex-1 bg-hundido border border-linea-fuerte rounded-lg px-3 py-2 text-sm text-tinta"
                     />
                     <Pressable
                       onPress={() => accionInstancia('conectar', telefono)}
                       disabled={ocupado !== '' || telefono.replace(/\D/g, '').length < 10}
                       style={ocupado !== '' || telefono.replace(/\D/g, '').length < 10
                         ? { opacity: 0.5 } : undefined}
-                      className="px-3 py-2 bg-emerald-600 active:bg-emerald-500 rounded-lg flex-row items-center gap-1.5"
+                      className="px-3 py-2 bg-primario active:bg-primario/85 rounded-lg flex-row items-center gap-1.5"
                     >
                       {ocupado === 'conectar'
-                        ? <Loader2 size={14} color="#ffffff" />
-                        : <Smartphone size={14} color="#ffffff" />}
-                      <Texto className="text-white text-xs font-medium">Código</Texto>
+                        ? <Loader2 size={14} color={paleta.sobrePrimario} />
+                        : <Smartphone size={14} color={paleta.sobrePrimario} />}
+                      <Texto className="text-sobre-primario text-xs font-medium">Código</Texto>
                     </Pressable>
                   </View>
 
@@ -320,26 +322,26 @@ export default function Whatsapp() {
                     disabled={ocupado !== ''}
                     className="flex-row items-center gap-1.5"
                   >
-                    <QrCode size={14} color="#94a3b8" />
-                    <Texto className="text-xs text-slate-400 flex-1">
+                    <QrCode size={14} color={paleta.tinta2} />
+                    <Texto className="text-xs text-tinta-2 flex-1">
                       o generar un QR para escanear desde otro dispositivo
                     </Texto>
                   </Pressable>
 
                   {pairingCode ? (
-                    <View className="bg-slate-800 rounded-xl p-4 items-center gap-1">
-                      <Texto className="text-xs text-slate-400">Código de emparejamiento</Texto>
-                      <Texto className="text-2xl font-bold text-emerald-400" style={{ letterSpacing: 6 }}>
+                    <View className="bg-hundido rounded-xl p-4 items-center gap-1">
+                      <Texto className="text-xs text-tinta-2">Código de emparejamiento</Texto>
+                      <Texto className="text-2xl font-semibold text-acento" style={{ letterSpacing: 6 }}>
                         {pairingCode}
                       </Texto>
-                      <Texto className="text-xs text-slate-500 text-center">
+                      <Texto className="text-xs text-tinta-2 text-center">
                         WhatsApp → Dispositivos vinculados → Vincular con número de teléfono
                       </Texto>
                     </View>
                   ) : null}
 
                   {qr ? (
-                    <View className="bg-white rounded-xl p-3 items-center">
+                    <View className="bg-panel rounded-xl p-3 items-center">
                       <Image
                         source={{ uri: qr }}
                         style={{ width: 256, height: 256 }}
@@ -361,7 +363,7 @@ export default function Whatsapp() {
 function Dato({ clave, children }: { clave: string; children: React.ReactNode }) {
   return (
     <View className="flex-row gap-4">
-      <Texto className="text-xs text-slate-500" style={{ width: 96 }}>{clave}</Texto>
+      <Texto className="text-xs text-tinta-2" style={{ width: 96 }}>{clave}</Texto>
       <View className="flex-1">{children}</View>
     </View>
   );
@@ -377,17 +379,18 @@ function Accion({
   texto: string;
   peligrosa?: boolean;
 }) {
+  const paleta = useColores();
   return (
     <Pressable
       onPress={onPress}
       disabled={ocupado}
       style={ocupado ? { opacity: 0.5 } : undefined}
-      className={`px-3 py-2 bg-slate-800 rounded-lg flex-row items-center gap-1.5 ${
-        peligrosa ? 'active:bg-rose-600' : 'active:bg-slate-700'
+      className={`px-3 py-2 bg-hundido rounded-lg flex-row items-center gap-1.5 ${
+        peligrosa ? 'active:bg-peligro/85' : 'active:bg-presionado'
       }`}
     >
-      {cargando ? <Loader2 size={14} color="#e2e8f0" /> : icono}
-      <Texto className="text-slate-200 text-xs font-medium">{texto}</Texto>
+      {cargando ? <Loader2 size={14} color={paleta.tinta} /> : icono}
+      <Texto className="text-tinta text-xs font-medium">{texto}</Texto>
     </Pressable>
   );
 }

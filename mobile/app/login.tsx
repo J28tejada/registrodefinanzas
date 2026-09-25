@@ -8,11 +8,13 @@ import { AlertCircle, CheckCircle2, Loader2, Mail, Wallet } from 'lucide-react-n
 import Texto from '../componentes/Texto';
 import { estaConfigurado, supabase } from '../lib/supabase';
 import { traducirErrorDeAuth } from '@compartido/mensajes-de-auth';
+import { useColores } from '../lib/colores';
 
 type Modo = 'entrar' | 'registrarse';
 
 /** El gemelo de app/login/page.tsx. */
 export default function Login() {
+  const paleta = useColores();
   const router = useRouter();
   const { next } = useLocalSearchParams<{ next?: string }>();
   const destino = next || '/';
@@ -104,70 +106,70 @@ export default function Login() {
   // hace la pantalla de la web: centrar contra la pantalla entera parece lo
   // mismo y deja la tarjeta casi cien píxeles más abajo.
   return (
-    <View className="flex-1 bg-slate-950">
+    <View className="flex-1 bg-fondo">
       <View className="min-h-[80vh] items-center justify-center px-4">
         <View className="w-full max-w-sm gap-6">
         <View className="items-center gap-3">
-          <View className="w-12 h-12 bg-emerald-500 rounded-xl items-center justify-center">
-            <Wallet size={24} color="#ffffff" />
+          <View className="w-12 h-12 bg-primario rounded-lg items-center justify-center">
+            <Wallet size={24} color={paleta.sobrePrimario} />
           </View>
           <View className="items-center">
-            <Texto className="text-xl font-bold text-white">Jobidai Wallet</Texto>
-            <Texto className="text-sm text-slate-400">
+            <Texto className="text-xl font-semibold text-tinta">Jobidai Wallet</Texto>
+            <Texto className="text-sm text-tinta-2">
               {modo === 'entrar' ? 'Entrá a tu cuenta' : 'Creá tu cuenta'}
             </Texto>
           </View>
         </View>
 
         {!estaConfigurado ? (
-          <View className="flex-row items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
-            <View className="mt-0.5"><AlertCircle size={16} color="#fbbf24" /></View>
-            <Texto className="text-amber-400 text-sm flex-1">
-              Faltan <Texto className="text-amber-400 text-sm font-mono">EXPO_PUBLIC_SUPABASE_URL</Texto> y{' '}
-              <Texto className="text-amber-400 text-sm font-mono">EXPO_PUBLIC_SUPABASE_ANON_KEY</Texto>.
+          <View className="flex-row items-start gap-2 bg-aviso/10 border border-aviso/20 rounded-xl px-4 py-3">
+            <View className="mt-0.5"><AlertCircle size={16} color={paleta.aviso} /></View>
+            <Texto className="text-aviso text-sm flex-1">
+              Faltan <Texto className="text-aviso text-sm font-mono">EXPO_PUBLIC_SUPABASE_URL</Texto> y{' '}
+              <Texto className="text-aviso text-sm font-mono">EXPO_PUBLIC_SUPABASE_ANON_KEY</Texto>.
               Sin eso no hay forma de iniciar sesión.
             </Texto>
           </View>
         ) : null}
 
         {error ? (
-          <View className="flex-row items-start gap-2 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
-            <View className="mt-0.5"><AlertCircle size={16} color="#fb7185" /></View>
-            <Texto className="text-rose-400 text-sm flex-1">{error}</Texto>
+          <View className="flex-row items-start gap-2 bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
+            <View className="mt-0.5"><AlertCircle size={16} color={paleta.peligro} /></View>
+            <Texto className="text-peligro text-sm flex-1">{error}</Texto>
           </View>
         ) : null}
 
         {confirmar ? (
-          <View className="bg-slate-900 border border-slate-800 rounded-2xl p-5 items-center gap-3">
-            <CheckCircle2 size={32} color="#34d399" />
-            <Texto className="text-sm text-white font-medium">Revisá tu correo</Texto>
-            <Texto className="text-xs text-slate-400 text-center">
-              Te mandamos un enlace a <Texto className="text-slate-200">{email}</Texto> para
+          <View className="bg-panel border border-linea rounded-xl p-5 items-center gap-3">
+            <CheckCircle2 size={32} color={paleta.acento} />
+            <Texto className="text-sm text-tinta font-medium">Revisá tu correo</Texto>
+            <Texto className="text-xs text-tinta-2 text-center">
+              Te mandamos un enlace a <Texto className="text-tinta">{email}</Texto> para
               confirmar la cuenta. Después de abrirlo podés entrar.
             </Texto>
           </View>
         ) : (
-          <View className="bg-slate-900 border border-slate-800 rounded-2xl p-5 gap-4">
+          <View className="bg-panel border border-linea rounded-xl p-5 gap-4">
             <Pressable
               onPress={entrarConGoogle}
               disabled={cargandoGoogle || cargando || !estaConfigurado}
               style={apagado(cargandoGoogle || cargando || !estaConfigurado)}
-              className="w-full py-3 bg-white active:bg-slate-100 rounded-xl flex-row items-center justify-center gap-2.5"
+              className="w-full py-3 bg-panel border border-linea-fuerte active:bg-presionado rounded-xl flex-row items-center justify-center gap-2.5"
             >
               {cargandoGoogle
-                ? <ActivityIndicator size="small" color="#0f172a" />
+                ? <ActivityIndicator size="small" color={paleta.tinta2} />
                 : <LogoDeGoogle />}
-              <Texto className="text-slate-900 text-sm font-medium">Continuar con Google</Texto>
+              <Texto className="text-tinta text-sm font-medium">Continuar con Google</Texto>
             </Pressable>
 
             <View className="flex-row items-center gap-3">
-              <View className="flex-1 h-px bg-slate-800" />
-              <Texto className="text-xs text-slate-500">o con tu correo</Texto>
-              <View className="flex-1 h-px bg-slate-800" />
+              <View className="flex-1 h-px bg-hundido" />
+              <Texto className="text-xs text-tinta-2">o con tu correo</Texto>
+              <View className="flex-1 h-px bg-hundido" />
             </View>
 
             <View className="gap-1.5">
-              <Texto className="text-xs leading-6 text-slate-400">Correo</Texto>
+              <Texto className="text-xs leading-6 text-tinta-2">Correo</Texto>
               <TextInput
                 value={email}
                 onChangeText={setEmail}
@@ -176,13 +178,13 @@ export default function Login() {
                 autoComplete="email"
                 textContentType="emailAddress"
                 placeholder="vos@ejemplo.com"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500"
+                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta placeholder:text-tinta-3 focus:border-tinta-3"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
             </View>
 
             <View className="gap-1.5">
-              <Texto className="text-xs leading-6 text-slate-400">Contraseña</Texto>
+              <Texto className="text-xs leading-6 text-tinta-2">Contraseña</Texto>
               <TextInput
                 value={password}
                 onChangeText={setPassword}
@@ -191,7 +193,7 @@ export default function Login() {
                 autoComplete={modo === 'entrar' ? 'current-password' : 'new-password'}
                 placeholder="Mínimo 6 caracteres"
                 onSubmitEditing={enviar}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500"
+                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta placeholder:text-tinta-3 focus:border-tinta-3"
                 style={{ fontFamily: 'Inter_400Regular' }}
               />
             </View>
@@ -200,12 +202,12 @@ export default function Login() {
               onPress={enviar}
               disabled={cargando || cargandoGoogle || !estaConfigurado}
               style={apagado(cargando || cargandoGoogle || !estaConfigurado)}
-              className="w-full py-3 bg-emerald-600 active:bg-emerald-500 rounded-xl flex-row items-center justify-center gap-2"
+              className="w-full py-3 bg-primario active:bg-primario/85 rounded-lg flex-row items-center justify-center gap-2"
             >
               {cargando
-                ? <ActivityIndicator size="small" color="#ffffff" />
-                : <Mail size={16} color="#ffffff" />}
-              <Texto className="text-white text-sm font-medium">
+                ? <ActivityIndicator size="small" color={paleta.sobrePrimario} />
+                : <Mail size={16} color={paleta.sobrePrimario} />}
+              <Texto className="text-sobre-primario text-sm font-medium">
                 {modo === 'entrar' ? 'Entrar' : 'Crear cuenta'}
               </Texto>
             </Pressable>
@@ -214,7 +216,7 @@ export default function Login() {
               onPress={() => { setModo(modo === 'entrar' ? 'registrarse' : 'entrar'); setError(''); }}
               className="w-full"
             >
-              <Texto className="text-xs text-slate-400 text-center">
+              <Texto className="text-xs text-tinta-2 text-center">
                 {modo === 'entrar' ? '¿No tenés cuenta? Creá una' : '¿Ya tenés cuenta? Entrá'}
               </Texto>
             </Pressable>

@@ -63,7 +63,7 @@ export default function ListaPage() {
   if (cargando) {
     return (
       <div className="max-w-2xl mx-auto pt-14 md:pt-0 flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        <Loader2 className="w-6 h-6 animate-spin text-tinta-2" />
       </div>
     );
   }
@@ -71,40 +71,40 @@ export default function ListaPage() {
   if (!lista) {
     return (
       <div className="max-w-2xl mx-auto space-y-4 pt-14 md:pt-0">
-        <Link href="/shopping" className="text-sm text-slate-400 hover:text-white flex items-center gap-1.5">
+        <Link href="/shopping" className="text-sm text-tinta-2 hover:text-tinta flex items-center gap-1.5">
           <ArrowLeft className="w-4 h-4" /> Supermercado
         </Link>
-        <p className="text-sm text-rose-400">{error || 'Esa lista no existe.'}</p>
+        <p className="text-sm text-peligro">{error || 'Esa lista no existe.'}</p>
       </div>
     );
   }
 
   return (
     <div className="max-w-2xl mx-auto space-y-4 pt-14 md:pt-0">
-      <Link href="/shopping" className="text-sm text-slate-400 hover:text-white flex items-center gap-1.5 w-fit">
+      <Link href="/shopping" className="text-sm text-tinta-2 hover:text-tinta flex items-center gap-1.5 w-fit">
         <ArrowLeft className="w-4 h-4" /> Supermercado
       </Link>
 
       <div className="min-w-0">
-        <h1 className="text-xl sm:text-2xl font-bold text-white truncate">{lista.name}</h1>
-        <p className="text-slate-400 text-sm">
+        <h1 className="text-xl sm:text-2xl font-semibold text-tinta truncate">{lista.name}</h1>
+        <p className="text-tinta-2 text-sm">
           Lista · {lista.items} {lista.items === 1 ? 'artículo' : 'artículos'}
         </p>
       </div>
 
       {error && (
-        <div className="flex items-start gap-2 text-rose-400 text-sm bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
+        <div className="flex items-start gap-2 text-peligro text-sm bg-peligro/10 border border-peligro/20 rounded-xl px-4 py-3">
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-baseline justify-between gap-3">
+      <div className="bg-panel border border-linea rounded-xl p-4 flex items-baseline justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-2xs uppercase tracking-wider text-slate-500">Costaría</p>
-          <p className="text-xl font-bold text-white tabular-nums">{fmt.money(lista.total)}</p>
+          <p className="text-2xs text-tinta-2">Costaría</p>
+          <p className="text-xl font-semibold text-tinta tabular-nums">{fmt.money(lista.total)}</p>
         </div>
-        <p className="text-xs text-slate-500 text-right">
+        <p className="text-xs text-tinta-2 text-right">
           A precios de referencia.<br />En el súper puede cambiar.
         </p>
       </div>
@@ -112,8 +112,8 @@ export default function ListaPage() {
       <AgregarArticulo listId={lista.id} onListo={cargar} />
 
       {lista.articulos.length === 0 ? (
-        <div className="text-center py-10 text-slate-500 bg-slate-900 border border-slate-800 rounded-2xl">
-          <ClipboardList className="w-8 h-8 mx-auto mb-3 text-slate-600" />
+        <div className="text-center py-10 text-tinta-2 bg-panel border border-linea rounded-xl">
+          <ClipboardList className="w-8 h-8 mx-auto mb-3 text-tinta-3" />
           <p className="text-sm">La lista está vacía.</p>
         </div>
       ) : (
@@ -121,8 +121,8 @@ export default function ListaPage() {
           {porCategoria.map(([categoria, articulos]) => (
             <div key={categoria} className="space-y-1.5">
               <div className="flex items-baseline justify-between gap-2 px-1">
-                <p className="text-xs font-medium text-slate-400 uppercase tracking-wider truncate">{categoria}</p>
-                <p className="text-xs text-slate-600 tabular-nums flex-shrink-0">
+                <p className="text-xs font-medium text-tinta-2 truncate">{categoria}</p>
+                <p className="text-xs text-tinta-3 tabular-nums flex-shrink-0">
                   {fmt.money(articulos.reduce((s, a) => s + a.quantity * a.unit_price, 0))}
                 </p>
               </div>
@@ -146,7 +146,7 @@ export default function ListaPage() {
           await fetch(`/api/shopping/${lista.id}`, { method: 'DELETE' });
           router.push('/shopping');
         }}
-        className="w-full py-2 text-rose-400 hover:bg-rose-500/10 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5"
+        className="w-full py-2 text-peligro hover:bg-peligro/10 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5"
       >
         <Trash2 className="w-3.5 h-3.5" /> Eliminar esta lista
       </button>
@@ -183,66 +183,66 @@ function FilaPlantilla({
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl">
+    <div className="bg-panel border border-linea rounded-xl">
       <button
         onClick={() => abierta ? setAbierta(false) : abrir()}
         className="w-full flex items-center gap-3 px-3 py-2.5 text-left"
       >
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-white truncate">{item.name}</p>
-          <p className="text-xs text-slate-500 tabular-nums">
+          <p className="text-sm text-tinta truncate">{item.name}</p>
+          <p className="text-xs text-tinta-2 tabular-nums">
             {item.quantity} {item.unit}
             {item.unit_price > 0 && ` × ${fmt.money(item.unit_price)}`}
           </p>
         </div>
-        <p className="text-sm text-slate-300 flex-shrink-0 tabular-nums">
+        <p className="text-sm text-tinta flex-shrink-0 tabular-nums">
           {fmt.money(item.quantity * item.unit_price)}
         </p>
       </button>
 
       {abierta && (
-        <div className="px-3 pb-3 space-y-2 border-t border-slate-800 pt-3">
+        <div className="px-3 pb-3 space-y-2 border-t border-linea pt-3">
           <div className="grid grid-cols-3 gap-2">
             <div className="space-y-1 min-w-0">
-              <label className="text-2xs text-slate-500">Cantidad</label>
+              <label className="text-2xs text-tinta-2">Cantidad</label>
               <input
                 type="number" min="0" step="0.001" inputMode="decimal"
                 value={cantidad} onChange={e => setCantidad(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-2 py-2 text-sm text-tinta focus:outline-none focus:border-tinta-3"
               />
             </div>
             <div className="space-y-1 min-w-0">
-              <label className="text-2xs text-slate-500">Unidad</label>
+              <label className="text-2xs text-tinta-2">Unidad</label>
               <div className="relative">
                 <select
                   value={unidad} onChange={e => setUnidad(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 pr-6 text-sm text-white focus:outline-none focus:border-emerald-500 appearance-none"
+                  className="w-full bg-hundido border border-linea-fuerte rounded-lg px-2 py-2 pr-6 text-sm text-tinta focus:outline-none focus:border-tinta-3 appearance-none"
                 >
                   {UNIDADES.map(u => <option key={u} value={u}>{u}</option>)}
                 </select>
-                <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-tinta-2 pointer-events-none" />
               </div>
             </div>
             <div className="space-y-1 min-w-0">
-              <label className="text-2xs text-slate-500">Precio c/u</label>
+              <label className="text-2xs text-tinta-2">Precio c/u</label>
               <input
                 type="number" min="0" step="0.01" inputMode="decimal"
                 value={precio} onChange={e => setPrecio(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                className="w-full bg-hundido border border-linea-fuerte rounded-lg px-2 py-2 text-sm text-tinta focus:outline-none focus:border-tinta-3"
               />
             </div>
           </div>
           <div className="flex gap-2">
             <button
               onClick={onBorrar}
-              className="px-3 py-2 text-rose-400 hover:bg-rose-500/10 rounded-lg text-xs transition-colors flex items-center gap-1.5 flex-shrink-0"
+              className="px-3 py-2 text-peligro hover:bg-peligro/10 rounded-lg text-xs transition-colors flex items-center gap-1.5 flex-shrink-0"
             >
               <Trash2 className="w-3.5 h-3.5" /> Quitar
             </button>
             <button
               onClick={guardar}
               disabled={guardando}
-              className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
+              className="flex-1 py-2 bg-primario hover:bg-primario/85 disabled:opacity-50 text-sobre-primario rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5"
             >
               {guardando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
               Guardar
@@ -279,7 +279,7 @@ function AgregarArticulo({ listId, onListo }: { listId: string; onListo: () => P
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 space-y-2">
+    <div className="bg-panel border border-linea rounded-xl p-3 space-y-2">
       <div className="flex gap-2">
         <input
           type="text"
@@ -288,13 +288,13 @@ function AgregarArticulo({ listId, onListo }: { listId: string; onListo: () => P
           onKeyDown={e => { if (e.key === 'Enter') agregar(); }}
           placeholder="Agregar artículo…"
           maxLength={60}
-          className="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500"
+          className="flex-1 min-w-0 bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 text-sm text-tinta placeholder:text-tinta-3 focus:outline-none focus:border-tinta-3"
         />
         <button
           onClick={agregar}
           disabled={guardando || !nombre.trim()}
           aria-label="Agregar"
-          className="px-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center justify-center flex-shrink-0"
+          className="px-4 bg-primario hover:bg-primario/85 disabled:opacity-50 text-sobre-primario rounded-lg transition-colors flex items-center justify-center flex-shrink-0"
         >
           {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
         </button>
@@ -303,11 +303,11 @@ function AgregarArticulo({ listId, onListo }: { listId: string; onListo: () => P
         <select
           value={categoria}
           onChange={e => setCategoria(e.target.value)}
-          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 pr-8 text-sm text-slate-300 focus:outline-none focus:border-emerald-500 appearance-none"
+          className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2 pr-8 text-sm text-tinta focus:outline-none focus:border-tinta-3 appearance-none"
         >
           {PASILLOS.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
-        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+        <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-tinta-2 pointer-events-none" />
       </div>
     </div>
   );
