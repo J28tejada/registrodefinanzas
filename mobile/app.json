@@ -6,14 +6,12 @@
     "orientation": "portrait",
     "scheme": "jobidai",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.jobidai.wallet"
     },
     "android": {
       "package": "com.jobidai.wallet",
-      "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "backgroundColor": "#0f172a"
       }
