@@ -5,8 +5,29 @@ import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 
 import { AppState, Platform } from 'react-native';
+import * as ExpoCrypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import { createClient } from '@supabase/supabase-js';
+
+/**
+ * PKCE con SHA-256, no con `plain`.
+ *
+ * supabase-js arma el desafío con `crypto.subtle.digest`, y Hermes no trae
+ * `crypto.subtle`. Sin él no falla: cae a `plain` y avisa con un WARN, que es
+ * peor, porque manda el verificador tal cual en la URL que abre el navegador.
+ * Quien vea esa URL y atrape el código de vuelta lo puede canjear. Solo se
+ * cubre SHA-256 porque es lo único que supabase-js pide.
+ */
+if (typeof globalThis.crypto?.subtle === 'undefined') {
+  Object.assign(globalThis.crypto, {
+    subtle: {
+      async digest(algoritmo: string, datos: BufferSource) {
+        if (algoritmo !== 'SHA-256') throw new Error(`Solo hay SHA-256, no ${algoritmo}.`);
+        return ExpoCrypto.digest(ExpoCrypto.CryptoDigestAlgorithm.SHA256, datos);
+      },
+    },
+  });
+}
 
 /**
  * El cliente de Supabase del teléfono.
@@ -110,6 +131,11 @@ export const supabase = createClient(url ?? 'http://sin-configurar.invalid', cla
     // En un teléfono no hay URL que leer: el login con Google vuelve por un
     // enlace profundo que se maneja a mano.
     detectSessionInUrl: false,
+    // supabase-js arranca en el flujo implícito, que vuelve con los tokens
+    // pegados después de un `#`. El login espera un `?code=` para canjear, y
+    // sin esto Google volvía a la app y decía que no traía el código. La web
+    // ya usa PKCE porque @supabase/ssr lo trae por defecto.
+    flowType: 'pkce',
   },
 });
 
