@@ -54,6 +54,32 @@ vidrio.
   (`peligro`), para lo que se pasó o falló. Un gasto normal va en tinta. Lo
   seleccionado va en gris (`bg-hundido` o `bg-elevado`), no en verde.
 
+## Skills de diseño
+
+En `.claude/skills/` hay skills de UI/UX de terceros: `impeccable`, las de Emil
+Kowalski y las de taste-skill. Su origen está en `skills-lock.json` y se
+actualizan con `npx skills update`. Ojo: para `impeccable` la herramienta
+instala la variante genérica (`.agents/`, para Codex). Acá va la de Claude Code
+(`.claude/`), que es la que apunta a las rutas correctas.
+
+Sirven de criterio, pero **la regla de las dos apps y el tema de arriba mandan
+sobre ellas**:
+
+- Un cambio de diseño se hace en la web **y** en el teléfono, en la misma
+  tanda. Si una skill propone algo que React Native no puede dibujar igual
+  (`calc()`, selectores de CSS, un efecto que no tenga equivalente en `Vidrio`),
+  se busca otra forma o no se hace.
+- Lo que propongan en colores se traduce a los tokens del tema: una skill que
+  sugiera `zinc-900` o un acento violeta no se copia tal cual.
+- Las skills de estética fija (`industrial-brutalist-ui`, `minimalist-ui`,
+  `high-end-visual-design`) no se aplican solas: la app ya tiene su identidad,
+  la del vidrio de arriba, y cambiarla es decisión del dueño.
+- Las de animación de Emil: `animate-expo` para el teléfono y `animate` para la
+  web.
+- `impeccable` puede activar hooks que corren un ejecutable descargado después
+  de cada edición (`/impeccable hooks on`). Están **apagados** y no se prenden
+  sin preguntarle al dueño.
+
 ## Antes de dar algo por terminado
 
 ```bash
