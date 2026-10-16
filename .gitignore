@@ -49,3 +49,11 @@ evolution/.env
 
 # Las claves del móvil
 /mobile/.env
+
+# Estados de cuenta y cualquier PDF: tienen nombre, número de cuenta y saldos,
+# y este repo es público. Las pruebas usan PDFs sintéticos que se arman en
+# memoria; un estado de cuenta real no entra al repo nunca.
+*.pdf
+
+# Las ramas temporales que crean los agentes para trabajar en paralelo.
+/.claude/worktrees/

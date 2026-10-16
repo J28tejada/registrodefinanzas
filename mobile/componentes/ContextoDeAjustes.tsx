@@ -74,7 +74,9 @@ export function ProveedorDeAjustes({
   useEffect(() => { refresh(); }, [refresh]);
 
   const save = useCallback(async (cambios: Partial<Config>) => {
-    if (!usuario) throw new Error('No hay sesión');
+    // El mismo texto que la web cuando no puede guardar: para quien lo lee es
+    // lo mismo, y los dos lados tienen que decir lo mismo.
+    if (!usuario) throw new Error('No se pudo guardar la configuración');
     const { currency, locale, timezone } = await saveSettings(db(usuario), cambios);
     setTraidos({ currency, locale, timezone });
   }, [usuario]);

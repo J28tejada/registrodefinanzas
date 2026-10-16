@@ -52,16 +52,8 @@ const PARES = [
 const PERDONADAS = [
   {
     par: 'components/CategoriesContext.tsx',
-    textos: [
-      'No se pudieron cargar las categorías.',
-      'No se pudieron cargar las categorías. Revisá la conexión.',
-    ],
-    porque: 'el teléfono todavía no las trae de la base; el proveedor las recibe por props',
-  },
-  {
-    par: 'components/SettingsContext.tsx',
-    textos: ['No se pudo guardar la configuración'],
-    porque: 'el teléfono todavía no guarda ajustes; usa los valores por defecto',
+    textos: ['No se pudieron cargar las categorías. Revisá la conexión.'],
+    porque: 'la web distingue "el servidor dijo que no" de "no hubo red"; el teléfono va directo a la base y tiene un solo camino de error',
   },
 ];
 
