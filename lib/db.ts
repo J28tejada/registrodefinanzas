@@ -35,7 +35,23 @@ import {
   UserSettings,
   DEFAULT_SETTINGS,
 } from './types';
-import { calcularSaldo, desdeElUltimoCorte, TotalesDeTarjeta } from './tarjetas';
+import { calcularSaldo, desdeElUltimoCorte, sumarDias, TotalesDeTarjeta } from './tarjetas';
+import type {
+  Aprendido,
+  ClaseDeLinea,
+  CodigoDeImportacion,
+  ContextoDeExtracto,
+  DecisionGuardada,
+  LineaPrevia,
+  MovimientoCandidato,
+  PagoCandidato,
+  PedidoDeImportacion,
+  ResultadoDeImportacion,
+} from './extractos/tipos';
+import { ERRORES_DE_IMPORTACION, ERROR_DE_IMPORTACION_GENERICO, FALTA_MIGRACION } from './extractos/textos';
+import {
+  ConsultaDeContexto, esUuid, leerConsultaDeContexto, leerPedidoDeImportacion,
+} from './extractos-campos';
 
 /**
  * Contexto de datos de una petición: cliente de Supabase + dueño de los datos.
@@ -1950,6 +1966,414 @@ export async function buscarCardPorTexto(db: Db, texto: string | null | undefine
   return candidatas.sort((a, b) => a.name.length - b.name.length)[0];
 }
 
+// ─── Estados de cuenta del banco ──────────────────────────────────────────────
+//
+// Leer el PDF es cosa del servidor (`lib/extractos/leer.ts`); todo lo que toca
+// la base vive acá y es lo mismo para los dos lados: la web lo llama por
+// `/api/statements/*` y el teléfono directo, con su sesión. RLS cuida igual.
+//
+// La importación en sí es UNA función SQL, `importar_estado_de_cuenta` (0024):
+// corre en una sola transacción y vuelve a comprobar todo, así que da lo mismo
+// quién la llame. Lo de acá prepara lo que la función no hace —crear la cuenta
+// del banco o una categoría que falte— y traduce sus códigos a texto.
+
+/** PostgREST devuelve como mucho mil filas por consulta, y no avisa que cortó. */
+const FILAS_POR_PAGINA = 1000;
+
+/**
+ * Hasta dónde se pagina antes de dar la consulta por rota. Cien mil
+ * movimientos en cuatro meses no son de una persona: es un bucle que no corta.
+ */
+const MAX_PAGINAS = 100;
+
+type ErrorDeConsulta = { code?: string; message: string };
+type Pagina = PromiseLike<{ data: unknown[] | null; error: ErrorDeConsulta | null }>;
+
+/**
+ * Todas las filas de una consulta, de a mil.
+ *
+ * Sin esto la consulta se queda con las primeras mil sin decir nada, y para
+ * cotejar eso es lo peor que puede pasar: lo que no vino parece "no anotado" y
+ * se ofrece como gasto nuevo. Se pide página tras página hasta que una venga
+ * corta. La consulta tiene que venir ordenada por algo único, o dos páginas
+ * pueden repetir o saltearse filas.
+ */
+async function todasLasPaginas(
+  pedir: (desde: number, hasta: number) => Pagina,
+): Promise<{ filas: Record<string, unknown>[]; error: ErrorDeConsulta | null }> {
+  const filas: Record<string, unknown>[] = [];
+  for (let pagina = 0; pagina < MAX_PAGINAS; pagina++) {
+    const desde = pagina * FILAS_POR_PAGINA;
+    const { data, error } = await pedir(desde, desde + FILAS_POR_PAGINA - 1);
+    if (error) return { filas, error };
+    const lote = (data ?? []) as Record<string, unknown>[];
+    filas.push(...lote);
+    if (lote.length < FILAS_POR_PAGINA) return { filas, error: null };
+  }
+  // Cortar callado sería el mismo problema que paginar resuelve.
+  throw new Error('La consulta no terminaba de traer filas y se cortó.');
+}
+
+/**
+ * Pesos a centavos. `amount` es numeric(14,2): llega como número con dos
+ * decimales a lo sumo, y el redondeo absorbe el error de la multiplicación
+ * (19.99 × 100 da 1998.999…), que en ese rango nunca llega a medio centavo.
+ */
+function centavosDeMonto(monto: unknown): number {
+  return Math.round(Number(monto) * 100);
+}
+
+/**
+ * Los movimientos entre dos fechas que podrían ser una línea del banco.
+ *
+ * La misma visibilidad que `getAllTransactions` —lo propio y todo lo de las
+ * cuentas compartidas, de cualquier origen—, pero paginado: `getAllTransactions`
+ * pide de una vez y PostgREST corta en mil.
+ */
+async function getMovimientosEntre(db: Db, desde: string, hasta: string): Promise<MovimientoCandidato[]> {
+  const cuentas = await misCuentas(db);
+  const [res, delSuper] = await Promise.all([
+    todasLasPaginas((a, b) => {
+      let q = db.supabase.from('transactions').select('*').gte('date', desde).lte('date', hasta);
+      q = soloVisibles(q, db.userId, cuentas);
+      return q.order('date').order('id').range(a, b);
+    }),
+    idsDeComprasDelSuper(db, cuentas),
+  ]);
+  if (res.error) fallar('No se pudieron leer los movimientos', res.error);
+
+  const movimientos = res.filas.map(rowToTransaction);
+  await ponerleNombreAlAutor(db, movimientos);
+
+  return movimientos.map(t => ({
+    id: t.id,
+    type: t.type,
+    centavos: centavosDeMonto(t.amount),
+    date: t.date,
+    description: t.description,
+    category: t.category,
+    subcategory: t.subcategory ?? null,
+    source: t.source,
+    ledger_id: t.ledger_id,
+    card_id: t.card_id ?? null,
+    author_id: t.author_id ?? null,
+    author_name: t.author_name ?? null,
+    esCompraDelSuper: delSuper.has(t.id),
+  }));
+}
+
+/**
+ * Los movimientos que salieron de cerrar una compra del súper.
+ *
+ * Se guardan con el total del carrito, que es una estimación: el banco cobra
+ * lo del ticket. Por eso el cotejo los busca "parecidos" y no exactos.
+ *
+ * Todas las compras cerradas, sin recortar por fecha: son una por ida al súper,
+ * pocas, y la fecha del movimiento se puede haber editado después.
+ */
+async function idsDeComprasDelSuper(db: Db, cuentas: string[]): Promise<Set<string>> {
+  const { filas, error } = await todasLasPaginas((a, b) => {
+    let q = db.supabase.from('shopping_trips').select('*').order('id');
+    q = soloVisibles(q, db.userId, cuentas);
+    return q.not('transaction_id', 'is', null).range(a, b);
+  });
+  if (error) {
+    // Sin la migración de las compras no hay ninguna: nada que marcar.
+    if (faltaLaTabla(error, 'shopping_trips')) return new Set();
+    fallar('No se pudieron leer las compras del súper', error);
+  }
+  return new Set(filas.map(f => f.transaction_id as string));
+}
+
+/** Los pagos de tarjeta ya registrados entre dos fechas. Son siempre de quien paga. */
+async function getCardPaymentsEntre(db: Db, desde: string, hasta: string): Promise<PagoCandidato[]> {
+  const { filas, error } = await todasLasPaginas((a, b) => db.supabase
+    .from('card_payments')
+    .select('id, card_id, source_card_id, amount, date')
+    .eq('user_id', db.userId)
+    .gte('date', desde)
+    .lte('date', hasta)
+    .order('date')
+    .order('id')
+    .range(a, b));
+  if (error) {
+    if (faltaLaTabla(error, 'card_payments')) return [];
+    fallar('No se pudieron leer los pagos de las tarjetas', error);
+  }
+  return filas.map(f => ({
+    id: f.id as string,
+    card_id: f.card_id as string,
+    source_card_id: (f.source_card_id as string) ?? null,
+    centavos: centavosDeMonto(f.amount),
+    date: f.date as string,
+  }));
+}
+
+/**
+ * Las líneas de importaciones anteriores entre dos fechas, de TODAS las
+ * cuentas del banco: un movimiento que ya explica una línea de otra cuenta
+ * tampoco está libre para esta.
+ *
+ * Null si la tabla no existe: la migración 0024 todavía no se corrió.
+ */
+async function getLineasPreviasEntre(db: Db, desde: string, hasta: string): Promise<LineaPrevia[] | null> {
+  const { filas, error } = await todasLasPaginas((a, b) => db.supabase
+    .from('statement_lines')
+    .select('id, line_key, bank, account_last4, decision, kind, match_key, transaction_id, '
+      + 'card_payment_id, created_by_import, import_id, date, created_at')
+    .eq('user_id', db.userId)
+    .gte('date', desde)
+    .lte('date', hasta)
+    .order('id')
+    .range(a, b));
+  if (error) {
+    if (faltaLaTabla(error, 'statement_lines')) return null;
+    fallar('No se pudieron leer las importaciones anteriores', error);
+  }
+  return filas.map(f => ({
+    line_key: f.line_key as string,
+    bank: f.bank as string,
+    account_last4: f.account_last4 as string,
+    decision: f.decision as DecisionGuardada,
+    kind: f.kind as ClaseDeLinea,
+    match_key: (f.match_key as string) ?? '',
+    transaction_id: (f.transaction_id as string) ?? null,
+    card_payment_id: (f.card_payment_id as string) ?? null,
+    created_by_import: Boolean(f.created_by_import),
+    import_id: f.import_id as string,
+    date: f.date as string,
+    created_at: f.created_at as string,
+  }));
+}
+
+/** Cuántas decisiones pasadas se miran para aprender. Las de hace años ya no enseñan. */
+const LINEAS_PARA_APRENDER = 500;
+
+/**
+ * Lo que se decidió antes para cada comercio o contraparte, con la categoría
+ * que tiene HOY su movimiento: si la persona lo recategorizó después de
+ * importar, la próxima vez se propone la corregida.
+ *
+ * Null si la tabla no existe.
+ */
+async function getAprendido(db: Db): Promise<Aprendido[] | null> {
+  const { data, error } = await db.supabase
+    .from('statement_lines')
+    .select('match_key, decision, created_at, transactions(type, category, subcategory, ledger_id)')
+    .eq('user_id', db.userId)
+    .neq('match_key', '')
+    .order('created_at', { ascending: false })
+    .limit(LINEAS_PARA_APRENDER);
+  if (error) {
+    if (faltaLaTabla(error, 'statement_lines')) return null;
+    fallar('No se pudo leer lo aprendido de importaciones anteriores', error);
+  }
+
+  return ((data ?? []) as Record<string, unknown>[]).map(f => {
+    // Objeto o lista de uno, según cómo infiera PostgREST la relación; null si
+    // el movimiento se borró o no se ve.
+    const tx = (Array.isArray(f.transactions) ? f.transactions[0] : f.transactions) as
+      Record<string, unknown> | null | undefined;
+    return {
+      match_key: f.match_key as string,
+      decision: f.decision as DecisionGuardada,
+      type: tx ? (tx.type as Aprendido['type']) : null,
+      category: tx ? ((tx.category as string) ?? null) : null,
+      subcategory: tx ? ((tx.subcategory as string) ?? null) : null,
+      ledger_id: tx ? ((tx.ledger_id as string) ?? null) : null,
+      created_at: f.created_at as string,
+    };
+  });
+}
+
+/**
+ * Todo lo que hace falta para cotejar un estado de cuenta contra lo anotado,
+ * en una sola ida a la base.
+ *
+ * Las ventanas salen de cuánto puede correrse cada cosa respecto de las
+ * fechas de entrada del banco: un movimiento del chat se anota el día de la
+ * compra (hasta un mes antes de que el banco la asiente) o, si vino del
+ * correo, el día en que se leyó (semanas después); un pago de tarjeta, unos
+ * días antes o después. Las líneas previas cubren las fechas de transacción
+ * de este estado y algo más.
+ *
+ * Sin la migración 0024 no tira: devuelve `migracionLista: false`, y la
+ * pantalla deja leer y revisar pero no importar.
+ */
+export async function cargarContextoDeExtracto(
+  db: Db,
+  consulta: ConsultaDeContexto,
+): Promise<ContextoDeExtracto> {
+  // El teléfono la llama sin ruta en el medio: la validación va acá también.
+  // El banco y los 4 no recortan nada —las líneas previas son de todas las
+  // cuentas, a propósito—, pero un pedido con ellos mal es un pedido roto.
+  const leida = leerConsultaDeContexto(consulta as unknown as Record<string, unknown>);
+  if (!leida.ok) throw new Error(leida.error);
+  const { desde, hasta } = leida.consulta;
+
+  const [movimientos, pagosDeTarjeta, lineasPrevias, aprendido, cards, settings] = await Promise.all([
+    getMovimientosEntre(db, sumarDias(desde, -60), sumarDias(hasta, 35)),
+    getCardPaymentsEntre(db, sumarDias(desde, -10), sumarDias(hasta, 10)),
+    getLineasPreviasEntre(db, sumarDias(desde, -45), sumarDias(hasta, 45)),
+    getAprendido(db),
+    // Archivadas incluidas: una cuenta archivada igual puede ser la del estado.
+    getCards(db, true),
+    getSettings(db),
+  ]);
+
+  return {
+    migracionLista: lineasPrevias !== null && aprendido !== null,
+    movimientos,
+    pagosDeTarjeta,
+    lineasPrevias: lineasPrevias ?? [],
+    aprendido: aprendido ?? [],
+    cards,
+    moneda: settings.currency,
+    yo: db.userId,
+  };
+}
+
+type FalloDeImportacion = { ok: false; error: string; faltaMigracion?: true };
+
+/**
+ * Del error de la función SQL al texto para la persona.
+ *
+ * La función tira excepciones cuyo mensaje ES el código (`NO_CUADRA`,
+ * `YA_ENLAZADO`…): así el texto vive en un solo lugar, `textos.ts`, y no
+ * copiado en plpgsql. Lo que no es un código conocido no se muestra crudo: un
+ * error de Postgres puede traer la clave de la línea, y la clave tiene el saldo.
+ */
+function traducirErrorDeImportacion(error: ErrorDeConsulta, funcion: string): FalloDeImportacion {
+  if (faltaLaFuncion(error, funcion)) return { ok: false, error: FALTA_MIGRACION, faltaMigracion: true };
+  const codigo = (error.message ?? '').trim();
+  if (Object.prototype.hasOwnProperty.call(ERRORES_DE_IMPORTACION, codigo)) {
+    return { ok: false, error: ERRORES_DE_IMPORTACION[codigo as CodigoDeImportacion] };
+  }
+  return { ok: false, error: ERROR_DE_IMPORTACION_GENERICO };
+}
+
+/**
+ * Da de alta la cuenta del banco en la Billetera.
+ *
+ * Si el nombre ya existe se prueba con los 4 al final ("Ahorro ··3456"). Y si
+ * la que choca es ESTA misma cuenta —un reintento después de una importación
+ * que falló con la cuenta ya creada—, se usa esa en vez de crear otra igual.
+ */
+async function crearCuentaDelBanco(
+  db: Db, nueva: NuevaCard,
+): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  let error = '';
+  for (const name of [nueva.name, `${nueva.name} ··${nueva.last4}`]) {
+    const creada = await createCard(db, { ...nueva, name });
+    if (creada.ok) return { ok: true, id: creada.card.id };
+    error = creada.error;
+
+    const misma = (await getCards(db, true)).find(c =>
+      c.name === name && c.last4 === nueva.last4 && (c.kind === 'savings' || c.kind === 'checking'));
+    if (misma) return { ok: true, id: misma.id };
+  }
+  return { ok: false, error };
+}
+
+/**
+ * Importa un estado de cuenta: todo o nada, y repetible sin duplicar.
+ *
+ * Primero se arma lo que la función SQL da por hecho —la cuenta del banco, sus
+ * últimos 4, las categorías nuevas— y recién después se llama a la función.
+ * Si falta la migración se avisa ANTES de crear nada, para no dejar una
+ * cuenta o una categoría sueltas de una importación que no se iba a hacer.
+ *
+ * Nunca cae a anotar los movimientos de a uno con `createTransaction`: sin la
+ * tabla de líneas no habría forma de reconocerlos la próxima vez, y subir el
+ * mismo PDF los duplicaría.
+ */
+export async function importarEstadoDeCuenta(
+  db: Db,
+  pedido: PedidoDeImportacion,
+): Promise<{ ok: true; resultado: ResultadoDeImportacion } | FalloDeImportacion> {
+  const leido = leerPedidoDeImportacion(pedido as unknown as Record<string, unknown>);
+  if (!leido.ok) return { ok: false, error: leido.error };
+  const { lineas, cuentaNueva, completarLast4, categoriasNuevas } = leido.pedido;
+  const cab = { ...leido.pedido.cab };
+
+  if (cuentaNueva || completarLast4 || categoriasNuevas) {
+    const { error } = await db.supabase.from('statement_lines').select('id').limit(1);
+    if (error) {
+      if (faltaLaTabla(error, 'statement_lines')) return { ok: false, error: FALTA_MIGRACION, faltaMigracion: true };
+      fallar('No se pudo preparar la importación', error);
+    }
+  }
+
+  if (cuentaNueva) {
+    const creada = await crearCuentaDelBanco(db, cuentaNueva);
+    if (!creada.ok) return creada;
+    cab.account_card_id = creada.id;
+  }
+
+  if (completarLast4) {
+    // Completar, no reemplazar: si la cuenta ya tiene otros 4, no es esta.
+    const card = await getCardById(db, completarLast4.card_id);
+    if (!card || (card.last4 && card.last4 !== completarLast4.last4)) {
+      return { ok: false, error: ERRORES_DE_IMPORTACION.CUENTA_INVALIDA };
+    }
+    if (!card.last4) {
+      const res = await updateCard(db, card.id, { last4: completarLast4.last4 });
+      if (!res.ok) return res;
+    }
+  }
+
+  for (const categoria of categoriasNuevas ?? []) {
+    const res = await createCategory(db, categoria);
+    // Que ya exista es justo lo que se quería: es un reintento, o alguien de la
+    // cuenta compartida la creó mientras se revisaba el estado.
+    if ('error' in res && !res.error.includes('ya tiene')) return { ok: false, error: res.error };
+  }
+
+  const { data, error } = await db.supabase.rpc('importar_estado_de_cuenta', {
+    p_cab: cab,
+    p_lineas: lineas,
+  });
+  if (error) return traducirErrorDeImportacion(error, 'importar_estado_de_cuenta');
+
+  const r = (data ?? {}) as Record<string, unknown>;
+  return {
+    ok: true,
+    resultado: {
+      importId: r.import_id as string,
+      creados: Number(r.creados ?? 0),
+      enlazados: Number(r.enlazados ?? 0),
+      pagos: Number(r.pagos ?? 0),
+      omitidos: Number(r.omitidos ?? 0),
+      yaEstaban: Number(r.ya_estaban ?? 0),
+      cardId: cab.account_card_id as string,
+    },
+  };
+}
+
+/**
+ * Deshace una importación: borra lo que creó y olvida sus líneas, que vuelven
+ * a quedar sin decidir. Lo que solo se enlazó con un movimiento que ya
+ * existía no se toca, porque ese lo anotó la persona.
+ */
+export async function deshacerImportacion(
+  db: Db,
+  importId: string,
+): Promise<{ ok: true; deshechas: number } | { ok: false; error: string }> {
+  if (!esUuid(importId)) return { ok: false, error: 'Esa importación no existe.' };
+
+  const { data, error } = await db.supabase.rpc('deshacer_importacion', { p_import: importId });
+  if (error) {
+    const traducido = traducirErrorDeImportacion(error, 'deshacer_importacion');
+    // La función corre en una sola transacción: si falló, no borró nada.
+    return {
+      ok: false,
+      error: traducido.error === ERROR_DE_IMPORTACION_GENERICO
+        ? 'No se pudo deshacer la importación. No se borró nada; probá de nuevo.'
+        : traducido.error,
+    };
+  }
+  return { ok: true, deshechas: Number((data as Record<string, unknown> | null)?.deshechas ?? 0) };
+}
 
 // ─── Lista de compras: la plantilla ───────────────────────────────────────────
 
