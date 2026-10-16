@@ -31,20 +31,34 @@ if (archivos.length === 0) {
   process.exit(1);
 }
 
-let fallaron = 0;
-for (const archivo of archivos) {
-  const nombre = archivo.replace('.prueba.ts', '');
-  process.stdout.write(`\n── ${nombre} ─────────────────────────────\n`);
-  try {
-    require(path.join(__dirname, archivo));
-  } catch (err) {
-    fallaron++;
-    console.error(`✗ ${nombre} explotó:`, err instanceof Error ? err.message : err);
+/*
+ * Una prueba asíncrona exporta `listo`, la promesa que termina cuando terminó
+ * de comprobar. Se la espera ANTES de pasar a la siguiente.
+ *
+ * Sin esto el `process.exit` del final cortaba el proceso con las aserciones
+ * todavía pendientes, y una prueba que leía un PDF —pdf.js es asíncrono—
+ * "pasaba" sin haber comprobado nada. Una prueba que no corre es peor que no
+ * tenerla: da la tranquilidad sin el control.
+ */
+async function main() {
+  let fallaron = 0;
+  for (const archivo of archivos) {
+    const nombre = archivo.replace('.prueba.ts', '');
+    process.stdout.write(`\n── ${nombre} ─────────────────────────────\n`);
+    try {
+      const modulo = require(path.join(__dirname, archivo)) as { listo?: unknown };
+      if (modulo?.listo instanceof Promise) await modulo.listo;
+    } catch (err) {
+      fallaron++;
+      console.error(`✗ ${nombre} explotó:`, err instanceof Error ? err.message : err);
+    }
   }
+
+  // Cada prueba suma a este contador global al fallar.
+  const globales = globalThis as unknown as { __fallas?: number };
+  const total = (globales.__fallas ?? 0) + fallaron;
+  console.log(total === 0 ? '\n✓ todo en orden' : `\n✗ ${total} falla(s)`);
+  process.exit(total > 0 ? 1 : 0);
 }
 
-// Cada prueba suma a este contador global al fallar.
-const globales = globalThis as unknown as { __fallas?: number };
-const total = (globales.__fallas ?? 0) + fallaron;
-console.log(total === 0 ? '\n✓ todo en orden' : `\n✗ ${total} falla(s)`);
-process.exit(total > 0 ? 1 : 0);
+main();
