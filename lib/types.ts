@@ -1,6 +1,9 @@
 export type TransactionType = 'income' | 'expense';
 export type TransactionScope = 'personal' | 'business';
-export type TransactionSource = 'manual' | 'voice' | 'ai' | 'whatsapp' | 'telegram';
+// 'statement' = importado de un estado de cuenta del banco. Es solo la insignia
+// de la lista: qué línea del banco ya entró NO se sabe por acá (las pantallas de
+// edición reescriben `source`), sino por la tabla `statement_lines` (0024).
+export type TransactionSource = 'manual' | 'voice' | 'ai' | 'whatsapp' | 'telegram' | 'statement';
 export type LedgerColor = 'green' | 'blue' | 'purple' | 'orange' | 'red' | 'teal' | 'indigo' | 'pink';
 
 export const LEDGER_COLOR_MAP: Record<LedgerColor, { main: string; dark: string; text: string }> = {

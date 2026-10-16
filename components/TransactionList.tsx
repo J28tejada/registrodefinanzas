@@ -1,21 +1,24 @@
 'use client';
 
-import { Transaction, LEDGER_COLOR_MAP } from '@/lib/types';
+import { Transaction, TransactionSource, LEDGER_COLOR_MAP } from '@/lib/types';
 import { useLedger } from './LedgerContext';
 import { useCategories } from './CategoriesContext';
 import CategoryIcon from './CategoryIcon';
 import { useFormatters } from './SettingsContext';
 import { useEffect, useState } from 'react';
-import { Pencil, Trash2, Mic, Bot, Pencil as PencilIcon, MessageCircle, Send, Receipt, User } from 'lucide-react';
+import { Pencil, Trash2, Mic, Bot, Pencil as PencilIcon, MessageCircle, Send, Receipt, User, FileText } from 'lucide-react';
 import { createClient } from '@/lib/supabase/browser';
 
 // Una trazabilidad que solo sirve consultando la base no le sirve al usuario.
-const sourceBadge = {
+// Tipado contra TransactionSource: un origen nuevo sin insignia no compila, en
+// vez de caer callado en la de "a mano".
+const sourceBadge: Record<TransactionSource, { icon: typeof Mic; cls: string; label: string; texto: string }> = {
   voice: { icon: Mic, cls: 'text-tinta-2', label: 'por voz', texto: '' },
   ai: { icon: Bot, cls: 'text-tinta-2', label: 'con IA', texto: '' },
   manual: { icon: PencilIcon, cls: 'text-tinta-3', label: 'a mano', texto: '' },
   whatsapp: { icon: MessageCircle, cls: 'text-acento', label: 'vía WhatsApp', texto: 'vía WhatsApp' },
   telegram: { icon: Send, cls: 'text-info', label: 'vía Telegram', texto: 'vía Telegram' },
+  statement: { icon: FileText, cls: 'text-tinta-2', label: 'del banco', texto: 'del banco' },
 };
 
 interface TransactionListProps {

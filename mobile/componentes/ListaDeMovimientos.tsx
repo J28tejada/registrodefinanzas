@@ -1,6 +1,6 @@
 import { Pressable, View } from 'react-native';
 import {
-  Bot, MessageCircle, Mic, Pencil, Receipt, Send, Trash2, User,
+  Bot, FileText, MessageCircle, Mic, Pencil, Receipt, Send, Trash2, User,
 } from 'lucide-react-native';
 import Texto from './Texto';
 import IconoDeCategoria from './IconoDeCategoria';
@@ -8,7 +8,7 @@ import { useCategorias } from './ContextoDeCategorias';
 import { useFormatters } from './ContextoDeAjustes';
 import { useCuenta } from './ContextoDeCuenta';
 import { useSesion } from './ContextoDeSesion';
-import { LEDGER_COLOR_MAP, Transaction } from '@compartido/types';
+import { LEDGER_COLOR_MAP, Transaction, TransactionSource } from '@compartido/types';
 import { useColores } from '../lib/colores';
 
 /**
@@ -24,7 +24,8 @@ const ORIGEN = {
   manual: { icono: Pencil, color: 'tinta3', texto: '' },
   whatsapp: { icono: MessageCircle, color: 'acento', texto: 'vía WhatsApp' },
   telegram: { icono: Send, color: 'info', texto: 'vía Telegram' },
-} as const;
+  statement: { icono: FileText, color: 'tinta2', texto: 'del banco' },
+} as const satisfies Record<TransactionSource, { icono: unknown; color: string; texto: string }>;
 
 /** El gemelo de components/TransactionList.tsx. */
 export default function ListaDeMovimientos({
