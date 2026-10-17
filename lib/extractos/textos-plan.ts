@@ -394,6 +394,9 @@ export const PANTALLA = {
   claveCampo: 'Contraseña del PDF',
   abrir: 'Abrir',
   leyendo: 'Leyendo el estado de cuenta…',
+  // El PDF no llegó al lector (sin señal, la web caída): no es el PDF, y
+  // decirle que lo baje de nuevo del banco la manda a arreglar lo que anda.
+  sinConexion: 'No se pudo llegar al servidor para leer el PDF. Revisá la conexión y probá de nuevo.',
   // Leído el PDF, falta lo que está en la base: sin eso no hay con qué cotejar.
   sinContexto: 'No se pudo comparar con lo que ya tenés anotado. Probá de nuevo.',
   sinCategorias: 'No se pudieron cargar las categorías de esa cuenta. Probá de nuevo.',
@@ -409,6 +412,23 @@ export const PANTALLA = {
   cancelar: 'Cancelar',
   deshecho: 'Deshecho: no quedó nada de esta importación.',
 } as const;
+
+/**
+ * Lo que dice la pantalla después de deshacer. Deshacer borra lo anotado, no lo
+ * que se creó para poder anotarlo: la cuenta nueva y la categoría de cargos
+ * quedan. Decir "no quedó nada" con la cuenta de otro en la Billetera (el PDF
+ * equivocado es justo cuando se deshace) sería mentir. Recibe los nombres de lo
+ * creado, o null.
+ */
+export function textoDeshecho(cuenta: string | null, categoria: string | null): string {
+  if (!cuenta && !categoria) return PANTALLA.deshecho;
+  const quedo = cuenta && categoria
+    ? `Quedaron la cuenta «${cuenta}» en la Billetera y la categoría «${categoria}», que se crearon al importar.`
+    : cuenta
+      ? `Quedó la cuenta «${cuenta}» en la Billetera, que se creó al importar.`
+      : `Quedó la categoría «${categoria}», que se creó al importar.`;
+  return `Deshecho: se borró lo que se anotó. ${quedo}`;
+}
 
 /** Lo que quedó después de importar, con los números de la función SQL. */
 export function textoListo(anotados: number, enlazados: number, pagos: number, sinAnotar: number): string {

@@ -16,7 +16,7 @@ import { cotejar, Cotejo, mencionaComercio, tokenDeComercio } from '@/lib/extrac
 import { categoriaPara } from '@/lib/extractos/categorizar';
 import { elegirCuenta, nombreDeProducto } from '@/lib/extractos/cuenta';
 import {
-  Plan, aplicarCambio, armarPedido, candidatosParaEnlazar, hojaDeLinea, libroSugerido,
+  Plan, aplicarCambio, armarPedido, candidatosParaEnlazar, hojaDeLinea, libroSugerido, loQueSeCrea,
   planearImportacion, vistaDelPlan,
 } from '@/lib/extractos/planear';
 import * as T from '@/lib/extractos/textos-plan';
@@ -1083,6 +1083,11 @@ t.igual('la pareja se pregunta con su nombre', vistaDelPlan(PLAN).secciones[0].g
   const pn = armarPedido(nueva);
   t.igual('…el pedido trae la cuenta nueva', [pn.cab.account_card_id, pn.cuentaNueva?.name, pn.cuentaNueva?.last4],
     [null, 'Cuenta Digital Libre', '3456']);
+  // Deshacer no borra la cuenta ni la categoría creadas: la pantalla lo dice.
+  t.igual('lo que se crea al importar', loQueSeCrea(pn), { cuenta: 'Cuenta Digital Libre ··3456', categoria: 'Cargos bancarios' });
+  t.igual('…y lo que dice después de deshacer', T.textoDeshecho(loQueSeCrea(pn).cuenta, loQueSeCrea(pn).categoria),
+    'Deshecho: se borró lo que se anotó. Quedaron la cuenta «Cuenta Digital Libre ··3456» en la Billetera y ' +
+    'la categoría «Cargos bancarios», que se crearon al importar.');
 
   const sinUltimos = card('card-sin', { name: 'Mi ahorro' });
   const completar = planearImportacion(EXTRACTO, ctxDe({ ...CTX, cards: [sinUltimos, VISA] }), { ...OP, cuentaPedida: 'card-sin' });
@@ -1184,6 +1189,11 @@ t.igual('de un timestamp', T.fechaCorta('2026-10-02T15:00:00Z'), '2 oct');
 t.igual('la fila de otro año lleva el año', T.fechaDeFila('2025-12-30', HOY), '30 dic 2025');
 t.igual('el período que cruza el año', T.periodo('2025-12-20', '2026-01-19'), '20 dic 2025 – 19 ene 2026');
 t.igual('un solo movimiento', T.botonImportar(1), 'Importar 1 movimiento');
+t.igual('deshecho sin crear nada', T.textoDeshecho(null, null), 'Deshecho: no quedó nada de esta importación.');
+t.igual('deshecho con la cuenta creada', T.textoDeshecho('Cuenta Digital Libre ··3456', null),
+  'Deshecho: se borró lo que se anotó. Quedó la cuenta «Cuenta Digital Libre ··3456» en la Billetera, que se creó al importar.');
+t.igual('deshecho con la categoría creada', T.textoDeshecho(null, 'Cargos bancarios'),
+  'Deshecho: se borró lo que se anotó. Quedó la categoría «Cargos bancarios», que se creó al importar.');
 t.igual('uno para revisar', T.avisoParaRevisar(1), 'Para revisar: 1. Si no lo decidís, no se anota.');
 t.igual('solo gastos', T.conteoSeAnotan(3, 0), 'Se anotan 3 gastos');
 t.igual('un solo ingreso', T.conteoSeAnotan(0, 1), 'Se anota 1 ingreso');

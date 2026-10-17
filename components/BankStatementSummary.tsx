@@ -123,7 +123,7 @@ export default function BankStatementSummary({
       )}
 
       <div className="flex flex-col gap-2">
-        <BotonDeImportar boton={boton} importando={importando} onImportar={onImportar} />
+        <BotonDeImportar boton={boton} importando={importando} ocupado={cambiandoLibro} onImportar={onImportar} />
         {error && <CajaDeError texto={error} />}
       </div>
     </div>
@@ -199,10 +199,12 @@ function Aviso({ aviso, onCambio }: { aviso: AvisoDeVista; onCambio: AlCambiar }
  * nadie vuelve hasta arriba a buscarlo.
  */
 export function BotonDeImportar({
-  boton, importando = false, onImportar,
+  boton, importando = false, ocupado = false, onImportar,
 }: {
   boton: VistaDelPlan['boton'];
   importando?: boolean;
+  /** Falta algo que el pedido necesita (las categorías del libro nuevo): apagado, sin decir "Importando…". */
+  ocupado?: boolean;
   onImportar: () => void;
 }) {
   // Sin nada que importar no es un botón apagado sino un dato: "ya se importó
@@ -216,7 +218,7 @@ export function BotonDeImportar({
     <button
       type="button"
       onClick={onImportar}
-      disabled={!boton.habilitado || importando}
+      disabled={!boton.habilitado || importando || ocupado}
       className="w-full py-3 bg-primario hover:bg-primario/85 disabled:opacity-50 text-sobre-primario rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
     >
       {importando ? (

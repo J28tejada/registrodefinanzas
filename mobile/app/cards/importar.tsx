@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert, AlertButton, Pressable, ScrollView, TextInput, View,
 } from 'react-native';
-import { Link, useLocalSearchParams } from 'expo-router';
+import { Link, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, CheckCircle2, FileUp, KeyRound, Undo2 } from 'lucide-react-native';
 import Texto from '../../componentes/Texto';
@@ -11,10 +11,11 @@ import ResumenDeExtracto, { BotonDeImportar, CajaDeError } from '../../component
 import RevisionDeExtracto from '../../componentes/RevisionDeExtracto';
 import HojaDeLineaDeExtracto from '../../componentes/HojaDeLineaDeExtracto';
 import { useCuenta } from '../../componentes/ContextoDeCuenta';
+import { useCategorias } from '../../componentes/ContextoDeCategorias';
 import { useSesion } from '../../componentes/ContextoDeSesion';
 import { useFormatters } from '../../componentes/ContextoDeAjustes';
 import { db } from '../../lib/datos';
-import { FALTA_LA_API, hayApi, llamarApi } from '../../lib/api';
+import { FALTA_LA_API, SIN_SESION, hayApi, llamarApi } from '../../lib/api';
 import { elegirPdf } from '../../lib/pdf';
 import { useColores } from '../../lib/colores';
 import {
@@ -24,14 +25,14 @@ import { leerConsultaDeContexto } from '@compartido/extractos-campos';
 import type { Category } from '@compartido/types';
 import {
   CambioDePlan, IdDeSeccion, Plan, SeccionDeVista, aplicarCambio, armarPedido, hojaDeLinea,
-  libroSugerido, planearImportacion, vistaDelPlan,
+  libroSugerido, loQueSeCrea, planearImportacion, vistaDelPlan,
 } from '@compartido/extractos/planear';
 import {
   ERROR_AL_DESHACER, ERROR_DE_IMPORTACION_GENERICO, FALTA_MIGRACION, MENSAJES_DE_LECTURA,
   mensajeNoCuadra,
 } from '@compartido/extractos/textos';
 import {
-  PANTALLA, fechaDeFila, textoDelPie, textoListo, yaEstabanImportados,
+  PANTALLA, fechaDeFila, textoDelPie, textoDeshecho, textoListo, yaEstabanImportados,
 } from '@compartido/extractos/textos-plan';
 import type {
   CodigoDeLectura, ContextoDeExtracto, ExtractoLeido, MotivoNoCuadra, ResultadoDeImportacion,
@@ -49,13 +50,16 @@ import type {
  * arma el mismo `lib/extractos/planear.ts`. Acá solo se dibuja y se pide.
  */
 
+/** Lo que la importación creó para poder anotar: deshacer no lo borra. */
+type Creado = ReturnType<typeof loQueSeCrea>;
+
 type Paso =
   | { tipo: 'elegir'; error: string }
   | { tipo: 'clave'; error: string }
   | { tipo: 'leyendo' }
   | { tipo: 'revisar' }
-  | { tipo: 'listo'; resultado: ResultadoDeImportacion; deshaciendo: boolean; error: string }
-  | { tipo: 'deshecho'; cardId: string };
+  | { tipo: 'listo'; resultado: ResultadoDeImportacion; creado: Creado; deshaciendo: boolean; error: string }
+  | { tipo: 'deshecho'; cardId: string; creado: Creado };
 
 /** Lo que contesta la ruta de leer: el estado leído, o el código de por qué no. */
 type RespuestaDeLectura = { extracto?: ExtractoLeido; codigo?: string; motivo?: string; fecha?: string; error?: string };
@@ -75,6 +79,7 @@ export default function ImportarEstado() {
   const { card } = useLocalSearchParams<{ card?: string }>();
   const cardPedida = typeof card === 'string' && card ? card : null;
   const { ledgers, currentLedger, notifyTransactionSaved, refreshLedgers } = useCuenta();
+  const { refrescar: refrescarCategorias } = useCategorias();
   const { session } = useSesion();
   const usuario = session?.user?.id;
   const fmt = useFormatters();
@@ -93,6 +98,12 @@ export default function ImportarEstado() {
    * importa sale de lo leído— y se suelta.
    */
   const pdfRef = useRef<string | null>(null);
+  /*
+   * Cada PDF elegido es un intento nuevo. Lo pedido para el anterior (importar,
+   * deshacer, las categorías de otro libro) puede volver tarde: si el intento
+   * cambió, se descarta en vez de pisar la pantalla del PDF nuevo.
+   */
+  const intentoRef = useRef(0);
 
   const [paso, setPaso] = useState<Paso>({ tipo: 'elegir', error: '' });
   // La contraseña vive solo en el campo: se manda una vez y se borra.
@@ -113,13 +124,32 @@ export default function ImportarEstado() {
   const nombreDe = (id: string) => cuentasRef.current.ledgers.find(l => l.id === id)?.name ?? null;
 
   const reiniciar = () => {
+    intentoRef.current += 1;
     pdfRef.current = null;
     setClave('');
     setPlan(null);
     setAbiertas({});
     setFilaAbierta(null);
+    setCambiandoLibro(false);
+    setImportando(false);
     setErrorDeImportacion('');
   };
+
+  /*
+   * La web desmonta la página al irse; acá el Stack la deja montada debajo de
+   * la que se abrió. Con la contraseña pedida, eso es el PDF entero y la clave a
+   * medio escribir guardados en una pantalla que no se ve: al perder el foco se
+   * sueltan, y al volver se elige de nuevo.
+   */
+  const pasoRef = useRef(paso);
+  pasoRef.current = paso;
+  const soltarAlSalir = useRef(() => {});
+  soltarAlSalir.current = () => {
+    if (pasoRef.current.tipo !== 'clave') return;
+    reiniciar();
+    setPaso({ tipo: 'elegir', error: '' });
+  };
+  useFocusEffect(useCallback(() => () => soltarAlSalir.current(), []));
 
   const mensajeDeLectura = (datos: RespuestaDeLectura | null) => {
     const codigo = datos?.codigo;
@@ -130,8 +160,10 @@ export default function ImportarEstado() {
       return mensajeNoCuadra(datos?.motivo as MotivoNoCuadra | undefined, fecha);
     }
     if (codigo && codigo in MENSAJES_DE_LECTURA) return MENSAJES_DE_LECTURA[codigo as CodigoDeLectura];
+    // Sin JSON no contestó la ruta sino algo en el camino (un 504, un proxy).
+    if (!datos) return PANTALLA.sinConexion;
     // Sin código es que no llegó al lector (la sesión, por ejemplo): eso dice `error`.
-    return datos?.error ?? MENSAJES_DE_LECTURA.ILEGIBLE;
+    return datos.error ?? MENSAJES_DE_LECTURA.ILEGIBLE;
   };
 
   /** Lo leído, contra lo que ya está anotado: de acá sale el plan. */
@@ -181,9 +213,12 @@ export default function ImportarEstado() {
         body: conClave ? { pdf, clave: conClave } : { pdf },
       });
       datos = await res.json().catch(() => null);
-    } catch {
+    } catch (e) {
+      // No llegó: el PDF no tiene nada que ver. Lo que `llamarApi` tira antes
+      // de salir (sin sesión, sin la dirección de la web) ya dice qué falta.
       pdfRef.current = null;
-      setPaso({ tipo: 'elegir', error: MENSAJES_DE_LECTURA.ILEGIBLE });
+      const propio = e instanceof Error && (e.message === SIN_SESION || e.message === FALTA_LA_API);
+      setPaso({ tipo: 'elegir', error: propio ? e.message : PANTALLA.sinConexion });
       return;
     }
 
@@ -238,9 +273,11 @@ export default function ImportarEstado() {
 
   const cambiarLibro = async (ledgerId: string) => {
     if (!plan || !usuario || ledgerId === plan.ledgerId) return;
+    const intento = intentoRef.current;
     setCambiandoLibro(true);
     setErrorDeImportacion('');
     const categorias = await categoriasDe(usuario, ledgerId);
+    if (intento !== intentoRef.current) return;
     setCambiandoLibro(false);
     if (!categorias) { setErrorDeImportacion(PANTALLA.sinCategorias); return; }
     cambiar(null, { tipo: 'libro', ledgerId, categorias, ledgerName: nombreDe(ledgerId) });
@@ -262,53 +299,69 @@ export default function ImportarEstado() {
   };
 
   const importar = async () => {
-    if (!plan || !usuario || importando) return;
+    // Con el libro cambiando, el pedido saldría con el anterior.
+    if (!plan || !usuario || importando || cambiandoLibro) return;
+    const intento = intentoRef.current;
+    const vigente = () => intento === intentoRef.current;
+    const pedido = armarPedido(plan);
     setImportando(true);
     setErrorDeImportacion('');
     try {
-      const res = await importarEstadoDeCuenta(db(usuario), armarPedido(plan));
+      const res = await importarEstadoDeCuenta(db(usuario), pedido);
+      const creado = loQueSeCrea(pedido);
+      if (res.ok) {
+        // Lo importado aparece en Movimientos, en la cuenta y en los saldos sin
+        // recargar, y la categoría de cargos, si se creó, en los selectores.
+        // Aunque la pantalla ya esté en otro PDF: la base cambió igual.
+        notifyTransactionSaved();
+        refreshLedgers();
+        if (creado.categoria) refrescarCategorias();
+      }
+      if (!vigente()) return;
       if (!res.ok) {
         setErrorDeImportacion(res.faltaMigracion ? FALTA_MIGRACION : res.error);
         return;
       }
-      setPaso({ tipo: 'listo', resultado: res.resultado, deshaciendo: false, error: '' });
+      setPaso({ tipo: 'listo', resultado: res.resultado, creado, deshaciendo: false, error: '' });
       setPlan(null);
       setFilaAbierta(null);
-      // Lo importado aparece en Movimientos, en la cuenta y en los saldos sin recargar.
-      notifyTransactionSaved();
-      refreshLedgers();
       scrollRef.current?.scrollTo({ y: 0, animated: false });
     } catch {
-      setErrorDeImportacion(ERROR_DE_IMPORTACION_GENERICO);
+      if (vigente()) setErrorDeImportacion(ERROR_DE_IMPORTACION_GENERICO);
     } finally {
-      setImportando(false);
+      if (vigente()) setImportando(false);
     }
   };
 
-  const deshacer = async (resultado: ResultadoDeImportacion) => {
+  const deshacer = async (resultado: ResultadoDeImportacion, creado: Creado) => {
     if (!usuario) return;
-    setPaso({ tipo: 'listo', resultado, deshaciendo: true, error: '' });
+    const intento = intentoRef.current;
+    setPaso({ tipo: 'listo', resultado, creado, deshaciendo: true, error: '' });
     try {
       const res = await deshacerImportacion(db(usuario), resultado.importId);
+      if (res.ok) {
+        notifyTransactionSaved();
+        refreshLedgers();
+      }
+      if (intento !== intentoRef.current) return;
       if (!res.ok) {
-        setPaso({ tipo: 'listo', resultado, deshaciendo: false, error: res.error });
+        setPaso({ tipo: 'listo', resultado, creado, deshaciendo: false, error: res.error });
         return;
       }
-      setPaso({ tipo: 'deshecho', cardId: resultado.cardId });
-      notifyTransactionSaved();
-      refreshLedgers();
+      setPaso({ tipo: 'deshecho', cardId: resultado.cardId, creado });
     } catch {
-      setPaso({ tipo: 'listo', resultado, deshaciendo: false, error: ERROR_AL_DESHACER });
+      if (intento !== intentoRef.current) return;
+      setPaso({ tipo: 'listo', resultado, creado, deshaciendo: false, error: ERROR_AL_DESHACER });
     }
   };
 
   /** Se pregunta antes, como el `confirm` de la web: borra de una todo lo importado. */
   const preguntarDeshacer = () => {
     if (paso.tipo !== 'listo' || paso.deshaciendo) return;
-    const { resultado } = paso;
+    const { resultado, creado } = paso;
     const botones: AlertButton[] = [
       { text: PANTALLA.cancelar, style: 'cancel' },
-      { text: PANTALLA.deshacer, style: 'destructive', onPress: () => { deshacer(resultado); } },
+      { text: PANTALLA.deshacer, style: 'destructive', onPress: () => { deshacer(resultado, creado); } },
     ];
     Alert.alert(PANTALLA.confirmarDeshacer, undefined, botones);
   };
@@ -321,7 +374,9 @@ export default function ImportarEstado() {
 
   return (
     <Pantalla ref={scrollRef} className="gap-6" keyboardShouldPersistTaps="handled">
-      <Link href="/cards" asChild>
+      {/* `dismissTo` y no un Link común: ese apila la Billetera encima y esta
+          pantalla queda viva debajo, con lo que tenga en memoria. */}
+      <Link href="/cards" dismissTo asChild>
         <Pressable className="self-start flex-row items-center gap-1.5">
           <ArrowLeft size={16} color={paleta.tinta2} />
           <Texto className="text-sm text-tinta-2">{PANTALLA.volver}</Texto>
@@ -453,9 +508,16 @@ export default function ImportarEstado() {
             <Texto className="text-xs text-tinta-2">
               {textoDelPie(dinero(vista.pie.gastosCentavos), dinero(vista.pie.ingresosCentavos), vista.pie.sinDecidir)}
             </Texto>
-            <BotonDeImportar boton={vista.boton} importando={importando} onImportar={importar} />
+            <BotonDeImportar boton={vista.boton} importando={importando} ocupado={cambiandoLibro} onImportar={importar} />
             {errorDeImportacion ? <CajaDeError texto={errorDeImportacion} /> : null}
-            <Pressable onPress={elegirOtro} accessibilityRole="button" className="self-center py-1">
+            {/* Mientras importa no se cambia de PDF: lo que conteste es de este. */}
+            <Pressable
+              onPress={elegirOtro}
+              disabled={importando}
+              accessibilityRole="button"
+              className="self-center py-1"
+              style={importando ? { opacity: 0.5 } : undefined}
+            >
               <Texto className="text-xs text-tinta-2">{PANTALLA.elegirOtroPdf}</Texto>
             </Pressable>
           </View>
@@ -492,8 +554,10 @@ export default function ImportarEstado() {
             </Link>
             <Pressable
               onPress={elegirOtro}
+              disabled={paso.deshaciendo}
               accessibilityRole="button"
               className="w-full py-2.5 bg-hundido active:bg-presionado rounded-lg items-center"
+              style={paso.deshaciendo ? { opacity: 0.5 } : undefined}
             >
               <Texto className="text-sm text-tinta">{PANTALLA.importarOtro}</Texto>
             </Pressable>
@@ -517,7 +581,7 @@ export default function ImportarEstado() {
         <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-5 gap-4">
           <View className="flex-row items-start gap-2">
             <View className="mt-0.5"><Undo2 size={16} color={paleta.tinta2} /></View>
-            <Texto className="flex-1 text-sm text-tinta">{PANTALLA.deshecho}</Texto>
+            <Texto className="flex-1 text-sm text-tinta">{textoDeshecho(paso.creado.cuenta, paso.creado.categoria)}</Texto>
           </View>
           <View className="gap-2">
             <Pressable

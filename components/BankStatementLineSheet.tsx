@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, ChevronDown, Lock, X } from 'lucide-react';
 import { Dinero, Monto, Pildora } from './BankStatementReview';
 import type { Category } from '@/lib/types';
@@ -49,12 +49,15 @@ export default function BankStatementLineSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clave]);
 
+  // Escape es salir por el sistema, como el botón atrás del teléfono: guarda lo
+  // escrito igual que "Listo". Por una ref para no colgarse de un cierre viejo.
+  const listoRef = useRef(() => {});
   useEffect(() => {
     if (!clave || enLinea) return;
-    const alTeclear = (e: KeyboardEvent) => { if (e.key === 'Escape') onCerrar(); };
+    const alTeclear = (e: KeyboardEvent) => { if (e.key === 'Escape') listoRef.current(); };
     window.addEventListener('keydown', alTeclear);
     return () => window.removeEventListener('keydown', alTeclear);
-  }, [clave, enLinea, onCerrar]);
+  }, [clave, enLinea]);
 
   if (!hoja) return null;
 
@@ -65,10 +68,13 @@ export default function BankStatementLineSheet({
     if (descripcion.trim() !== hoja.descripcion) cambiar({ tipo: 'descripcion', descripcion });
   };
 
+  // Todas las salidas pasan por acá —la X, Escape, el fondo, "Listo"—: la
+  // descripción se guarda al perder el foco, y desmontar la hoja no lo quita.
   const listo = () => {
     guardarDescripcion();
     onCerrar();
   };
+  listoRef.current = listo;
 
   const elegida = (id: string) => hoja.opciones.some(o => o.id === id && o.elegida);
   const verCandidatos = hoja.candidatos.length > 0 && (lista === 'linked' || elegida('linked'));
@@ -87,7 +93,7 @@ export default function BankStatementLineSheet({
         <h2 className="font-semibold text-tinta">{hoja.titulo}</h2>
         <button
           type="button"
-          onClick={onCerrar}
+          onClick={listo}
           aria-label={HOJA.cerrar}
           className="p-1 -m-1 text-tinta-2 hover:text-tinta transition-colors"
         >

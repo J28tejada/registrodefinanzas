@@ -30,14 +30,20 @@ function bytesDe(base64: string): number {
  * base64 viajando para que el servidor conteste que no es un estado de cuenta
  * son datos del teléfono perdidos. Si el selector no lo sabe, se mira después.
  *
- * La copia que el selector deja en el caché se borra apenas se leyó: la
- * pantalla promete que no se guarda nada hasta importar, y un estado de cuenta
- * tirado en el caché de la app es justamente guardar.
+ * La copia que el selector deja se borra apenas se leyó: la pantalla promete
+ * que no se guarda nada hasta importar, y un estado de cuenta tirado en el
+ * caché de la app es justamente guardar.
+ *
+ * En iOS el selector ya entrega una copia propia, en `tmp/<app>-Inbox/`
+ * (`asCopy`), y con `copyToCacheDirectory` hacía otra en el caché y solo
+ * devolvía esa: se borraba una y la otra, entera, quedaba. Ahí se pide sin la
+ * segunda y se borra la de iOS. En Android sí hace falta: lo que entrega es un
+ * `content://` que no se puede leer sin copiarlo.
  */
 export async function elegirPdf(): Promise<PdfElegido> {
   let elegido;
   try {
-    elegido = await getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: true });
+    elegido = await getDocumentAsync({ type: 'application/pdf', copyToCacheDirectory: Platform.OS !== 'ios' });
   } catch {
     return { tipo: 'error', codigo: 'ILEGIBLE' };
   }
@@ -69,10 +75,11 @@ export async function elegirPdf(): Promise<PdfElegido> {
 function borrarCopia(uri: string) {
   if (Platform.OS === 'web') return;
   try {
-    // Solo la copia, que el selector deja en `<caché>/DocumentPicker/` en iOS
-    // y en Android: si alguna vez devolviera el archivo original, borrarlo
-    // sería borrarle el PDF a la persona.
-    if (!uri.includes('/DocumentPicker/')) return;
+    // Solo una copia: la de `<caché>/DocumentPicker/` en Android, la de
+    // `tmp/<app>-Inbox/` en iOS. Si alguna vez devolviera el archivo
+    // original, borrarlo sería borrarle el PDF a la persona.
+    const esCopia = uri.includes('/DocumentPicker/') || (Platform.OS === 'ios' && uri.includes('-Inbox/'));
+    if (!esCopia) return;
     const copia = new File(uri);
     if (copia.exists) copia.delete();
   } catch {

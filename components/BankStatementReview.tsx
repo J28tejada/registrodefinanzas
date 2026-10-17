@@ -173,7 +173,12 @@ function Fila({
       role="button"
       tabIndex={0}
       onClick={onAbrir}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onAbrir(); } }}
+      onKeyDown={e => {
+        // Solo la fila: un Enter sobre una píldora sube hasta acá, y el
+        // `preventDefault` le cancelaba el clic y abría la hoja en su lugar.
+        if (e.target !== e.currentTarget) return;
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onAbrir(); }
+      }}
       className="py-3 flex items-start gap-3 cursor-pointer"
     >
       <CategoryIcon icon={dibujo.icon} color={dibujo.color} type={apagada ? 'expense' : tipo} size="sm" />

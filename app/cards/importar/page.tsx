@@ -8,19 +8,20 @@ import BankStatementSummary, { BotonDeImportar, CajaDeError } from '@/components
 import BankStatementReview from '@/components/BankStatementReview';
 import BankStatementLineSheet from '@/components/BankStatementLineSheet';
 import { useLedger } from '@/components/LedgerContext';
+import { useCategories } from '@/components/CategoriesContext';
 import { useFormatters } from '@/components/SettingsContext';
 import type { Category } from '@/lib/types';
 import { bytesABase64 } from '@/lib/extractos/base64';
 import {
   CambioDePlan, IdDeSeccion, Plan, SeccionDeVista, aplicarCambio, armarPedido, hojaDeLinea,
-  libroSugerido, planearImportacion, vistaDelPlan,
+  libroSugerido, loQueSeCrea, planearImportacion, vistaDelPlan,
 } from '@/lib/extractos/planear';
 import {
   ERROR_AL_DESHACER, ERROR_DE_IMPORTACION_GENERICO, FALTA_MIGRACION, LIMITE_PDF_BYTES,
   MENSAJES_DE_LECTURA, mensajeNoCuadra,
 } from '@/lib/extractos/textos';
 import {
-  PANTALLA, fechaDeFila, textoDelPie, textoListo, yaEstabanImportados,
+  PANTALLA, fechaDeFila, textoDelPie, textoDeshecho, textoListo, yaEstabanImportados,
 } from '@/lib/extractos/textos-plan';
 import type {
   CodigoDeLectura, ContextoDeExtracto, ExtractoLeido, MotivoNoCuadra, ResultadoDeImportacion,
@@ -49,13 +50,16 @@ export default function ImportarEstadoPage() {
   );
 }
 
+/** Lo que la importación creó para poder anotar: deshacer no lo borra. */
+type Creado = ReturnType<typeof loQueSeCrea>;
+
 type Paso =
   | { tipo: 'elegir'; error: string }
   | { tipo: 'clave'; error: string }
   | { tipo: 'leyendo' }
   | { tipo: 'revisar' }
-  | { tipo: 'listo'; resultado: ResultadoDeImportacion; deshaciendo: boolean; error: string }
-  | { tipo: 'deshecho'; cardId: string };
+  | { tipo: 'listo'; resultado: ResultadoDeImportacion; creado: Creado; deshaciendo: boolean; error: string }
+  | { tipo: 'deshecho'; cardId: string; creado: Creado };
 
 /** Las categorías de un libro. Null si no llegaron: sin ellas no hay plan posible. */
 async function categoriasDe(ledgerId: string): Promise<Category[] | null> {
@@ -71,6 +75,7 @@ async function categoriasDe(ledgerId: string): Promise<Category[] | null> {
 function ImportarEstado() {
   const cardPedida = useSearchParams().get('card');
   const { ledgers, currentLedger, notifyTransactionSaved, refreshLedgers } = useLedger();
+  const { refrescar: refrescarCategorias } = useCategories();
   const fmt = useFormatters();
   const dinero = useCallback((centavos: number) => fmt.money(centavos / 100), [fmt]);
   // Leer el PDF tarda: lo que se mira al terminar son las cuentas de ESE momento,
@@ -85,6 +90,12 @@ function ImportarEstado() {
    * importa sale de lo leído— y se suelta.
    */
   const pdfRef = useRef<string | null>(null);
+  /*
+   * Cada PDF elegido es un intento nuevo. Lo pedido para el anterior (importar,
+   * deshacer, las categorías de otro libro) puede volver tarde: si el intento
+   * cambió, se descarta en vez de pisar la pantalla del PDF nuevo.
+   */
+  const intentoRef = useRef(0);
 
   const [paso, setPaso] = useState<Paso>({ tipo: 'elegir', error: '' });
   // La contraseña vive solo en el campo: se manda una vez y se borra.
@@ -105,11 +116,14 @@ function ImportarEstado() {
   const nombreDe = (id: string) => cuentasRef.current.ledgers.find(l => l.id === id)?.name ?? null;
 
   const reiniciar = () => {
+    intentoRef.current += 1;
     pdfRef.current = null;
     setClave('');
     setPlan(null);
     setAbiertas({});
     setFilaAbierta(null);
+    setCambiandoLibro(false);
+    setImportando(false);
     setErrorDeImportacion('');
   };
 
@@ -129,8 +143,10 @@ function ImportarEstado() {
       return mensajeNoCuadra(datos?.motivo as MotivoNoCuadra | undefined, fecha);
     }
     if (codigo && codigo in MENSAJES_DE_LECTURA) return MENSAJES_DE_LECTURA[codigo as CodigoDeLectura];
+    // Sin JSON no contestó la ruta sino algo en el camino (un 504, un proxy).
+    if (!datos) return PANTALLA.sinConexion;
     // Sin código es que no llegó al lector (la sesión, por ejemplo): eso dice `error`.
-    return datos?.error ?? MENSAJES_DE_LECTURA.ILEGIBLE;
+    return datos.error ?? MENSAJES_DE_LECTURA.ILEGIBLE;
   };
 
   /** Lo leído, contra lo que ya está anotado: de acá sale el plan. */
@@ -180,7 +196,10 @@ function ImportarEstado() {
       });
       datos = await res.json().catch(() => null);
     } catch {
-      setPaso({ tipo: 'elegir', error: MENSAJES_DE_LECTURA.ILEGIBLE });
+      // No llegó: el PDF no tiene nada que ver. Se suelta igual, como al
+      // fallar la lectura: para probar de nuevo se elige otra vez.
+      pdfRef.current = null;
+      setPaso({ tipo: 'elegir', error: PANTALLA.sinConexion });
       return;
     }
 
@@ -237,9 +256,11 @@ function ImportarEstado() {
 
   const cambiarLibro = async (ledgerId: string) => {
     if (!plan || ledgerId === plan.ledgerId) return;
+    const intento = intentoRef.current;
     setCambiandoLibro(true);
     setErrorDeImportacion('');
     const categorias = await categoriasDe(ledgerId);
+    if (intento !== intentoRef.current) return;
     setCambiandoLibro(false);
     if (!categorias) { setErrorDeImportacion(PANTALLA.sinCategorias); return; }
     cambiar(null, { tipo: 'libro', ledgerId, categorias, ledgerName: nombreDe(ledgerId) });
@@ -257,38 +278,50 @@ function ImportarEstado() {
   };
 
   const importar = async () => {
-    if (!plan || importando) return;
+    // Con el libro cambiando, el pedido saldría con el anterior.
+    if (!plan || importando || cambiandoLibro) return;
+    const intento = intentoRef.current;
+    const vigente = () => intento === intentoRef.current;
+    const pedido = armarPedido(plan);
     setImportando(true);
     setErrorDeImportacion('');
     try {
       const res = await fetch('/api/statements/importar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(armarPedido(plan)),
+        body: JSON.stringify(pedido),
       });
       const datos = await res.json().catch(() => null);
+      const creado = loQueSeCrea(pedido);
+      if (res.ok) {
+        // Lo importado aparece en Movimientos, en la cuenta y en los saldos sin
+        // recargar, y la categoría de cargos, si se creó, en los selectores.
+        // Aunque la pantalla ya esté en otro PDF: la base cambió igual.
+        notifyTransactionSaved();
+        refreshLedgers();
+        if (creado.categoria) refrescarCategorias();
+      }
+      if (!vigente()) return;
       if (!res.ok) {
         setErrorDeImportacion(datos?.faltaMigracion ? FALTA_MIGRACION : (datos?.error ?? ERROR_DE_IMPORTACION_GENERICO));
         return;
       }
-      setPaso({ tipo: 'listo', resultado: datos as ResultadoDeImportacion, deshaciendo: false, error: '' });
+      setPaso({ tipo: 'listo', resultado: datos as ResultadoDeImportacion, creado, deshaciendo: false, error: '' });
       setPlan(null);
       setFilaAbierta(null);
-      // Lo importado aparece en Movimientos, en la cuenta y en los saldos sin recargar.
-      notifyTransactionSaved();
-      refreshLedgers();
       window.scrollTo({ top: 0 });
     } catch {
-      setErrorDeImportacion(ERROR_DE_IMPORTACION_GENERICO);
+      if (vigente()) setErrorDeImportacion(ERROR_DE_IMPORTACION_GENERICO);
     } finally {
-      setImportando(false);
+      if (vigente()) setImportando(false);
     }
   };
 
   const deshacer = async () => {
     if (paso.tipo !== 'listo' || paso.deshaciendo) return;
     if (!confirm(PANTALLA.confirmarDeshacer)) return;
-    const { resultado } = paso;
+    const { resultado, creado } = paso;
+    const intento = intentoRef.current;
     setPaso({ ...paso, deshaciendo: true, error: '' });
     try {
       const res = await fetch('/api/statements/deshacer', {
@@ -297,15 +330,19 @@ function ImportarEstado() {
         body: JSON.stringify({ importId: resultado.importId }),
       });
       const datos = await res.json().catch(() => null);
+      if (res.ok) {
+        notifyTransactionSaved();
+        refreshLedgers();
+      }
+      if (intento !== intentoRef.current) return;
       if (!res.ok) {
-        setPaso({ tipo: 'listo', resultado, deshaciendo: false, error: datos?.error ?? ERROR_AL_DESHACER });
+        setPaso({ tipo: 'listo', resultado, creado, deshaciendo: false, error: datos?.error ?? ERROR_AL_DESHACER });
         return;
       }
-      setPaso({ tipo: 'deshecho', cardId: resultado.cardId });
-      notifyTransactionSaved();
-      refreshLedgers();
+      setPaso({ tipo: 'deshecho', cardId: resultado.cardId, creado });
     } catch {
-      setPaso({ tipo: 'listo', resultado, deshaciendo: false, error: ERROR_AL_DESHACER });
+      if (intento !== intentoRef.current) return;
+      setPaso({ tipo: 'listo', resultado, creado, deshaciendo: false, error: ERROR_AL_DESHACER });
     }
   };
 
@@ -450,12 +487,14 @@ function ImportarEstado() {
             <p className="text-xs text-tinta-2">
               {textoDelPie(dinero(vista.pie.gastosCentavos), dinero(vista.pie.ingresosCentavos), vista.pie.sinDecidir)}
             </p>
-            <BotonDeImportar boton={vista.boton} importando={importando} onImportar={importar} />
+            <BotonDeImportar boton={vista.boton} importando={importando} ocupado={cambiandoLibro} onImportar={importar} />
             {errorDeImportacion && <CajaDeError texto={errorDeImportacion} />}
+            {/* Mientras importa no se cambia de PDF: lo que conteste es de este. */}
             <button
               type="button"
               onClick={elegirOtro}
-              className="self-center py-1 text-xs text-tinta-2 hover:text-tinta transition-colors"
+              disabled={importando}
+              className="self-center py-1 text-xs text-tinta-2 hover:text-tinta disabled:opacity-50 transition-colors"
             >
               {PANTALLA.elegirOtroPdf}
             </button>
@@ -493,7 +532,8 @@ function ImportarEstado() {
             <button
               type="button"
               onClick={elegirOtro}
-              className="flex-1 py-2.5 bg-hundido hover:bg-presionado text-tinta rounded-lg text-sm transition-colors"
+              disabled={paso.deshaciendo}
+              className="flex-1 py-2.5 bg-hundido hover:bg-presionado disabled:opacity-50 text-tinta rounded-lg text-sm transition-colors"
             >
               {PANTALLA.importarOtro}
             </button>
@@ -514,7 +554,7 @@ function ImportarEstado() {
         <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-5 flex flex-col gap-4">
           <p className="flex items-start gap-2 text-sm text-tinta">
             <Undo2 className="w-4 h-4 mt-0.5 flex-shrink-0 text-tinta-2" />
-            <span className="flex-1 min-w-0">{PANTALLA.deshecho}</span>
+            <span className="flex-1 min-w-0">{textoDeshecho(paso.creado.cuenta, paso.creado.categoria)}</span>
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <button

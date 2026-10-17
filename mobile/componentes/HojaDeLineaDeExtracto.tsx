@@ -63,6 +63,8 @@ export default function HojaDeLineaDeExtracto({
     if (descripcion.trim() !== hoja.descripcion) cambiar({ tipo: 'descripcion', descripcion });
   };
 
+  // Todas las salidas pasan por acá —la X, el botón atrás, el fondo, "Listo"—:
+  // la descripción se guarda al perder el foco, y desmontar la hoja no lo quita.
   const listo = () => {
     guardarDescripcion();
     onCerrar();
@@ -188,7 +190,7 @@ export default function HojaDeLineaDeExtracto({
     <Vidrio className={`border border-t-borde-luz border-linea ${enLinea ? 'rounded-2xl' : 'rounded-t-2xl max-h-[92%]'}`}>
       <View className="px-5 py-4 border-b border-linea flex-row items-center justify-between gap-3">
         <Texto className="text-base font-semibold text-tinta">{hoja.titulo}</Texto>
-        <Pressable onPress={onCerrar} accessibilityLabel={HOJA.cerrar} hitSlop={8} className="p-1 -m-1">
+        <Pressable onPress={listo} accessibilityLabel={HOJA.cerrar} hitSlop={8} className="p-1 -m-1">
           <X size={20} color={paleta.tinta2} />
         </Pressable>
       </View>

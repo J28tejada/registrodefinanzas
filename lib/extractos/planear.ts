@@ -1771,3 +1771,16 @@ export function armarPedido(plan: Plan): PedidoDeImportacion {
   }
   return pedido;
 }
+
+/**
+ * Lo que un pedido crea antes de anotar, por el nombre con que se muestra: la
+ * cuenta nueva y la categoría de cargos. Deshacer no lo borra, y la pantalla
+ * de después tiene que decirlo (`textoDeshecho`).
+ */
+export function loQueSeCrea(pedido: PedidoDeImportacion): { cuenta: string | null; categoria: string | null } {
+  const { cuentaNueva } = pedido;
+  return {
+    cuenta: cuentaNueva ? T.nombreConUltimos4(cuentaNueva.name, cuentaNueva.last4) : null,
+    categoria: pedido.categoriasNuevas?.[0]?.name ?? null,
+  };
+}

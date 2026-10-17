@@ -185,7 +185,19 @@ function Fila({
   };
 
   return (
-    <Pressable onPress={onAbrir} accessibilityRole="button" className="py-3 flex-row items-start gap-3">
+    <Pressable
+      onPress={onAbrir}
+      accessibilityRole="button"
+      // Con el lector de pantalla la fila es un solo elemento y las píldoras de
+      // adentro no se alcanzan: van como acciones de la fila, que es lo que en
+      // la web hace llegar a cada una con Tab.
+      accessibilityActions={fila.acciones.map(a => ({ name: a.id, label: a.texto }))}
+      onAccessibilityAction={e => {
+        const a = fila.acciones.find(x => x.id === e.nativeEvent.actionName);
+        if (a) tocarPildora(a);
+      }}
+      className="py-3 flex-row items-start gap-3"
+    >
       <IconoDeCategoria icon={dibujo.icon} color={dibujo.color} type={apagada ? 'expense' : tipo} size="sm" />
 
       <View className="flex-1 gap-1">

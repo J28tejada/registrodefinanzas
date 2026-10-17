@@ -119,7 +119,7 @@ export default function ResumenDeExtracto({
       ) : null}
 
       <View className="gap-2">
-        <BotonDeImportar boton={boton} importando={importando} onImportar={onImportar} />
+        <BotonDeImportar boton={boton} importando={importando} ocupado={cambiandoLibro} onImportar={onImportar} />
         {error ? <CajaDeError texto={error} /> : null}
       </View>
     </View>
@@ -200,10 +200,12 @@ function Aviso({ aviso, onCambio }: { aviso: AvisoDeVista; onCambio: AlCambiar }
  * nadie vuelve hasta arriba a buscarlo.
  */
 export function BotonDeImportar({
-  boton, importando = false, onImportar,
+  boton, importando = false, ocupado = false, onImportar,
 }: {
   boton: VistaDelPlan['boton'];
   importando?: boolean;
+  /** Falta algo que el pedido necesita (las categorías del libro nuevo): apagado, sin decir "Importando…". */
+  ocupado?: boolean;
   onImportar: () => void;
 }) {
   const paleta = useColores();
@@ -216,7 +218,7 @@ export function BotonDeImportar({
       </View>
     );
   }
-  const apagado = !boton.habilitado || importando;
+  const apagado = !boton.habilitado || importando || ocupado;
   return (
     <Pressable
       onPress={onImportar}

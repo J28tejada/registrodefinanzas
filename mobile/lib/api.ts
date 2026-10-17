@@ -32,6 +32,9 @@ export const FALTA_LA_API =
   'Falta decir dónde vive la app web. Poné EXPO_PUBLIC_API_URL en mobile/.env '
   + 'con la dirección de tu despliegue.';
 
+/** Lo que tira `llamarApi` sin sesión, antes de salir: quien llama lo puede distinguir de un corte de red. */
+export const SIN_SESION = 'Tenés que iniciar sesión.';
+
 /** Llama a una ruta de la web con la sesión de este teléfono. */
 export async function llamarApi(
   ruta: string, opciones: { method?: string; body?: unknown } = {},
@@ -40,7 +43,7 @@ export async function llamarApi(
 
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
-  if (!token) throw new Error('Tenés que iniciar sesión.');
+  if (!token) throw new Error(SIN_SESION);
 
   return fetchConStream(`${BASE}${ruta}`, {
     method: opciones.method ?? 'GET',
