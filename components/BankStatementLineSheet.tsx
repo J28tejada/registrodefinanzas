@@ -208,7 +208,9 @@ export default function BankStatementLineSheet({
         )}
       </div>
 
-      <div className="px-5 py-4 border-t border-linea">
+      {/* pb-safe: en un teléfono la hoja llega al borde, y sin el margen "Listo"
+          queda debajo de la barra de gestos. Nunca menos de 1rem. */}
+      <div className="px-5 pt-4 pb-safe border-t border-linea">
         <button
           type="button"
           onClick={listo}

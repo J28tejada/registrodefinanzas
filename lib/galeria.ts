@@ -298,7 +298,8 @@ function extractoInventado(movs: LineaInventada[]): ExtractoLeido {
   };
 }
 
-const EXTRACTO_INVENTADO = extractoInventado(LINEAS_INVENTADAS);
+/** Exportado para probar la pantalla entera con los mismos datos (lo que la ruta de leer devolvería). */
+export const EXTRACTO_INVENTADO = extractoInventado(LINEAS_INVENTADAS);
 
 /** El libro "Personal" con las categorías de arranque (0021–0023), cada una con su ícono. */
 function categoriasDelLibro(): Category[] {
@@ -340,7 +341,7 @@ const movimientoAnotado = (
 });
 
 /** Lo que "la base" sabe: la cuenta, la Visa, dos cosas ya anotadas y una importación anterior. */
-const CONTEXTO_INVENTADO: ContextoDeExtracto = {
+export const CONTEXTO_INVENTADO: ContextoDeExtracto = {
   migracionLista: true,
   movimientos: [
     // Anotado por WhatsApp el día de la compra: se enlaza solo.

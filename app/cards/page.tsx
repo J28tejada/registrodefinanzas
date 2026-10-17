@@ -80,7 +80,8 @@ export default function CardsPage() {
             href="/cards/importar"
             title={ENTRADAS.botonCompleto}
             aria-label={ENTRADAS.botonCompleto}
-            className="px-3 py-2 bg-panel border border-t-borde-luz border-linea-fuerte hover:bg-presionado text-tinta rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+            // 11px y no 12: con el borde mide lo mismo que "Nueva", que no lo tiene.
+            className="px-[11px] py-2 bg-panel border border-t-borde-luz border-linea-fuerte hover:bg-presionado text-tinta rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
           >
             <FileUp className="w-4 h-4" />
             <span className="hidden sm:inline">{ENTRADAS.boton}</span>
