@@ -67,5 +67,8 @@ export const ERRORES_DE_IMPORTACION: Record<CodigoDeImportacion, string> = {
 
 export const ERROR_DE_IMPORTACION_GENERICO = 'No se pudo importar. No se anotó nada; probá de nuevo.';
 
+/** Deshacer corre en una sola transacción: si falló, no borró nada, y eso es lo que hay que decir. */
+export const ERROR_AL_DESHACER = 'No se pudo deshacer la importación. No se borró nada; probá de nuevo.';
+
 export const FALTA_MIGRACION =
   'Falta actualizar la base de datos (migración 0024). Hasta entonces se puede leer el estado de cuenta pero no importarlo.';

@@ -48,7 +48,9 @@ import type {
   PedidoDeImportacion,
   ResultadoDeImportacion,
 } from './extractos/tipos';
-import { ERRORES_DE_IMPORTACION, ERROR_DE_IMPORTACION_GENERICO, FALTA_MIGRACION } from './extractos/textos';
+import {
+  ERRORES_DE_IMPORTACION, ERROR_AL_DESHACER, ERROR_DE_IMPORTACION_GENERICO, FALTA_MIGRACION,
+} from './extractos/textos';
 import {
   ConsultaDeContexto, esUuid, leerConsultaDeContexto, leerPedidoDeImportacion,
 } from './extractos-campos';
@@ -2367,9 +2369,7 @@ export async function deshacerImportacion(
     // La función corre en una sola transacción: si falló, no borró nada.
     return {
       ok: false,
-      error: traducido.error === ERROR_DE_IMPORTACION_GENERICO
-        ? 'No se pudo deshacer la importación. No se borró nada; probá de nuevo.'
-        : traducido.error,
+      error: traducido.error === ERROR_DE_IMPORTACION_GENERICO ? ERROR_AL_DESHACER : traducido.error,
     };
   }
   return { ok: true, deshechas: Number((data as Record<string, unknown> | null)?.deshechas ?? 0) };

@@ -5,10 +5,24 @@ import BudgetBar from '@/components/BudgetBar';
 import CategoryIcon from '@/components/CategoryIcon';
 import TransactionList from '@/components/TransactionList';
 import CardStatement from '@/components/CardStatement';
+import BankStatementSummary from '@/components/BankStatementSummary';
+import BankStatementReview from '@/components/BankStatementReview';
+import BankStatementLineSheet from '@/components/BankStatementLineSheet';
 import {
-  ESTADOS_DE_CUENTA, ICONOS, MOVIMIENTOS, MOVIMIENTOS_ANCHO, PIEZAS, PRESUPUESTOS,
-  RESUMENES,
+  CATEGORIAS_DEL_EXTRACTO, ESTADOS_DE_CUENTA, EXTRACTO_HOJA, EXTRACTO_RESUMEN, EXTRACTO_SECCIONES,
+  ICONOS, MOVIMIENTOS, MOVIMIENTOS_ANCHO, PIEZAS, PRESUPUESTOS, RESUMENES,
 } from '@/lib/galeria';
+import { makeFormatters } from '@/lib/format';
+import { DEFAULT_SETTINGS } from '@/lib/types';
+
+/**
+ * Los montos del estado de cuenta con la configuración fija y no la de quien
+ * mira: la galería tiene que dibujar lo mismo con sesión o sin ella, y lo
+ * mismo que el teléfono, que también la fija.
+ */
+const fmt = makeFormatters(DEFAULT_SETTINGS);
+const dinero = (centavos: number) => fmt.money(centavos / 100);
+const nada = () => {};
 
 /**
  * El catálogo de componentes de la web, para compararlo con el del teléfono.
@@ -56,6 +70,30 @@ export default function GaleriaPage() {
             />
           </Pieza>
         ))}
+
+        <Pieza id={EXTRACTO_RESUMEN.id} titulo={EXTRACTO_RESUMEN.titulo} ancho={EXTRACTO_RESUMEN.ancho}>
+          <BankStatementSummary
+            resumen={EXTRACTO_RESUMEN.resumen} boton={EXTRACTO_RESUMEN.boton} dinero={dinero}
+            libros={EXTRACTO_RESUMEN.libros} libroId={EXTRACTO_RESUMEN.libroId} onLibro={nada}
+            onCambio={nada} onConteo={nada} onImportar={nada}
+          />
+        </Pieza>
+
+        {EXTRACTO_SECCIONES.map(p => (
+          <Pieza key={p.id} id={p.id} titulo={p.titulo} ancho={p.ancho}>
+            <BankStatementReview
+              seccion={p.seccion} abierta onAlternar={nada} dinero={dinero}
+              categorias={CATEGORIAS_DEL_EXTRACTO} onCambio={nada} onAbrirFila={nada}
+            />
+          </Pieza>
+        ))}
+
+        <Pieza id={EXTRACTO_HOJA.id} titulo={EXTRACTO_HOJA.titulo} ancho={EXTRACTO_HOJA.ancho}>
+          <BankStatementLineSheet
+            hoja={EXTRACTO_HOJA.hoja} dinero={dinero} categorias={CATEGORIAS_DEL_EXTRACTO}
+            onCambio={nada} onCerrar={nada} enLinea
+          />
+        </Pieza>
 
         {ICONOS.map(p => (
           <Pieza key={p.id} id={p.id} titulo={p.titulo} ancho={p.ancho}>

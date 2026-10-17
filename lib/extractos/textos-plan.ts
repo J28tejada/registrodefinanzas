@@ -346,8 +346,11 @@ export const HOJA = {
   titulo: '¿Qué hacemos con este movimiento?',
   categoria: 'Categoría',
   subcategoria: 'Subcategoría',
+  /** La primera opción de la subcategoría: elegirla es siempre opcional. */
+  sinSubcategoria: 'Sin subcategoría',
   descripcion: 'Descripción',
   listo: 'Listo',
+  cerrar: 'Cerrar',
   bloqueada: 'Ya se importó: para cambiarlo, editá el movimiento o deshacé la importación.',
 } as const;
 
@@ -374,6 +377,8 @@ export const ENTRADAS = {
 } as const;
 
 export const PANTALLA = {
+  /** El enlace de arriba, que vuelve a donde se entra. */
+  volver: 'Billetera',
   titulo: 'Importar estado de cuenta',
   subtitulo: 'Del PDF del banco a tus movimientos',
   explicacion:
@@ -386,6 +391,10 @@ export const PANTALLA = {
   claveCampo: 'Contraseña del PDF',
   abrir: 'Abrir',
   leyendo: 'Leyendo el estado de cuenta…',
+  // Leído el PDF, falta lo que está en la base: sin eso no hay con qué cotejar.
+  sinContexto: 'No se pudo comparar con lo que ya tenés anotado. Probá de nuevo.',
+  sinCategorias: 'No se pudieron cargar las categorías de esa cuenta. Probá de nuevo.',
+  sinLibro: 'No tenés ninguna cuenta donde anotar. Creá una y volvé a subir el PDF.',
   importando: 'Importando…',
   verLaCuenta: 'Ver la cuenta',
   importarOtro: 'Importar otro',
