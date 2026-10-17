@@ -5,7 +5,7 @@ import { Check, Lock, X } from 'lucide-react-native';
 import Texto from './Texto';
 import Vidrio from './Vidrio';
 import Selector from './Selector';
-import { Dinero, Monto, NUMEROS_PAREJOS, Pildora } from './RevisionDeExtracto';
+import { Dinero, Monto, NUMEROS_PAREJOS, Pildora, SOMBRA_CHICA } from './RevisionDeExtracto';
 import { useColores } from '../lib/colores';
 import type { Category } from '@compartido/types';
 import type { CambioDePlan, HojaDeLinea } from '@compartido/extractos/planear';
@@ -256,8 +256,9 @@ function Eleccion({
       accessibilityRole="radio"
       accessibilityState={{ checked: elegida }}
       className={`w-full px-3 py-2.5 rounded-xl border flex-row items-center gap-3 ${
-        elegida ? 'bg-elevado border-linea-fuerte shadow-sm' : 'bg-hundido border-transparent'
+        elegida ? 'bg-elevado border-linea-fuerte' : 'bg-hundido border-transparent'
       }`}
+      style={elegida ? SOMBRA_CHICA : undefined}
     >
       <View
         className={`w-4 h-4 rounded-full border-2 items-center justify-center ${

@@ -52,10 +52,13 @@ export default function Selector({
 
   return (
     <>
+      {/* 9px a la derecha y no 12: la flecha de los `<select>` de la web va
+          con `right-2.5`, a 10px del borde de afuera, y acá el borde suma 1.
+          Con `px-3` quedaba 3px más adentro en todos los selectores. */}
       <Pressable
         onPress={() => setAbierto(true)}
         disabled={cargando}
-        className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 flex-row items-center gap-2.5"
+        className="w-full bg-hundido border border-linea-fuerte rounded-lg pl-3 pr-[9px] py-2.5 flex-row items-center gap-2.5"
         style={cargando ? { opacity: 0.6 } : undefined}
       >
         {elegida?.color ? (

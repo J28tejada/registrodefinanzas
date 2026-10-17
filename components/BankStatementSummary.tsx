@@ -75,7 +75,7 @@ export default function BankStatementSummary({
             value={libroId}
             disabled={cambiandoLibro}
             onChange={e => onLibro(e.target.value)}
-            className="w-full bg-hundido border border-linea-fuerte rounded-lg pl-3 pr-8 py-2 text-sm text-tinta appearance-none focus:outline-none focus:border-tinta-3 disabled:opacity-60"
+            className="w-full bg-hundido border border-linea-fuerte rounded-lg pl-3 pr-8 py-2.5 text-sm text-tinta appearance-none focus:outline-none focus:border-tinta-3 disabled:opacity-60"
           >
             {libros.map(l => (
               <option key={l.id} value={l.id}>{l.nombre}</option>

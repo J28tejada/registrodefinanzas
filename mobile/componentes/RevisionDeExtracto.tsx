@@ -30,6 +30,13 @@ export type AlCambiar = (destino: string | null, cambio: CambioDePlan) => void;
 /** `tabular-nums` no existe como clase en NativeWind: va por estilo, en cada monto. */
 export const NUMEROS_PAREJOS = { fontVariant: ['tabular-nums' as const] };
 
+/**
+ * El `shadow-sm` de la web, escrito a mano. La misma clase en NativeWind es
+ * otra sombra —1px al 35% de negro, la de su preset— y lo elegido se veía con
+ * un filo oscuro abajo que en la web no tiene.
+ */
+export const SOMBRA_CHICA = { boxShadow: '0px 1px 2px 0px rgba(0, 0, 0, 0.05)' };
+
 // Un ícono por sección para reconocerlas al pasar sin leer el título. Solo
 // "Para revisar" va en color: es la única que pide algo.
 const ICONO_DE_SECCION: Record<IdDeSeccion, LucideIcon> = {
@@ -284,8 +291,9 @@ export function Pildora({
       accessibilityRole="button"
       accessibilityState={{ selected: elegida }}
       className={`rounded-full border flex-row items-center gap-1 ${grande ? 'px-3 py-1.5' : 'px-2.5 py-1'} ${
-        elegida ? 'bg-elevado border-linea-fuerte shadow-sm' : 'bg-hundido border-transparent'
+        elegida ? 'bg-elevado border-linea-fuerte' : 'bg-hundido border-transparent'
       }`}
+      style={elegida ? SOMBRA_CHICA : undefined}
     >
       {elegida ? <Check size={grande ? 14 : 12} color={paleta.tinta} strokeWidth={2.5} /> : null}
       <Texto
