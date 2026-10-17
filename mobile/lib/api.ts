@@ -6,8 +6,13 @@ import { supabase } from './supabase';
  *
  * Todo lo demás —movimientos, tarjetas, presupuestos, categorías— va derecho a
  * Supabase con `lib/db.ts`, y RLS es lo que separa los datos de una persona de
- * los de otra. Acá viven las excepciones: las que necesitan un secreto que no
- * puede estar adentro de la app, que hoy es la clave del modelo del asistente.
+ * los de otra. Acá viven las excepciones, que son dos clases de cosas: las que
+ * necesitan un secreto que no puede estar adentro de la app —la clave del
+ * modelo del asistente, las de Gmail, Telegram y WhatsApp— y las que el
+ * teléfono no puede correr:
+ * leer el PDF de un estado de cuenta, que es pdf.js. De ese último solo pasa
+ * por acá la lectura; cotejarlo con lo anotado, importarlo y deshacerlo vuelve
+ * a ir directo.
  *
  * La sesión viaja en `Authorization` y no en una cookie, porque la app no tiene
  * cookies: guarda su sesión en el llavero del teléfono. Es el mismo token que

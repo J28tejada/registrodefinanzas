@@ -39,7 +39,7 @@ WhatsApp necesita Evolution API y un túnel.
 
 ## La app del teléfono
 
-`mobile/` es la misma app en React Native, con las mismas veinte pantallas.
+`mobile/` es la misma app en React Native, con las mismas veintiuna pantallas.
 No es un puerto que se dejó a medias y después se siguió por su cuenta: la
 regla es que las dos se vean igual, y eso se comprueba, no se promete.
 

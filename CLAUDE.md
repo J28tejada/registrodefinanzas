@@ -13,18 +13,35 @@
 ## Las dos apps
 
 La web (Next.js, raíz) y la del teléfono (Expo, `mobile/`) tienen que verse
-igual. Las mismas 20 pantallas.
+igual. Las mismas 21 pantallas.
 
 - Todo `lib/` es compartido. En el teléfono se importa como `@compartido/…`.
   Nada de `lib/` puede importar de Next.
 - El teléfono habla con Supabase **directo**, con las mismas funciones de
   `lib/db.ts`. RLS es lo que protege los datos. Solo pasa por la web lo que
-  necesita un secreto del servidor (asistente y Gmail), vía `mobile/lib/api.ts`
-  con el token en `Authorization`.
+  necesita un secreto del servidor (asistente y Gmail) o lo que el teléfono no
+  puede correr (leer el PDF de un estado de cuenta, que es pdf.js), vía
+  `mobile/lib/api.ts` con el token en `Authorization`. Lo que viene después de
+  leerlo —cotejar, importar, deshacer— vuelve a ir directo.
 - Las validaciones de lo que entra a la base viven en `lib/*-campos.ts` y las
   usan los dos lados. No duplicarlas.
 - Cada pantalla o componente del teléfono dice arriba de qué archivo de la web
   es gemelo.
+
+## Estados de cuenta: el repo es público
+
+Un estado de cuenta tiene nombre, número de cuenta, saldos y en qué gasta el
+dueño. Nada de eso entra al repo:
+
+- El PDF real nunca se copia acá. `*.pdf` está en el `.gitignore`; para ver si
+  uno se entiende está `npm run extracto -- <ruta-afuera-del-repo>`, que
+  imprime solo cuentas de conjunto.
+- Los especímenes son inventados: los de las pruebas
+  (`scripts/pruebas/sinteticos/`) y los de la galería (`lib/galeria.ts`). Ni un
+  comercio, un monto o un nombre de un estado real, tampoco en un comentario ni
+  en un commit.
+- La app no imprime lo que lee: los logs dicen el código y cuántas líneas, nunca
+  una línea.
 
 ## El tema
 
@@ -90,6 +107,11 @@ cd mobile && npx expo-doctor
 
 En una Mac el comparador necesita el Chrome instalado:
 `CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" npm run comparar`.
+
+Si se tocó `supabase/migrations/`, además `npm run migraciones`: las aplica en
+un Postgres desechable antes de que el dueño las pegue en la base real. Pide un
+Postgres 16 local con `dblink`; en una Mac,
+`PG_BIN=/opt/homebrew/opt/postgresql@16/bin npm run migraciones`.
 
 Si algo falla, se arregla; no se silencia. Las diferencias visuales ya
 aceptadas están en `scripts/diferencias-conocidas.json`, cada una con su motivo.
