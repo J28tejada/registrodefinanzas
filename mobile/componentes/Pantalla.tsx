@@ -39,12 +39,17 @@ export const ALTO_DE_LA_BARRA_DE_ABAJO = 77;
  * pone.
  */
 export default function Pantalla({
-  className = '', children, ...resto
-}: ScrollViewProps & { className?: string }) {
+  className = '', children, ref, ...resto
+}: ScrollViewProps & {
+  className?: string;
+  /** Para las pantallas que llevan hasta una parte suya con `scrollTo`: el `scrollIntoView` de la web. */
+  ref?: React.Ref<ScrollView>;
+}) {
   const insets = useSafeAreaInsets();
 
   return (
     <ScrollView
+      ref={ref}
       className="flex-1"
       /*
        * El relleno de arriba va por `style` y el resto por clases: es el único

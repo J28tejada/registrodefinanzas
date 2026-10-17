@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Link } from 'expo-router';
 import {
-  AlertCircle, ChevronLeft, ChevronRight, CreditCard, Plus,
+  AlertCircle, ChevronLeft, ChevronRight, CreditCard, FileUp, Plus,
 } from 'lucide-react-native';
 import Texto from '../../componentes/Texto';
 import Pantalla from '../../componentes/Pantalla';
@@ -16,6 +16,7 @@ import { db } from '../../lib/datos';
 import { getCardsWithUsage } from '@compartido/db';
 import { limitesDelMes } from '@compartido/format';
 import { avisosDeTarjetas } from '@compartido/tarjetas';
+import { ENTRADAS } from '@compartido/extractos/textos-plan';
 import { CARD_GROUPS, CARD_KIND_LABEL, CardWithUsage, LEDGER_COLOR_MAP } from '@compartido/types';
 import { useColores } from '../../lib/colores';
 
@@ -79,13 +80,28 @@ export default function Billetera() {
             Tus tarjetas, cuentas y efectivo, con cuánto va por cada uno
           </Texto>
         </View>
-        <Pressable
-          onPress={() => setCreando(v => !v)}
-          accessibilityLabel="Nuevo medio de pago"
-          className="px-3 py-2 bg-primario active:bg-primario/85 rounded-lg flex-row items-center gap-1.5"
-        >
-          <Plus size={16} color={paleta.sobrePrimario} />
-        </Pressable>
+        {/* Los dos del mismo alto aunque uno lleve borde: items-stretch. */}
+        <View className="flex-row items-stretch gap-2">
+          {/* Secundario, de vidrio: importar es de una vez al mes, "Nueva" es
+              lo que se viene a hacer acá. Solo el ícono, igual que "Nueva", y
+              el nombre entero para quien no lo ve. 11px y no 12: con el borde
+              mide lo mismo que "Nueva", que no lo tiene. */}
+          <Link href="/cards/importar" asChild>
+            <Pressable
+              accessibilityLabel={ENTRADAS.botonCompleto}
+              className="px-[11px] py-2 bg-panel border border-t-borde-luz border-linea-fuerte active:bg-presionado rounded-lg flex-row items-center gap-1.5"
+            >
+              <FileUp size={16} color={paleta.tinta} />
+            </Pressable>
+          </Link>
+          <Pressable
+            onPress={() => setCreando(v => !v)}
+            accessibilityLabel="Nuevo medio de pago"
+            className="px-3 py-2 bg-primario active:bg-primario/85 rounded-lg flex-row items-center gap-1.5"
+          >
+            <Plus size={16} color={paleta.sobrePrimario} />
+          </Pressable>
+        </View>
       </View>
 
       <View className="flex-row items-center justify-center gap-1">

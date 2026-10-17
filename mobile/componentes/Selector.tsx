@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, View } from 'react-native';
 import { Check, ChevronDown } from 'lucide-react-native';
 import Texto from './Texto';
 import { useColores } from '../lib/colores';
@@ -26,7 +26,7 @@ export interface OpcionDeSelector {
  * encontrar "Cuenta de ahorro" entre las tarjetas.
  */
 export default function Selector({
-  value, opciones, onChange, placeholder = 'Sin especificar', titulo,
+  value, opciones, onChange, placeholder = 'Sin especificar', titulo, cargando = false,
 }: {
   value: string;
   opciones: OpcionDeSelector[];
@@ -34,6 +34,11 @@ export default function Selector({
   placeholder?: string;
   /** Lo que se lee arriba de la hoja. */
   titulo?: string;
+  /**
+   * Mientras llega lo que depende de la opción elegida: no se puede tocar y
+   * la flecha pasa a ser la ruedita, como el `disabled` con `Loader2` de la web.
+   */
+  cargando?: boolean;
 }) {
   const paleta = useColores();
   const [abierto, setAbierto] = useState(false);
@@ -49,7 +54,9 @@ export default function Selector({
     <>
       <Pressable
         onPress={() => setAbierto(true)}
+        disabled={cargando}
         className="w-full bg-hundido border border-linea-fuerte rounded-lg px-3 py-2.5 flex-row items-center gap-2.5"
+        style={cargando ? { opacity: 0.6 } : undefined}
       >
         {elegida?.color ? (
           <View className="w-4 h-4 rounded-sm" style={{ backgroundColor: elegida.color }} />
@@ -57,7 +64,9 @@ export default function Selector({
         <Texto className={`flex-1 text-sm ${elegida ? 'text-tinta' : 'text-tinta-2'}`} numberOfLines={1}>
           {elegida?.etiqueta ?? placeholder}
         </Texto>
-        <ChevronDown size={16} color={paleta.tinta2} />
+        {cargando
+          ? <ActivityIndicator size="small" color={paleta.tinta2} style={{ width: 16, height: 16 }} />
+          : <ChevronDown size={16} color={paleta.tinta2} />}
       </Pressable>
 
       <Modal visible={abierto} transparent animationType="slide" onRequestClose={() => setAbierto(false)}>

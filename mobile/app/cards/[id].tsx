@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import {
   AlertCircle, Archive, ArchiveRestore, ArrowLeft, ChevronLeft, ChevronRight,
-  Loader2, Pencil, Trash2,
+  FileUp, Loader2, Pencil, Trash2,
 } from 'lucide-react-native';
 import Texto from '../../componentes/Texto';
 import Pantalla from '../../componentes/Pantalla';
@@ -20,6 +20,7 @@ import {
 } from '@compartido/db';
 import { limitesDelMes } from '@compartido/format';
 import { CardDetail, CARD_KIND_LABEL, LEDGER_COLOR_MAP, Transaction, llevaSaldo } from '@compartido/types';
+import { ENTRADAS } from '@compartido/extractos/textos-plan';
 import { useColores } from '../../lib/colores';
 
 /** El gemelo de app/cards/[id]/page.tsx. */
@@ -364,6 +365,29 @@ export default function DetalleDeTarjeta() {
               </View>
             ))}
           </View>
+        </View>
+      ) : null}
+
+      {/* Solo en las cuentas de banco: es lo único que el lector sabe leer, y
+          entrar desde acá le dice a la importación de qué cuenta tiene que ser
+          el PDF (si es de otra, avisa en vez de anotarlo donde no va). */}
+      {card.kind === 'savings' || card.kind === 'checking' ? (
+        <View className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 gap-3">
+          <View className="flex-row items-start gap-3">
+            <View className="w-10 h-10 bg-hundido rounded-xl items-center justify-center">
+              <FileUp size={20} color={paleta.tinta2} />
+            </View>
+            <View className="flex-1 gap-0.5">
+              <Texto className="text-sm font-medium text-tinta">{ENTRADAS.tarjetaTitulo}</Texto>
+              <Texto className="text-xs text-tinta-2">{ENTRADAS.tarjetaTexto}</Texto>
+            </View>
+          </View>
+          <Link href={{ pathname: '/cards/importar', params: { card: card.id } } as never} asChild>
+            <Pressable className="w-full py-2.5 bg-hundido active:bg-presionado rounded-lg flex-row items-center justify-center gap-2">
+              <FileUp size={16} color={paleta.tinta} />
+              <Texto className="text-sm font-medium text-tinta">{ENTRADAS.botonCompleto}</Texto>
+            </Pressable>
+          </Link>
         </View>
       ) : null}
 

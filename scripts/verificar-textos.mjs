@@ -41,6 +41,13 @@ const PARES = [
   ['components/CategoryIcon.tsx', 'mobile/componentes/IconoDeCategoria.tsx'],
   ['components/CategoriesContext.tsx', 'mobile/componentes/ContextoDeCategorias.tsx'],
   ['components/SettingsContext.tsx', 'mobile/componentes/ContextoDeAjustes.tsx'],
+  // Importar un estado de cuenta. Casi todo lo que dicen sale de
+  // lib/extractos/textos-plan.ts, que comparten; esto atrapa lo que alguien
+  // escriba suelto en una sola de las dos.
+  ['app/cards/importar/page.tsx', 'mobile/app/cards/importar.tsx'],
+  ['components/BankStatementSummary.tsx', 'mobile/componentes/ResumenDeExtracto.tsx'],
+  ['components/BankStatementReview.tsx', 'mobile/componentes/RevisionDeExtracto.tsx'],
+  ['components/BankStatementLineSheet.tsx', 'mobile/componentes/HojaDeLineaDeExtracto.tsx'],
 ];
 
 /**

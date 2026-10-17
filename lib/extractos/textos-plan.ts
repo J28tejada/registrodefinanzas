@@ -401,6 +401,9 @@ export const PANTALLA = {
   deshacer: 'Deshacer',
   // Se pregunta antes: borra de una todo lo que la importación anotó.
   confirmarDeshacer: '¿Deshacer esta importación? Se borra lo que se anotó con ella.',
+  // El otro botón de esa pregunta. Solo lo escribe el teléfono: el `confirm`
+  // del navegador trae los suyos, y el `Alert` hay que dárselos.
+  cancelar: 'Cancelar',
   deshecho: 'Deshecho: no quedó nada de esta importación.',
 } as const;
 
