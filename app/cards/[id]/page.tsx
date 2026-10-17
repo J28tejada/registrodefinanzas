@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
   AlertCircle, Archive, ArchiveRestore, ArrowLeft, ChevronLeft, ChevronRight,
-  Loader2, Pencil, Trash2,
+  FileUp, Loader2, Pencil, Trash2,
 } from 'lucide-react';
 import AddTransactionModal from '@/components/AddTransactionModal';
 import CardForm from '@/components/CardForm';
@@ -16,6 +16,7 @@ import { useLedger } from '@/components/LedgerContext';
 import {
   CardDetail, CARD_KIND_LABEL, LEDGER_COLOR_MAP, Transaction, llevaSaldo,
 } from '@/lib/types';
+import { ENTRADAS } from '@/lib/extractos/textos-plan';
 
 export default function CardDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -308,6 +309,30 @@ export default function CardDetailPage() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Solo en las cuentas de banco: es lo único que el lector sabe leer, y
+          entrar desde acá le dice a la importación de qué cuenta tiene que ser
+          el PDF (si es de otra, avisa en vez de anotarlo donde no va). */}
+      {(card.kind === 'savings' || card.kind === 'checking') && (
+        <div className="bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 sm:p-5 flex flex-col gap-3">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-hundido rounded-xl flex items-center justify-center flex-shrink-0">
+              <FileUp className="w-5 h-5 text-tinta-2" />
+            </div>
+            <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+              <p className="text-sm font-medium text-tinta">{ENTRADAS.tarjetaTitulo}</p>
+              <p className="text-xs text-tinta-2">{ENTRADAS.tarjetaTexto}</p>
+            </div>
+          </div>
+          <Link
+            href={`/cards/importar?card=${card.id}`}
+            className="w-full py-2.5 bg-hundido hover:bg-presionado text-tinta rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            <FileUp className="w-4 h-4" />
+            {ENTRADAS.botonCompleto}
+          </Link>
         </div>
       )}
 

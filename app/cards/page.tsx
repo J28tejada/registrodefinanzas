@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  CreditCard, Plus, AlertCircle, ChevronLeft, ChevronRight, ChevronRight as Flecha,
+  CreditCard, Plus, AlertCircle, ChevronLeft, ChevronRight, ChevronRight as Flecha, FileUp,
 } from 'lucide-react';
 import CardForm from '@/components/CardForm';
 import CardAlerts from '@/components/CardAlerts';
@@ -12,6 +12,7 @@ import { useFormatters } from '@/components/SettingsContext';
 import { useLedger } from '@/components/LedgerContext';
 import { CardWithUsage, CARD_GROUPS, CARD_KIND_LABEL, LEDGER_COLOR_MAP } from '@/lib/types';
 import { avisosDeTarjetas } from '@/lib/tarjetas';
+import { ENTRADAS } from '@/lib/extractos/textos-plan';
 
 export default function CardsPage() {
   const fmt = useFormatters();
@@ -70,13 +71,28 @@ export default function CardsPage() {
           <h1 className="text-xl sm:text-2xl font-semibold text-tinta">Billetera</h1>
           <p className="text-tinta-2 text-sm">Tus tarjetas, cuentas y efectivo, con cuánto va por cada uno</p>
         </div>
-        <button
-          onClick={() => setCreando(v => !v)}
-          className="px-3 py-2 bg-primario hover:bg-primario/85 text-sobre-primario rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 flex-shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Nueva</span>
-        </button>
+        {/* Los dos del mismo alto aunque uno lleve borde: items-stretch. */}
+        <div className="flex items-stretch gap-2 flex-shrink-0">
+          {/* Secundario, de vidrio: importar es de una vez al mes, "Nueva" es
+              lo que se viene a hacer acá. En el teléfono queda solo el ícono,
+              igual que "Nueva", y el nombre entero va en el title. */}
+          <Link
+            href="/cards/importar"
+            title={ENTRADAS.botonCompleto}
+            aria-label={ENTRADAS.botonCompleto}
+            className="px-3 py-2 bg-panel border border-t-borde-luz border-linea-fuerte hover:bg-presionado text-tinta rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+          >
+            <FileUp className="w-4 h-4" />
+            <span className="hidden sm:inline">{ENTRADAS.boton}</span>
+          </Link>
+          <button
+            onClick={() => setCreando(v => !v)}
+            className="px-3 py-2 bg-primario hover:bg-primario/85 text-sobre-primario rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Nueva</span>
+          </button>
+        </div>
       </div>
 
       {/* Mes */}

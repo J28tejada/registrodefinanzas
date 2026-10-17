@@ -123,8 +123,8 @@ export default function BankStatementSummary({
       )}
 
       <div className="flex flex-col gap-2">
-        <ImportButton boton={boton} importando={importando} onImportar={onImportar} />
-        {error && <ErrorDeImportacion texto={error} />}
+        <BotonDeImportar boton={boton} importando={importando} onImportar={onImportar} />
+        {error && <CajaDeError texto={error} />}
       </div>
     </div>
   );
@@ -198,7 +198,7 @@ function Aviso({ aviso, onCambio }: { aviso: AvisoDeVista; onCambio: AlCambiar }
  * lista: en el teléfono no hay pie fijo, y después de revisar sesenta filas
  * nadie vuelve hasta arriba a buscarlo.
  */
-export function ImportButton({
+export function BotonDeImportar({
   boton, importando = false, onImportar,
 }: {
   boton: VistaDelPlan['boton'];
@@ -228,8 +228,8 @@ export function ImportButton({
   );
 }
 
-/** El error de importar: en rojo porque falló, y con lo que dice la base de por qué. */
-export function ErrorDeImportacion({ texto }: { texto: string }) {
+/** Un error de la pantalla (leer, importar, deshacer): en rojo porque falló, y con el porqué. */
+export function CajaDeError({ texto }: { texto: string }) {
   return (
     <p className="px-3 py-2.5 bg-peligro/10 border border-peligro/20 text-peligro rounded-xl flex items-start gap-2 text-sm">
       <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />

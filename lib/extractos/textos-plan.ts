@@ -399,6 +399,8 @@ export const PANTALLA = {
   verLaCuenta: 'Ver la cuenta',
   importarOtro: 'Importar otro',
   deshacer: 'Deshacer',
+  // Se pregunta antes: borra de una todo lo que la importación anotó.
+  confirmarDeshacer: '¿Deshacer esta importación? Se borra lo que se anotó con ella.',
   deshecho: 'Deshecho: no quedó nada de esta importación.',
 } as const;
 

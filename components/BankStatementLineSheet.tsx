@@ -300,6 +300,9 @@ function SelectorDeCategoria({
           </select>
           <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-tinta-2 pointer-events-none" />
         </div>
+        {/* Pegado a la categoría que explica, no al final: si está debajo de la
+            subcategoría parece que habla de ella. */}
+        {categoria.porque && <p className="text-xs text-tinta-2">{categoria.porque}</p>}
       </div>
 
       {subs.length > 0 && (
@@ -321,8 +324,6 @@ function SelectorDeCategoria({
           </div>
         </div>
       )}
-
-      {categoria.porque && <p className="-mt-1 text-xs text-tinta-2">{categoria.porque}</p>}
     </div>
   );
 }

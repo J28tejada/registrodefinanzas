@@ -121,13 +121,15 @@ function EncabezadoDeGrupo({ grupo, onCambio }: { grupo: GrupoDeVista; onCambio:
       {grupo.pregunta && <p className="text-sm text-tinta">{grupo.pregunta}</p>}
       {grupo.botones.length > 0 && (
         // Solo tocan lo que sigue sin decidir: lo ya elegido fila por fila no se pisa.
+        // Con borde y sin relleno, para no confundirlos con las píldoras de
+        // cada fila, que dicen casi lo mismo pero deciden una sola.
         <div className="flex flex-wrap gap-2">
           {grupo.botones.map(b => (
             <button
               key={b.texto}
               type="button"
               onClick={() => onCambio(b.destino, b.cambio)}
-              className="px-3 py-1.5 bg-hundido hover:bg-presionado text-tinta rounded-lg text-xs font-medium transition-colors"
+              className="px-3 py-1.5 border border-linea-fuerte hover:bg-hundido text-tinta rounded-lg text-xs font-medium transition-colors"
             >
               {b.texto}
             </button>
@@ -156,6 +158,9 @@ function Fila({
 }) {
   const tipo: TransactionType = fila.monto.signo === '+' ? 'income' : 'expense';
   const dibujo = fila.categoria ? dibujoDe(categorias, fila.categoria.categoria, tipo) : { icon: null, color: null };
+  // Lo que no se anota se apaga entero, no solo el monto: un ícono verde y un
+  // título en negro en "No se anotan" se leían como plata que sí entraba.
+  const apagada = fila.monto.rol === 'apagado';
 
   const tocarPildora = (a: AccionDeFila) => {
     // Sin cambio, la píldora pide algo más (la categoría): eso se elige en la hoja.
@@ -171,11 +176,13 @@ function Fila({
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onAbrir(); } }}
       className="py-3 flex items-start gap-3 cursor-pointer"
     >
-      <CategoryIcon icon={dibujo.icon} color={dibujo.color} type={tipo} size="sm" />
+      <CategoryIcon icon={dibujo.icon} color={dibujo.color} type={apagada ? 'expense' : tipo} size="sm" />
 
       <div className="flex-1 min-w-0 flex flex-col gap-1">
         <div className="flex items-start gap-3">
-          <p className="flex-1 min-w-0 text-sm font-medium text-tinta truncate">{fila.descripcion}</p>
+          <p className={`flex-1 min-w-0 text-sm font-medium truncate ${apagada ? 'text-tinta-2' : 'text-tinta'}`}>
+            {fila.descripcion}
+          </p>
           <Monto monto={fila.monto} dinero={dinero} className="text-sm font-medium flex-shrink-0" />
         </div>
 
