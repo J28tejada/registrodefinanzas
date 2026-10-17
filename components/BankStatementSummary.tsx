@@ -97,7 +97,7 @@ export default function BankStatementSummary({
         <div className="border-t border-linea pt-2 flex flex-col">
           {resumen.conteos.map((c, i) => (
             <button
-              key={c.seccion}
+              key={c.id}
               type="button"
               onClick={() => onConteo(c.seccion)}
               className={`py-2.5 flex items-center gap-2 text-left text-sm text-tinta ${i > 0 ? 'border-t border-linea' : ''}`}

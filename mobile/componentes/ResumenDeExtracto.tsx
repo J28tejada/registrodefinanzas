@@ -93,7 +93,7 @@ export default function ResumenDeExtracto({
         <View className="border-t border-linea pt-2">
           {resumen.conteos.map((c, i) => (
             <Pressable
-              key={c.seccion}
+              key={c.id}
               onPress={() => onConteo(c.seccion)}
               accessibilityRole="button"
               className={`py-2.5 flex-row items-center gap-2 ${i > 0 ? 'border-t border-linea' : ''}`}

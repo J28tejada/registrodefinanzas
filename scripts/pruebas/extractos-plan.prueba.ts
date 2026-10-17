@@ -757,6 +757,26 @@ t.igual('la pareja se pregunta con su nombre', vistaDelPlan(PLAN).secciones[0].g
     { asentada: '2026-09-04', centavos: -50000, clase: 'withdrawal', descripcion: 'Retiro de efectivo', matchKey: 'retiro' },
   ]), ctxDe(), OP));
   t.igual('nada nuevo', sinNada.boton, { texto: 'No hay nada nuevo para importar', habilitado: false, n: 0 });
+
+  // Todo importado antes, pero una se borró después: queda por decidir, y el
+  // botón no puede decir que ya se importó todo.
+  const conBorrada = extractoDe([compra('2026-09-03', 15000, 'Kiosco'), compra('2026-09-04', 25000, 'Kiosco')]);
+  const cb = conBorrada.lineas.map(l => l.clave);
+  const borrada = planearImportacion(conBorrada, ctxDe({
+    lineasPrevias: [previa(cb[0], { transaction_id: null }), previa(cb[1], { transaction_id: 'tx-1' })],
+  }), OP);
+  t.igual('importado todo y una borrada', [vistaDelPlan(borrada).boton, vistaDelPlan(borrada).resumen.paraRevisar], [
+    { texto: 'Falta decidir lo que está en «Para revisar».', habilitado: false, n: 0 },
+    'Para revisar: 1. Si no lo decidís, no se anota.',
+  ]);
+  t.igual('…decidida, se importa', vistaDelPlan(aplicarCambio(borrada, 'borrados', { tipo: 'anotar-de-nuevo' })).boton,
+    { texto: 'Importar 1 movimiento', habilitado: true, n: 1 });
+  const soloDepositos = planearImportacion(extractoDe([
+    { asentada: '2026-09-03', centavos: 1000000, clase: 'deposit', descripcion: 'Depósito', matchKey: 'dep:acte' },
+  ]), ctxDe(), OP);
+  t.igual('solo depósitos sin decidir: falta decidir', vistaDelPlan(soloDepositos).boton.texto, T.FALTA_DECIDIR);
+  t.igual('…y sin anotar ninguno, nada nuevo',
+    vistaDelPlan(aplicarCambio(soloDepositos, 'depositos', { tipo: 'decidir', decision: 'skipped' })).boton.texto, T.NADA_NUEVO);
 }
 
 // ─── aplicarCambio ───────────────────────────────────────────────────────────
@@ -862,6 +882,19 @@ t.igual('la pareja se pregunta con su nombre', vistaDelPlan(PLAN).secciones[0].g
   t.igual('lo elegido a mano no se pisa', hojaDeLinea(elegida, c[0])?.extender?.n, 1);
   const despues = aplicarCambio(elegida, c[0], { tipo: 'categoria', categoria: 'Hogar', subcategoria: null, extender: true });
   t.igual('…ni al extender', resumenDe(despues, 2), 'expense Salud › Farmacia');
+
+  // "Transporte › Combustible" son dos cambios: la categoría resetea la
+  // subcategoría. El segundo tiene que llegar a las mismas que el primero.
+  const conTransporte = aplicarCambio(p, c[0], { tipo: 'categoria', categoria: 'Transporte', subcategoria: null, extender: true });
+  t.igual('después de la categoría, la casilla sigue', hojaDeLinea(conTransporte, c[0])?.extender?.n, 2);
+  const conSub = aplicarCambio(conTransporte, c[0], { tipo: 'categoria', categoria: 'Transporte', subcategoria: 'Combustible', extender: true });
+  t.igual('…y la subcategoría va a las tres', [0, 1, 2, 3].map(i => resumenDe(conSub, i)),
+    ['expense Transporte › Combustible', 'expense Transporte › Combustible', 'expense Transporte › Combustible', 'expense Otros personal']);
+  t.igual('…también desde otra de las tres', hojaDeLinea(conTransporte, c[1])?.extender?.n, 2);
+  const distinta = aplicarCambio(conTransporte, c[2], { tipo: 'categoria', categoria: 'Transporte', subcategoria: 'Peaje' });
+  t.igual('la que quedó distinta no se cuenta', hojaDeLinea(distinta, c[0])?.extender?.n, 1);
+  const otraSub = aplicarCambio(distinta, c[0], { tipo: 'categoria', categoria: 'Transporte', subcategoria: 'Combustible', extender: true });
+  t.igual('…ni se pisa', resumenDe(otraSub, 2), 'expense Transporte › Peaje');
   t.cierto('una categoría que no existe no se elige',
     aplicarCambio(p, c[0], { tipo: 'categoria', categoria: 'Materiales', subcategoria: null }) === p);
   const deposito = planearImportacion(extractoDe([
@@ -957,6 +990,29 @@ t.igual('la pareja se pregunta con su nombre', vistaDelPlan(PLAN).secciones[0].g
   t.igual('los conteos del resumen', v.resumen.conteos.map(c => c.texto), [
     'Se anotan 6: 5 en gastos y 1 en ingresos', 'Pagos de tarjeta: 1', 'Ya estaban anotados: 1', 'No se anotan: 6',
   ]);
+  t.igual('cada conteo lleva a su sección', v.resumen.conteos.map(c => [c.id, c.seccion]), [
+    ['se-anotan', 'se-anotan'], ['pagos', 'pagos'], ['ya-estaban', 'ya-estaban'], ['no-se-anotan', 'no-se-anotan'],
+  ]);
+  {
+    // Lo decidido en "Para revisar" se queda ahí: si es lo único de su
+    // resultado, el conteo no puede llevar a una sección que no se arma.
+    const e = extractoDe([
+      compra('2026-09-03', 15000, 'Kiosco'),
+      compra('2026-09-19', 40000, 'Farmacia Uno'),
+      { asentada: '2026-09-20', centavos: 1000000, clase: 'deposit', descripcion: 'Depósito', matchKey: 'dep:acte' },
+    ]);
+    const c = e.lineas.map(l => l.clave);
+    let p = planearImportacion(e, ctxDe({
+      movimientos: [mov({ id: 'tx-ana', centavos: 40000, date: '2026-09-19', description: 'Farmacia', author_id: 'ana', author_name: 'Ana' })],
+    }), OP);
+    p = aplicarCambio(p, 'depositos', { tipo: 'decidir', decision: 'skipped' });
+    p = aplicarCambio(p, c[1], { tipo: 'enlazar', candidato: { tipo: 'movimiento', id: 'tx-ana' } });
+    const vr = vistaDelPlan(p);
+    t.igual('decidido todo en Para revisar: las secciones', vr.secciones.map(s => s.id), ['revisar', 'se-anotan']);
+    t.igual('…y los conteos llevan ahí', vr.resumen.conteos.map(x => [x.id, x.seccion]), [
+      ['se-anotan', 'se-anotan'], ['ya-estaban', 'revisar'], ['no-se-anotan', 'revisar'],
+    ]);
+  }
   t.igual('lo que falta revisar', v.resumen.paraRevisar, 'Para revisar: 6. Si no los decidís, no se anotan.');
   t.igual('el botón', v.boton, { texto: 'Importar 8 movimientos', habilitado: true, n: 8 });
   t.igual('el pie', v.pie, { gastosCentavos: 525225, ingresosCentavos: 1234, sinDecidir: 6 });

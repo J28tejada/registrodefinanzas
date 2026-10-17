@@ -143,6 +143,9 @@ export function botonImportar(n: number): string {
 
 export const NADA_NUEVO = 'No hay nada nuevo para importar';
 
+/** Todavía nada para importar, pero con líneas sin decidir: eso es lo que falta. */
+export const FALTA_DECIDIR = 'Falta decidir lo que está en «Para revisar».';
+
 /** Recibe la fecha ya legible ('3 sep'). */
 export function yaSeImporto(fecha: string): string {
   return `Este estado de cuenta ya se importó el ${fecha}.`;

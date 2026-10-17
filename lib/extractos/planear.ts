@@ -784,13 +784,25 @@ function intencionDe(
 
 // ─── Los cambios ─────────────────────────────────────────────────────────────
 
-/** Las otras líneas del mismo comercio a las que se les puede pasar la categoría. */
+/**
+ * Las otras líneas del mismo comercio a las que se les puede pasar la categoría:
+ * las que no tienen una elegida, y las que tienen la misma que esta. Esas
+ * últimas son casi siempre las que se extendieron desde acá, y la subcategoría
+ * se elige en un segundo cambio: sin contarlas, "Transporte" iba a las cuatro
+ * compras y "Combustible" a una sola. Lo elegido distinto no se pisa.
+ */
 function extensibles(plan: Plan, l: LineaDelPlan, tipo: TransactionType): LineaDelPlan[] {
   const mk = l.linea.matchKey;
   if (!mk) return [];
+  const propia = plan.elecciones[l.clave]?.categoria;
+  const comoEsta = (m: LineaDelPlan) => {
+    const suya = plan.elecciones[m.clave]?.categoria;
+    if (!suya) return true;
+    return !!propia && suya.categoria === propia.categoria && suya.subcategoria === propia.subcategoria;
+  };
   return plan.lineas.filter(m =>
     m.clave !== l.clave && !m.bloqueada && m.linea.matchKey === mk &&
-    esDebito(m) === esDebito(l) && m.intencion === tipo && !plan.elecciones[m.clave]?.categoria);
+    esDebito(m) === esDebito(l) && m.intencion === tipo && comoEsta(m));
 }
 
 /**
@@ -1108,8 +1120,12 @@ export interface ResumenDeVista {
   saldoInicialCentavos: number;
   saldoFinalCentavos: number;
   avisos: AvisoDeVista[];
-  /** Una por resultado con algo, en el orden de las secciones; cada una lleva a la suya. */
-  conteos: { seccion: IdDeSeccion; n: number; texto: string }[];
+  /**
+   * Una por resultado con algo, en el orden de las secciones. `id` es el
+   * resultado y `seccion`, adonde lleva: la suya o, si sus filas siguen todas
+   * en "Para revisar", esa. Dos conteos pueden llevar al mismo lugar.
+   */
+  conteos: { id: IdDeSeccion; seccion: IdDeSeccion; n: number; texto: string }[];
   /** 'Para revisar: 4. Si no los decidís, no se anotan.', o null. */
   paraRevisar: string | null;
 }
@@ -1513,11 +1529,18 @@ export function vistaDelPlan(plan: Plan): VistaDelPlan {
   // ── El resumen.
   const avisos = avisosDe(plan);
   const conteos: ResumenDeVista['conteos'] = [];
-  if (gastos + ingresos > 0) conteos.push({ seccion: 'se-anotan', n: gastos + ingresos, texto: T.conteoSeAnotan(gastos, ingresos) });
-  if (pagos > 0) conteos.push({ seccion: 'pagos', n: pagos, texto: T.conteoPagos(pagos) });
-  if (yaEstaban > 0) conteos.push({ seccion: 'ya-estaban', n: yaEstaban, texto: T.conteoYaEstaban(yaEstaban) });
-  if (noSeAnotan > 0) conteos.push({ seccion: 'no-se-anotan', n: noSeAnotan, texto: T.conteoNoSeAnotan(noSeAnotan) });
-  if (importados > 0) conteos.push({ seccion: 'ya-importados', n: importados, texto: T.conteoYaImportados(importados) });
+  // Lo decidido en "Para revisar" se cuenta por su resultado pero se queda
+  // allá: si todo lo de un resultado vino de ahí, su sección no existe y el
+  // conteo lleva a donde están esas filas.
+  const conteo = (id: IdDeSeccion, n: number, texto: string) => {
+    const seccion = secciones.some(s => s.id === id) ? id : 'revisar';
+    conteos.push({ id, seccion, n, texto });
+  };
+  if (gastos + ingresos > 0) conteo('se-anotan', gastos + ingresos, T.conteoSeAnotan(gastos, ingresos));
+  if (pagos > 0) conteo('pagos', pagos, T.conteoPagos(pagos));
+  if (yaEstaban > 0) conteo('ya-estaban', yaEstaban, T.conteoYaEstaban(yaEstaban));
+  if (noSeAnotan > 0) conteo('no-se-anotan', noSeAnotan, T.conteoNoSeAnotan(noSeAnotan));
+  if (importados > 0) conteo('ya-importados', importados, T.conteoYaImportados(importados));
 
   // ── El botón. Cuenta las líneas que hacen algo en la base: lo que se anota,
   //    los pagos y los enlaces. Lo que no se anota igual se manda, pero solo
@@ -1525,7 +1548,11 @@ export function vistaDelPlan(plan: Plan): VistaDelPlan {
   const n = gastos + ingresos + pagos + yaEstaban;
   let boton: VistaDelPlan['boton'];
   const todasPrevias = lineas.length > 0 && lineas.every(l => l.previa !== null);
-  if (n === 0 && todasPrevias) {
+  if (n === 0 && sinDecidir > 0) {
+    // Es justo lo que pide el pie: volver a subir el PDF para decidir lo que
+    // quedó. "Ya se importó" o "nada nuevo" dirían que no hay nada que hacer.
+    boton = { texto: T.FALTA_DECIDIR, habilitado: false, n };
+  } else if (n === 0 && todasPrevias) {
     const ultima = lineas.reduce((max, l) => (l.previa && l.previa.created_at > max ? l.previa.created_at : max), '');
     boton = { texto: T.yaSeImporto(fechaDe(plan, ultima)), habilitado: false, n };
   } else if (n === 0) {
