@@ -23,6 +23,7 @@ import type {
   LineaDePedido,
   PedidoDeImportacion,
 } from './extractos/tipos';
+import { clavesDelEstado } from './extractos/claves';
 import { ERRORES_DE_IMPORTACION } from './extractos/textos';
 import type { LedgerColor, NuevaCard, TransactionType } from './types';
 import { COLORES_DE_CUENTA } from './cuentas-campos';
@@ -373,29 +374,17 @@ function revisarEnlaces(lineas: LineaDePedido[]): Resultado<object> {
 }
 
 /**
- * La clave de cada línea, con la misma fórmula que la función SQL y que
- * `LineaDeExtracto.clave`: fecha de entrada | centavos | saldo después | cuántas
- * iguales vinieron antes. Hace falta acá para saber a qué compra apunta cada
- * devolución.
- */
-function clavesDelLote(lineas: LineaDePedido[]): string[] {
-  const vistas = new Map<string, number>();
-  return lineas.map(l => {
-    const triple = `${l.posted}|${l.cents}|${l.balance}`;
-    const n = vistas.get(triple) ?? 0;
-    vistas.set(triple, n + 1);
-    return `${triple}|${n}`;
-  });
-}
-
-/**
  * Una compra guardada por su neto tiene que tener exactamente una devolución
  * de este lote que apunte a ella, y la resta tiene que dar exacta. Una
  * devolución, a su vez, tiene que apuntar a una compra que se guarda por su
  * neto. Si no, un error del cliente achicaría un gasto en silencio.
  */
 function revisarNetos(lineas: LineaDePedido[]): Resultado<object> {
-  const claves = clavesDelLote(lineas);
+  // Las claves con la misma fórmula que la función SQL: hacen falta para saber
+  // a qué compra apunta cada devolución.
+  const claves = clavesDelEstado(
+    lineas.map(l => ({ asentada: l.posted, centavos: l.cents, saldoCentavos: l.balance })),
+  );
   const porClave = new Map(claves.map((k, i) => [k, lineas[i]]));
 
   for (let i = 0; i < lineas.length; i++) {

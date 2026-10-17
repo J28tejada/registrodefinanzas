@@ -14,7 +14,9 @@
     "typecheck": "tsc --noEmit",
     "comparar": "node scripts/comparar-galeria.mjs",
     "comparar:build": "bash scripts/construir-para-comparar.sh && npm run comparar",
-    "textos": "node scripts/verificar-textos.mjs"
+    "textos": "node scripts/verificar-textos.mjs",
+    "extracto": "sucrase-node scripts/leer-extracto.ts",
+    "migraciones": "bash scripts/probar-migraciones.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
