@@ -5,14 +5,15 @@ import BarraDePresupuesto from '../componentes/BarraDePresupuesto';
 import IconoDeCategoria from '../componentes/IconoDeCategoria';
 import ListaDeMovimientos from '../componentes/ListaDeMovimientos';
 import EstadoDeCuenta from '../componentes/EstadoDeCuenta';
+import LineaDeTiempoDeTarjeta from '../componentes/LineaDeTiempoDeTarjeta';
 import ResumenDeExtracto from '../componentes/ResumenDeExtracto';
 import RevisionDeExtracto from '../componentes/RevisionDeExtracto';
 import HojaDeLineaDeExtracto from '../componentes/HojaDeLineaDeExtracto';
 import { ProveedorDeAjustes } from '../componentes/ContextoDeAjustes';
 import { ProveedorDeCategorias } from '../componentes/ContextoDeCategorias';
 import {
-  CATEGORIAS_DEL_EXTRACTO, ESTADOS_DE_CUENTA, EXTRACTO_HOJA, EXTRACTO_RESUMEN, EXTRACTO_SECCIONES,
-  ICONOS, MOVIMIENTOS, MOVIMIENTOS_ANCHO, PIEZAS, PRESUPUESTOS, RESUMENES,
+  CATEGORIAS_DEL_EXTRACTO, DIAS_PARA_PAGAR, ESTADOS_DE_CUENTA, EXTRACTO_HOJA, EXTRACTO_RESUMEN,
+  EXTRACTO_SECCIONES, ICONOS, MOVIMIENTOS, MOVIMIENTOS_ANCHO, PIEZAS, PRESUPUESTOS, RESUMENES,
 } from '@compartido/galeria';
 import { makeFormatters } from '@compartido/format';
 import { DEFAULT_SETTINGS } from '@compartido/types';
@@ -72,6 +73,15 @@ export default function Galeria() {
               <EstadoDeCuenta
                 card={p.card} balance={p.balance} payments={p.payments}
                 mediosDePago={p.mediosDePago} usuario="" onCambio={() => {}}
+              />
+            </Pieza>
+          ))}
+
+          {DIAS_PARA_PAGAR.map(p => (
+            <Pieza key={p.id} id={p.id} titulo={p.titulo} ancho={p.ancho}>
+              <LineaDeTiempoDeTarjeta
+                diaDeCorte={p.diaDeCorte} diaDePago={p.diaDePago} hoy={p.hoy}
+                compraInicial={p.compraInicial} enLinea={p.enLinea}
               />
             </Pieza>
           ))}

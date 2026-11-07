@@ -48,6 +48,9 @@ const PARES = [
   ['components/BankStatementSummary.tsx', 'mobile/componentes/ResumenDeExtracto.tsx'],
   ['components/BankStatementReview.tsx', 'mobile/componentes/RevisionDeExtracto.tsx'],
   ['components/BankStatementLineSheet.tsx', 'mobile/componentes/HojaDeLineaDeExtracto.tsx'],
+  // Los días para pagar de una tarjeta. Las frases salen de
+  // lib/linea-de-tiempo.ts; esto atrapa lo que se escriba suelto en una sola.
+  ['components/CardTimeline.tsx', 'mobile/componentes/LineaDeTiempoDeTarjeta.tsx'],
 ];
 
 /**

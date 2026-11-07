@@ -10,6 +10,7 @@ import Texto from '../../componentes/Texto';
 import Pantalla from '../../componentes/Pantalla';
 import FormularioDeTarjeta from '../../componentes/FormularioDeTarjeta';
 import EstadoDeCuenta from '../../componentes/EstadoDeCuenta';
+import LineaDeTiempoDeTarjeta from '../../componentes/LineaDeTiempoDeTarjeta';
 import ListaDeMovimientos from '../../componentes/ListaDeMovimientos';
 import { useCuenta } from '../../componentes/ContextoDeCuenta';
 import { useSesion } from '../../componentes/ContextoDeSesion';
@@ -268,6 +269,13 @@ export default function DetalleDeTarjeta() {
           usuario={usuario}
           onCambio={cargar}
         />
+      ) : null}
+
+      {/* Cuántos días da para pagar según el día en que se use. Pegado al
+          estado de cuenta porque sale de las mismas dos fechas, y antes del
+          historial: es lo que se mira ANTES de comprar. */}
+      {llevaSaldo(card) && card.statement_day != null && card.due_day != null ? (
+        <LineaDeTiempoDeTarjeta diaDeCorte={card.statement_day} diaDePago={card.due_day} hoy={fmt.today()} />
       ) : null}
 
       {/* Mes */}

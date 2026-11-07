@@ -4,6 +4,8 @@ import { Bell, Check, Loader2, X } from 'lucide-react-native';
 import Texto from './Texto';
 import Selector from './Selector';
 import CampoDeFecha from './CampoDeFecha';
+import LineaDeTiempoDeTarjeta from './LineaDeTiempoDeTarjeta';
+import { useFormatters } from './ContextoDeAjustes';
 import { db } from '../lib/datos';
 import { createCard, updateCard } from '@compartido/db';
 import { leerCamposDeCiclo } from '@compartido/tarjetas-campos';
@@ -50,6 +52,19 @@ function oNulo(valor: string): number | null {
 }
 
 /**
+ * Los dos días del ciclo, si los dos son días válidos; si no, null.
+ *
+ * Con la misma validación que al guardar (`leerCamposDeCiclo`), y no con una
+ * propia: la vista previa no puede dibujar un ciclo que después no se guarda.
+ */
+function cicloDelBorrador(b: Borrador): { corte: number; pago: number } | null {
+  const leido = leerCamposDeCiclo({ statement_day: b.statement_day, due_day: b.due_day });
+  if (!leido.ok) return null;
+  const { statement_day: corte, due_day: pago } = leido.campos;
+  return corte && pago ? { corte, pago } : null;
+}
+
+/**
  * El gemelo de components/CardForm.tsx.
  *
  * La web manda el borrador a `/api/cards`, que valida y guarda. Acá se guarda
@@ -86,6 +101,8 @@ export default function FormularioDeTarjeta({
   );
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+  const fmt = useFormatters();
+  const ciclo = cicloDelBorrador(borrador);
 
   const guardar = async () => {
     const name = borrador.name.trim();
@@ -228,6 +245,16 @@ export default function FormularioDeTarjeta({
             Si el día de pago es anterior al de corte, se entiende que vence el mes
             siguiente. En los meses cortos se corre al último día.
           </Texto>
+
+          {/* Apenas los dos días son válidos, lo que significan: cuántos días
+              da la tarjeta según cuándo se use. Es más fácil de entender que
+              la regla de arriba, y de paso confirma que se cargó lo que se
+              quería y no los días al revés. */}
+          {ciclo ? (
+            <View className="py-3 border-t border-b border-linea">
+              <LineaDeTiempoDeTarjeta diaDeCorte={ciclo.corte} diaDePago={ciclo.pago} hoy={fmt.today()} enLinea />
+            </View>
+          ) : null}
 
           <View className="flex-row gap-2">
             <View className="flex-1 gap-1">

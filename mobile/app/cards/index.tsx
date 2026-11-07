@@ -16,8 +16,9 @@ import { db } from '../../lib/datos';
 import { getCardsWithUsage } from '@compartido/db';
 import { limitesDelMes } from '@compartido/format';
 import { avisosDeTarjetas } from '@compartido/tarjetas';
+import { resumenDeDiasParaPagar } from '@compartido/linea-de-tiempo';
 import { ENTRADAS } from '@compartido/extractos/textos-plan';
-import { CARD_GROUPS, CARD_KIND_LABEL, CardWithUsage, LEDGER_COLOR_MAP } from '@compartido/types';
+import { CARD_GROUPS, CARD_KIND_LABEL, CardWithUsage, LEDGER_COLOR_MAP, llevaSaldo } from '@compartido/types';
 import { useColores } from '../../lib/colores';
 
 /** El gemelo de app/cards/page.tsx. */
@@ -184,7 +185,7 @@ export default function Billetera() {
                 <Texto className="text-xs font-medium text-tinta-2 px-1">
                   {titulo}
                 </Texto>
-                {delGrupo.map(c => <Fila key={c.id} card={c} total={total} fmt={fmt} />)}
+                {delGrupo.map(c => <Fila key={c.id} card={c} total={total} fmt={fmt} hoy={fmt.today()} />)}
               </View>
             );
           })}
@@ -201,15 +202,19 @@ export default function Billetera() {
 }
 
 /** Una tarjeta de la lista. Toda la fila entra al detalle. */
-function Fila({ card, total, fmt }: {
+function Fila({ card, total, fmt, hoy }: {
   card: CardWithUsage;
   total: number;
   fmt: { money: (n: number) => string; date: (iso: string) => string };
+  hoy: string;
 }) {
   const paleta = useColores();
   const colores = LEDGER_COLOR_MAP[card.color] ?? { dark: paleta.lineaFuerte, main: paleta.tinta3 };
   const parte = total > 0 ? (card.gastoDelMes / total) * 100 : 0;
   const saldo = card.balance;
+  // Solo las de crédito: las demás no tienen ciclo aunque les quede un día
+  // de corte guardado de antes de cambiarles el tipo.
+  const plazo = llevaSaldo(card) ? resumenDeDiasParaPagar(hoy, card.statement_day, card.due_day) : null;
 
   return (
     <Link href={`/cards/${card.id}` as never} asChild>
@@ -259,6 +264,9 @@ function Fila({ card, total, fmt }: {
                 </Texto>
               ) : null}
             </View>
+            {/* Para elegir con cuál pagar hoy sin entrar a cada una: la que da
+                más días es la que conviene. */}
+            {plazo ? <Texto className="text-2xs text-tinta-2">{plazo}</Texto> : null}
           </View>
         ) : parte > 0 ? (
           <View className="mt-3 h-1.5 bg-hundido rounded-full overflow-hidden">
