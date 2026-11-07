@@ -135,12 +135,21 @@ export default function LineaDeTiempoDeTarjeta({
           </Texto>
         </View>
 
-        <GestureDetector gesture={gesto}>
+        {/* `touchAction` es solo para el export web, el de la comparación: ahí
+            Gesture Handler pone `none` y se comía el scroll. `pan-y` es lo mismo
+            que el `touch-pan-y` de la web. En el teléfono no hace nada. */}
+        <GestureDetector gesture={gesto} touchAction="pan-y">
           <View
             accessible
             accessibilityRole="adjustable"
             accessibilityLabel={TEXTOS_DE_LA_LINEA.barraAccesible}
-            accessibilityValue={{ min: 0, max: linea.diasDelCiclo - 1, now: indice, text: textos.valor }}
+            // Los `aria-value*` y no `accessibilityValue`: React Native los
+            // junta en lo mismo, y el export web solo entiende estos. Con el
+            // objeto, la barra del export salía sin valor para el lector.
+            aria-valuemin={0}
+            aria-valuemax={linea.diasDelCiclo - 1}
+            aria-valuenow={indice}
+            aria-valuetext={textos.valor}
             accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
             onAccessibilityAction={alAjustar}
             onLayout={e => { ancho.current = e.nativeEvent.layout.width; }}
