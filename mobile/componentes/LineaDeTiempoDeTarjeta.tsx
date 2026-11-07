@@ -63,7 +63,9 @@ export default function LineaDeTiempoDeTarjeta({
     //
     // Se activa recién con 6px de costado, y se cae si antes el dedo bajó o
     // subió 10: así un scroll que empieza sobre la barra sigue siendo scroll y
-    // no mueve la compra, igual que el `touch-pan-y` de la web.
+    // no mueve la compra, igual que el `touch-pan-y` de la web. Y 6 y no los
+    // 15 del menú lateral: arrastrando la barra hacia la derecha se activa
+    // primero este gesto, y el menú no se abre por debajo.
     const arrastre = Gesture.Pan()
       .runOnJS(true)
       .activeOffsetX([-6, 6])
