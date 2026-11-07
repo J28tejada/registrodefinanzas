@@ -10,6 +10,7 @@ import {
 import AddTransactionModal from '@/components/AddTransactionModal';
 import CardForm from '@/components/CardForm';
 import CardStatement from '@/components/CardStatement';
+import CardTimeline from '@/components/CardTimeline';
 import TransactionList from '@/components/TransactionList';
 import { useFormatters } from '@/components/SettingsContext';
 import { useLedger } from '@/components/LedgerContext';
@@ -219,6 +220,13 @@ export default function CardDetailPage() {
           mediosDePago={mediosDePago}
           onCambio={cargar}
         />
+      )}
+
+      {/* Cuántos días da para pagar según el día en que se use. Pegado al
+          estado de cuenta porque sale de las mismas dos fechas, y antes del
+          historial: es lo que se mira ANTES de comprar. */}
+      {llevaSaldo(card) && card.statement_day != null && card.due_day != null && (
+        <CardTimeline diaDeCorte={card.statement_day} diaDePago={card.due_day} hoy={fmt.today()} />
       )}
 
       {/* Mes */}

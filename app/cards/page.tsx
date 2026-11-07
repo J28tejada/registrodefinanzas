@@ -10,8 +10,9 @@ import CardAlerts from '@/components/CardAlerts';
 import { budgetTone } from '@/components/BudgetBar';
 import { useFormatters } from '@/components/SettingsContext';
 import { useLedger } from '@/components/LedgerContext';
-import { CardWithUsage, CARD_GROUPS, CARD_KIND_LABEL, LEDGER_COLOR_MAP } from '@/lib/types';
+import { CardWithUsage, CARD_GROUPS, CARD_KIND_LABEL, LEDGER_COLOR_MAP, llevaSaldo } from '@/lib/types';
 import { avisosDeTarjetas } from '@/lib/tarjetas';
+import { resumenDeDiasParaPagar } from '@/lib/linea-de-tiempo';
 import { ENTRADAS } from '@/lib/extractos/textos-plan';
 
 export default function CardsPage() {
@@ -172,7 +173,7 @@ export default function CardsPage() {
                   {titulo}
                 </p>
                 {delGrupo.map(c => (
-                  <FilaTarjeta key={c.id} card={c} total={total} fmt={fmt} />
+                  <FilaTarjeta key={c.id} card={c} total={total} fmt={fmt} hoy={fmt.today()} />
                 ))}
               </div>
             );
@@ -192,16 +193,20 @@ export default function CardsPage() {
 
 /** Una tarjeta de la lista. Toda la fila entra al detalle. */
 function FilaTarjeta({
-  card, total, fmt,
+  card, total, fmt, hoy,
 }: {
   card: CardWithUsage;
   total: number;
   fmt: { money: (n: number) => string; date: (iso: string) => string };
+  hoy: string;
 }) {
   const money = fmt.money;
   const colores = LEDGER_COLOR_MAP[card.color] ?? { dark: '#334155', main: '#475569' };
   const parte = total > 0 ? (card.gastoDelMes / total) * 100 : 0;
   const saldo = card.balance;
+  // Solo las de crédito: las demás no tienen ciclo aunque les quede un día
+  // de corte guardado de antes de cambiarles el tipo.
+  const plazo = llevaSaldo(card) ? resumenDeDiasParaPagar(hoy, card.statement_day, card.due_day) : null;
 
   return (
     <Link
@@ -259,6 +264,9 @@ function FilaTarjeta({
               </span>
             )}
           </div>
+          {/* Para elegir con cuál pagar hoy sin entrar a cada una: la que da
+              más días es la que conviene. */}
+          {plazo && <p className="text-2xs text-tinta-2">{plazo}</p>}
         </div>
       ) : parte > 0 ? (
         /* Cuánto del gasto del mes se fue por acá: comparar dos tarjetas por sus

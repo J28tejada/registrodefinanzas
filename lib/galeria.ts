@@ -212,6 +212,31 @@ export const ESTADOS_DE_CUENTA: (Pieza & {
 ];
 
 /**
+ * Los días para pagar de una tarjeta de crédito: la barra del ciclo.
+ *
+ * Con un "hoy" fijo, porque la pieza cuenta desde hoy y una galería que cambia
+ * sola cada mañana no se puede comparar. Cada espécimen es una forma distinta
+ * de la barra: el ciclo de acá (corte 25, pago 10) a mitad de camino; uno que
+ * vence el mismo mes; otro día elegido —que es lo que hace aparecer la píldora
+ * de "Hoy"—; y la versión del formulario con un solo día de gracia, donde el
+ * corte y el pago quedan pegados y las etiquetas tienen que no pisarse.
+ */
+export const DIAS_PARA_PAGAR: (Pieza & {
+  diaDeCorte: number; diaDePago: number; hoy: string; compraInicial?: string; enLinea?: boolean;
+})[] = [
+  { id: 'dias-para-pagar', titulo: 'Tarjeta · días para pagar', ancho: 361,
+    diaDeCorte: 25, diaDePago: 10, hoy: '2026-12-03' },
+  { id: 'dias-para-pagar-mismo-mes', titulo: 'Tarjeta · días para pagar, vence el mismo mes', ancho: 361,
+    diaDeCorte: 5, diaDePago: 25, hoy: '2026-11-20' },
+  // El día después del corte: lo máximo, y la compra lejos de hoy.
+  { id: 'dias-para-pagar-otro-dia', titulo: 'Tarjeta · días para pagar, otro día elegido', ancho: 361,
+    diaDeCorte: 25, diaDePago: 10, hoy: '2026-12-03', compraInicial: '2026-11-26' },
+  // 301 es lo que queda adentro del recuadro de "Saldo y ciclo" en un teléfono.
+  { id: 'dias-para-pagar-formulario', titulo: 'Tarjeta · días para pagar, en el formulario', ancho: 301,
+    diaDeCorte: 1, diaDePago: 2, hoy: '2026-11-15', enLinea: true },
+];
+
+/**
  * La importación de un estado de cuenta del banco, con todo INVENTADO.
  *
  * El repo es público y un estado real tiene nombres, números de cuenta y en
@@ -428,5 +453,5 @@ export const EXTRACTO_HOJA: Pieza & { hoja: HojaDeLinea } = {
 /** Todas las piezas, para que el comparador sepa qué recortar. */
 export const PIEZAS: Pieza[] = [
   ...RESUMENES, ...PRESUPUESTOS, ...ICONOS, ...MOVIMIENTOS, ...MOVIMIENTOS_ANCHO,
-  ...ESTADOS_DE_CUENTA, EXTRACTO_RESUMEN, ...EXTRACTO_SECCIONES, EXTRACTO_HOJA,
+  ...ESTADOS_DE_CUENTA, ...DIAS_PARA_PAGAR, EXTRACTO_RESUMEN, ...EXTRACTO_SECCIONES, EXTRACTO_HOJA,
 ];

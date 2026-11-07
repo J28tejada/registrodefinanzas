@@ -56,32 +56,45 @@ t.igual('15/15 · vence el mes siguiente', [largo.corte, largo.pago, largo.minim
   ['2026-11-15', '2026-12-15', 30, 60]);
 
 // ─── Los textos ───
+//
+// "~" es el espacio duro que va entre el número y lo que cuenta, para que no
+// queden en renglones distintos.
+
+const duro = (texto: string) => texto.replace(/~/g, '\u00a0');
 
 const textos = textosDeLaLinea(comun, '2026-12-03');
 t.igual('textos · hoy', textos, {
   numero: '38',
   unidad: 'días',
-  frase: 'Si la usás hoy, tenés hasta el 10 ene para pagarla.',
-  inicio: '26 nov',
-  corte: 'Corte 25 dic',
-  pago: 'Pago 10 ene',
-  extremos: 'Lo máximo son 45 días, si la usás el día después del corte. El mismo día del corte, 16 días.',
-  valor: '3 dic: 38 días para pagar',
+  frase: duro('Si la usás hoy, tenés hasta el 10~ene para pagarla.'),
+  inicio: duro('26~nov'),
+  corte: duro('Corte 25~dic'),
+  pago: duro('Pago 10~ene'),
+  // El próximo día después del corte, con sus días: los del ciclo de enero.
+  consejo: duro('Conviene usarla el día después del corte: el 26~dic da 46~días. El día del corte da 16~días.'),
+  valor: duro('3~dic: 38~días para pagar'),
 });
 t.igual('frase · mañana', textosDeLaLinea(comun, '2026-12-04').frase,
-  'Si la usás mañana, tenés hasta el 10 ene para pagarla.');
+  duro('Si la usás mañana, tenés hasta el 10~ene para pagarla.'));
 t.igual('frase · ayer', textosDeLaLinea(comun, '2026-12-02').frase,
-  'Si la usaste ayer, tenés hasta el 10 ene para pagarla.');
+  duro('Si la usaste ayer, tenés hasta el 10~ene para pagarla.'));
 t.igual('frase · más adelante', textosDeLaLinea(comun, '2026-12-20').frase,
-  'Si la usás el 20 dic, tenés hasta el 10 ene para pagarla.');
+  duro('Si la usás el 20~dic, tenés hasta el 10~ene para pagarla.'));
 t.igual('frase · ya pasó', textosDeLaLinea(comun, '2026-11-26').frase,
-  'Si la usaste el 26 nov, tenés hasta el 10 ene para pagarla.');
+  duro('Si la usaste el 26~nov, tenés hasta el 10~ene para pagarla.'));
+// El consejo cambia en los dos bordes del ciclo, que es cuando más sirve.
+t.igual('consejo · hoy es el corte', textosDeLaLinea(lineaDeTiempo('2026-12-25', 25, 10), '2026-12-25').consejo,
+  duro('Hoy es el corte: si esperás a mañana, tenés 46~días en vez de 16~días.'));
+t.igual('consejo · el corte fue ayer', textosDeLaLinea(lineaDeTiempo('2026-12-26', 25, 10), '2026-12-26').consejo,
+  'Hoy es el mejor día para usarla: el corte fue ayer, y lo que compres hoy entra recién en el próximo.');
 const unDia = textosDeLaLinea(corto, '2026-12-01');
-t.igual('un día · singular', [unDia.numero, unDia.unidad, unDia.valor], ['1', 'día', '1 dic: 1 día para pagar']);
-t.cierto('un día · extremos en singular', unDia.extremos.endsWith('El mismo día del corte, 1 día.'));
-t.cierto('sin gracia · "ninguno"', textosDeLaLinea(sinGracia, '2026-04-15').extremos.endsWith('el corte, ninguno.'));
-t.igual('lista', resumenDeDiasParaPagar('2026-12-03', 25, 10), 'Usándola hoy: 38 días para pagar');
-t.igual('lista · singular', resumenDeDiasParaPagar('2026-12-01', 1, 2), 'Usándola hoy: 1 día para pagar');
+t.igual('un día · singular', [unDia.numero, unDia.unidad, unDia.valor], ['1', 'día', duro('1~dic: 1~día para pagar')]);
+t.cierto('un día · consejo en singular', unDia.consejo.endsWith(duro('El día del corte da 1~día.')));
+t.cierto('sin gracia · "ninguno"', textosDeLaLinea(sinGracia, '2026-04-15').consejo.endsWith('El día del corte no da ninguno.'));
+t.igual('sin gracia · el día del corte', textosDeLaLinea(lineaDeTiempo('2026-04-30', 30, 31), '2026-04-30').consejo,
+  duro('Hoy es el corte: si esperás a mañana, tenés 30~días en vez de ninguno.'));
+t.igual('lista', resumenDeDiasParaPagar('2026-12-03', 25, 10), duro('Usándola hoy: 38~días para pagar'));
+t.igual('lista · singular', resumenDeDiasParaPagar('2026-12-01', 1, 2), duro('Usándola hoy: 1~día para pagar'));
 t.igual('lista · sin corte', resumenDeDiasParaPagar('2026-12-03', null, 10), null);
 t.igual('lista · sin pago', resumenDeDiasParaPagar('2026-12-03', 25, null), null);
 

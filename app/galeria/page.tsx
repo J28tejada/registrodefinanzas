@@ -5,11 +5,12 @@ import BudgetBar from '@/components/BudgetBar';
 import CategoryIcon from '@/components/CategoryIcon';
 import TransactionList from '@/components/TransactionList';
 import CardStatement from '@/components/CardStatement';
+import CardTimeline from '@/components/CardTimeline';
 import BankStatementSummary from '@/components/BankStatementSummary';
 import BankStatementReview from '@/components/BankStatementReview';
 import BankStatementLineSheet from '@/components/BankStatementLineSheet';
 import {
-  CATEGORIAS_DEL_EXTRACTO, ESTADOS_DE_CUENTA, EXTRACTO_HOJA, EXTRACTO_RESUMEN, EXTRACTO_SECCIONES,
+  CATEGORIAS_DEL_EXTRACTO, DIAS_PARA_PAGAR, ESTADOS_DE_CUENTA, EXTRACTO_HOJA, EXTRACTO_RESUMEN, EXTRACTO_SECCIONES,
   ICONOS, MOVIMIENTOS, MOVIMIENTOS_ANCHO, PIEZAS, PRESUPUESTOS, RESUMENES,
 } from '@/lib/galeria';
 import { makeFormatters } from '@/lib/format';
@@ -67,6 +68,15 @@ export default function GaleriaPage() {
             <CardStatement
               card={p.card} balance={p.balance} payments={p.payments}
               mediosDePago={p.mediosDePago} onCambio={() => {}}
+            />
+          </Pieza>
+        ))}
+
+        {DIAS_PARA_PAGAR.map(p => (
+          <Pieza key={p.id} id={p.id} titulo={p.titulo} ancho={p.ancho}>
+            <CardTimeline
+              diaDeCorte={p.diaDeCorte} diaDePago={p.diaDePago} hoy={p.hoy}
+              compraInicial={p.compraInicial} enLinea={p.enLinea}
             />
           </Pieza>
         ))}

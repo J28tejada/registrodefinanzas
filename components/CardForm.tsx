@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import { Bell, Check, ChevronDown, Loader2, X } from 'lucide-react';
+import CardTimeline from './CardTimeline';
+import { useFormatters } from './SettingsContext';
+import { leerCamposDeCiclo } from '@/lib/tarjetas-campos';
 import {
   Card, CardKind, CARD_GROUPS, CARD_KIND_LABEL, LedgerColor, LEDGER_COLOR_MAP,
   etiquetaUltimosDigitos, llevaSaldo,
@@ -40,6 +43,19 @@ function oNulo(valor: string): number | null {
 }
 
 /**
+ * Los dos días del ciclo, si los dos son días válidos; si no, null.
+ *
+ * Con la misma validación que al guardar (`leerCamposDeCiclo`), y no con una
+ * propia: la vista previa no puede dibujar un ciclo que después no se guarda.
+ */
+function cicloDelBorrador(b: Borrador): { corte: number; pago: number } | null {
+  const leido = leerCamposDeCiclo({ statement_day: b.statement_day, due_day: b.due_day });
+  if (!leido.ok) return null;
+  const { statement_day: corte, due_day: pago } = leido.campos;
+  return corte && pago ? { corte, pago } : null;
+}
+
+/**
  * Alta y edición de una tarjeta, con el mismo formulario en los dos casos.
  *
  * Guarda por su cuenta y avisa cuando terminó: los dos lugares que lo usan
@@ -71,6 +87,8 @@ export default function CardForm({
   );
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+  const fmt = useFormatters();
+  const ciclo = cicloDelBorrador(borrador);
 
   const guardar = async () => {
     const name = borrador.name.trim();
@@ -210,6 +228,16 @@ export default function CardForm({
             Si el día de pago es anterior al de corte, se entiende que vence el mes
             siguiente. En los meses cortos se corre al último día.
           </p>
+
+          {/* Apenas los dos días son válidos, lo que significan: cuántos días
+              da la tarjeta según cuándo se use. Es más fácil de entender que
+              la regla de arriba, y de paso confirma que se cargó lo que se
+              quería y no los días al revés. */}
+          {ciclo && (
+            <div className="py-3 border-y border-linea">
+              <CardTimeline diaDeCorte={ciclo.corte} diaDePago={ciclo.pago} hoy={fmt.today()} enLinea />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1 min-w-0">

@@ -152,9 +152,24 @@ export const TEXTOS_DE_LA_LINEA = {
   nota: 'Vale si pagás el total del estado de cuenta a tiempo; si no, el banco cobra intereses.',
 };
 
+/*
+ * Espacio duro entre el número y lo que cuenta: "1 / día" o "2 / dic" partidos
+ * en dos renglones se leen como dos cosas sueltas.
+ */
+const DURO = '\u00a0';
+
 /** "1 día", "16 días". */
 function enDias(n: number): string {
-  return n === 1 ? '1 día' : `${n} días`;
+  return n === 1 ? `1${DURO}día` : `${n}${DURO}días`;
+}
+
+/**
+ * '10 ene'. Con la tabla de `textos-plan` y no con Intl: el mes abreviado
+ * cambia entre motores ('sept' en unos, 'sep' en otros) y las dos apps tienen
+ * que decir lo mismo.
+ */
+function fecha(iso: string): string {
+  return fechaCorta(iso).replace(' ', DURO);
 }
 
 /**
@@ -166,9 +181,35 @@ function cuando(compra: string, hoy: string): string {
   if (diferencia === 0) return 'Si la usás hoy';
   if (diferencia === 1) return 'Si la usás mañana';
   if (diferencia === -1) return 'Si la usaste ayer';
-  return diferencia > 0
-    ? `Si la usás el ${fechaCorta(compra)}`
-    : `Si la usaste el ${fechaCorta(compra)}`;
+  return diferencia > 0 ? `Si la usás el ${fecha(compra)}` : `Si la usaste el ${fecha(compra)}`;
+}
+
+/**
+ * El consejo de abajo: cuándo conviene usarla. Depende de hoy y no de la compra
+ * elegida, así que no se mueve mientras se arrastra.
+ *
+ * Nombra el PRÓXIMO día después del corte, con su número exacto, y no el
+ * primero de la barra: ese casi siempre ya pasó, y lo que sirve es saber para
+ * cuándo dejar una compra grande. Sus días son los del ciclo que viene, que
+ * pueden diferir en uno o dos de los de esta barra porque los meses no miden
+ * lo mismo.
+ */
+function consejo(linea: LineaDeTiempo): string {
+  const manana = sumarDias(linea.corte, 1);
+  const delSiguiente = enDias(diasParaPagar(manana, linea.diaDeCorte, linea.diaDePago).dias);
+  // Cero pasa cuando el pago y el corte, recortados a un mes corto, caen el
+  // mismo día (corte 30, pago 31, en abril): no hay gracia que contar.
+  const delCorte = linea.minimo === 0 ? 'ninguno' : enDias(linea.minimo);
+
+  if (linea.hoy === linea.inicio) {
+    return 'Hoy es el mejor día para usarla: el corte fue ayer, y lo que compres hoy entra recién en el próximo.';
+  }
+  // El día del corte es cuando más rinde esperar: un día cambia el doble.
+  if (linea.hoy === linea.corte) {
+    return `Hoy es el corte: si esperás a mañana, tenés ${delSiguiente} en vez de ${delCorte}.`;
+  }
+  return `Conviene usarla el día después del corte: el ${fecha(manana)} da ${delSiguiente}. ` +
+    (linea.minimo === 0 ? 'El día del corte no da ninguno.' : `El día del corte da ${delCorte}.`);
 }
 
 /** Todo lo que dice la pieza para una compra del día `compra`. */
@@ -185,33 +226,24 @@ export interface TextosDeLaLinea {
   corte: string;
   /** Debajo de la barra, a la derecha. */
   pago: string;
-  /** Los dos extremos del ciclo: lo más y lo menos que da. */
-  extremos: string;
+  /** Cuándo conviene usarla: el día después del corte, con su número. */
+  consejo: string;
   /** Para el lector de pantalla: el valor de la barra. */
   valor: string;
 }
 
-/**
- * Los textos de la pieza. Las fechas van con la tabla de `textos-plan` y no con
- * Intl: el mes abreviado cambia entre motores ('sept' en unos, 'sep' en otros)
- * y las dos apps tienen que decir lo mismo.
- */
+/** Los textos de la pieza para una compra del día `compra`. */
 export function textosDeLaLinea(linea: LineaDeTiempo, compra: string): TextosDeLaLinea {
   const { dias } = diasParaPagar(compra, linea.diaDeCorte, linea.diaDePago);
-  // Cero pasa cuando el pago y el corte, recortados a un mes corto, caen el
-  // mismo día (corte 30, pago 31, en abril): no hay gracia que contar.
-  const delCorte = linea.minimo === 0 ? 'ninguno' : enDias(linea.minimo);
   return {
     numero: String(dias),
     unidad: dias === 1 ? 'día' : 'días',
-    frase: `${cuando(compra, linea.hoy)}, tenés hasta el ${fechaCorta(linea.pago)} para pagarla.`,
-    inicio: fechaCorta(linea.inicio),
-    corte: `Corte ${fechaCorta(linea.corte)}`,
-    pago: `Pago ${fechaCorta(linea.pago)}`,
-    extremos:
-      `Lo máximo son ${enDias(linea.maximo)}, si la usás el día después del corte. ` +
-      `El mismo día del corte, ${delCorte}.`,
-    valor: `${fechaCorta(compra)}: ${enDias(dias)} para pagar`,
+    frase: `${cuando(compra, linea.hoy)}, tenés hasta el ${fecha(linea.pago)} para pagarla.`,
+    inicio: fecha(linea.inicio),
+    corte: `Corte ${fecha(linea.corte)}`,
+    pago: `Pago ${fecha(linea.pago)}`,
+    consejo: consejo(linea),
+    valor: `${fecha(compra)}: ${enDias(dias)} para pagar`,
   };
 }
 
