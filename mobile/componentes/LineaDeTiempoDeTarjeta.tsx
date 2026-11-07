@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { AccessibilityActionEvent, Pressable, View } from 'react-native';
+import { AccessibilityActionEvent, AccessibilityInfo, Platform, Pressable, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { RotateCcw } from 'lucide-react-native';
 import Texto from './Texto';
@@ -53,6 +53,7 @@ export default function LineaDeTiempoDeTarjeta({
   // En un ref y no en el estado: solo lo leen los gestos, y medir la barra no
   // tiene por qué volver a dibujarla.
   const ancho = useRef(0);
+  const barra = useRef<View>(null);
 
   const gesto = useMemo(() => {
     const elegirEn = (x: number) => {
@@ -88,14 +89,27 @@ export default function LineaDeTiempoDeTarjeta({
     if (e.nativeEvent.actionName === 'decrement') setElegida(compraDelIndice(linea, indice - 1));
   };
 
+  // La píldora desaparece con su propio toque (la compra vuelve a hoy). Si el
+  // foco del lector se quedara en ella, el sistema lo mandaría a cualquier
+  // lado, casi siempre arriba de todo: se lo lleva a la barra, que es la que
+  // acaba de cambiar. En el export web, el foco de siempre: ahí React Native
+  // Web no tiene `sendAccessibilityEvent`.
+  const volverAHoy = () => {
+    setElegida(null);
+    const vista = barra.current;
+    if (!vista) return;
+    if (Platform.OS === 'web') (vista as unknown as HTMLElement).focus?.();
+    else AccessibilityInfo.sendAccessibilityEvent(vista, 'focus');
+  };
+
   return (
     <View className={enLinea
       ? 'flex-col gap-4'
       : 'bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 flex-col gap-4'}
     >
-      {/* Alto fijo: la píldora aparece y desaparece, y el renglón no puede
-          saltar con ella. */}
-      <View className="flex-row items-center justify-between gap-3 h-5">
+      {/* Alto mínimo: la píldora aparece y desaparece, y el renglón no puede
+          saltar con ella. Mínimo y no fijo, para que crezca si crece la letra. */}
+      <View className="flex-row items-center justify-between gap-3 min-h-5">
         {/* En el formulario, el título y el número bajan un escalón: ahí lo
             principal son los campos, y esto es la vista previa de lo que dicen. */}
         <Texto className={enLinea ? 'text-xs font-medium text-tinta-2' : 'text-sm font-medium text-tinta'}>
@@ -103,7 +117,7 @@ export default function LineaDeTiempoDeTarjeta({
         </Texto>
         {compra !== hoy ? (
           <Pressable
-            onPress={() => setElegida(null)}
+            onPress={volverAHoy}
             accessibilityLabel={TEXTOS_DE_LA_LINEA.volverAHoyAccesible}
             className="flex-row items-center gap-1 px-2 py-0.5 rounded-full bg-hundido active:bg-presionado"
           >
@@ -127,14 +141,13 @@ export default function LineaDeTiempoDeTarjeta({
       <View className="flex-col gap-1">
         {/* El corte va arriba de la barra y el inicio y el pago abajo: así
             ninguna etiqueta se pisa con otra, aunque la gracia sea de un día.
-            Termina en la marca, que siempre cae de la mitad para la derecha. */}
-        <View className="relative h-4">
-          <Texto
-            className="absolute top-0 text-2xs text-tinta-2"
-            style={{ right: `${(1 - enCorte) * 100}%` }}
-          >
-            {textos.corte}
-          </Texto>
+            Termina en la marca, que cae cerca de la mitad o más a la derecha.
+            En el flujo y no flotando sobre una caja de alto fijo: con la letra
+            del sistema grande, la etiqueta crece y tiene que empujar la barra
+            para abajo en vez de taparla. El relleno en porcentaje se mide sobre
+            el ancho, igual que en la web. */}
+        <View className="flex-col items-end" style={{ paddingRight: `${(1 - enCorte) * 100}%` }}>
+          <Texto className="text-2xs text-tinta-2">{textos.corte}</Texto>
         </View>
 
         {/* `touchAction` es solo para el export web, el de la comparación: ahí
@@ -142,6 +155,7 @@ export default function LineaDeTiempoDeTarjeta({
             que el `touch-pan-y` de la web. En el teléfono no hace nada. */}
         <GestureDetector gesture={gesto} touchAction="pan-y">
           <View
+            ref={barra}
             accessible
             accessibilityRole="adjustable"
             accessibilityLabel={TEXTOS_DE_LA_LINEA.barraAccesible}
@@ -200,6 +214,7 @@ export default function LineaDeTiempoDeTarjeta({
 
       <View className="flex-col gap-1 pt-3 border-t border-linea">
         <Texto className="text-xs text-tinta-2">{textos.consejo}</Texto>
+        {textos.antes ? <Texto className="text-xs text-tinta-2">{textos.antes}</Texto> : null}
         <Texto className="text-2xs text-tinta-2">{TEXTOS_DE_LA_LINEA.nota}</Texto>
       </View>
     </View>

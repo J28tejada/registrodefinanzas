@@ -50,6 +50,7 @@ export default function CardTimeline({
   const enCorte = linea.posicionDelCorte;
 
   const pista = useRef<HTMLDivElement>(null);
+  const barra = useRef<HTMLDivElement>(null);
   const toque = useRef<{ id: number; dedo: boolean; desde: number; arrastra: boolean } | null>(null);
 
   const elegirEn = (clientX: number) => {
@@ -98,14 +99,22 @@ export default function CardTimeline({
     setElegida(compraDelIndice(linea, destino[e.key]));
   };
 
+  // La píldora desaparece con su propio clic (la compra vuelve a hoy). Si el
+  // foco se quedara en ella, caería al <body> y el lector perdería el lugar:
+  // se lo lleva a la barra, que es la que acaba de cambiar.
+  const volverAHoy = () => {
+    setElegida(null);
+    barra.current?.focus();
+  };
+
   return (
     <div className={enLinea
       ? 'flex flex-col gap-4'
       : 'bg-panel border border-t-borde-luz border-linea rounded-2xl p-4 flex flex-col gap-4'}
     >
-      {/* Alto fijo: la píldora aparece y desaparece, y el renglón no puede
-          saltar con ella. */}
-      <div className="flex items-center justify-between gap-3 h-5">
+      {/* Alto mínimo: la píldora aparece y desaparece, y el renglón no puede
+          saltar con ella. Mínimo y no fijo, para que crezca si crece la letra. */}
+      <div className="flex items-center justify-between gap-3 min-h-5">
         {/* En el formulario, el título y el número bajan un escalón: ahí lo
             principal son los campos, y esto es la vista previa de lo que dicen. */}
         <p className={enLinea ? 'text-xs font-medium text-tinta-2' : 'text-sm font-medium text-tinta'}>
@@ -114,7 +123,7 @@ export default function CardTimeline({
         {compra !== hoy && (
           <button
             type="button"
-            onClick={() => setElegida(null)}
+            onClick={volverAHoy}
             aria-label={TEXTOS_DE_LA_LINEA.volverAHoyAccesible}
             className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-hundido hover:bg-presionado text-2xs text-tinta-2 transition-colors"
           >
@@ -134,17 +143,17 @@ export default function CardTimeline({
       <div className="flex flex-col gap-1">
         {/* El corte va arriba de la barra y el inicio y el pago abajo: así
             ninguna etiqueta se pisa con otra, aunque la gracia sea de un día.
-            Termina en la marca, que siempre cae de la mitad para la derecha. */}
-        <div className="relative h-4">
-          <p
-            className="absolute top-0 text-2xs text-tinta-2"
-            style={{ right: `${(1 - enCorte) * 100}%` }}
-          >
-            {textos.corte}
-          </p>
+            Termina en la marca, que cae cerca de la mitad o más a la derecha.
+            En el flujo y no flotando sobre una caja de alto fijo: en el
+            teléfono, con la letra del sistema grande, la etiqueta crece y
+            tiene que empujar la barra para abajo en vez de taparla. El relleno
+            en porcentaje se mide sobre el ancho, igual en los dos motores. */}
+        <div className="flex flex-col items-end" style={{ paddingRight: `${(1 - enCorte) * 100}%` }}>
+          <p className="text-2xs text-tinta-2">{textos.corte}</p>
         </div>
 
         <div
+          ref={barra}
           role="slider"
           tabIndex={0}
           aria-label={TEXTOS_DE_LA_LINEA.barraAccesible}
@@ -204,6 +213,7 @@ export default function CardTimeline({
 
       <div className="flex flex-col gap-1 pt-3 border-t border-linea">
         <p className="text-xs text-tinta-2">{textos.consejo}</p>
+        {textos.antes && <p className="text-xs text-tinta-2">{textos.antes}</p>}
         <p className="text-2xs text-tinta-2">{TEXTOS_DE_LA_LINEA.nota}</p>
       </div>
     </div>
