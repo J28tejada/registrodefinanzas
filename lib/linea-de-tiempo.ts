@@ -15,7 +15,9 @@
  * Puro y compartido: lo usan las dos apps, y los textos también viven acá para
  * que la web y el teléfono digan exactamente lo mismo.
  */
-import { corteAnterior, diasEntre, pagoDelCorte, proximoCorte, sumarDias } from './tarjetas';
+import {
+  corteAnterior, diasEntre, pagoDelCorte, proximoCorte, proximoPago, sumarDias,
+} from './tarjetas';
 import { fechaCorta } from './extractos/textos-plan';
 
 // ─── Una compra ───────────────────────────────────────────────────────────────
@@ -192,10 +194,17 @@ function cuando(compra: string, hoy: string): string {
  * primero de la barra: ese casi siempre ya pasó, y lo que sirve es saber para
  * cuándo dejar una compra grande. Sus días son los del ciclo que viene, que
  * pueden no ser los de esta barra porque los meses no miden lo mismo.
+ *
+ * Por eso mismo no siempre conviene esperar: si el ciclo que viene pasa por
+ * febrero, el día después del corte puede dar menos que hoy (con corte 25 y
+ * pago 10, el 27 dic da 45 y el 26 ene, 43). Ahí se dice que hoy da más, en
+ * vez de mandar a esperar un mes para perder días.
  */
 function consejo(linea: LineaDeTiempo): string {
   const manana = sumarDias(linea.corte, 1);
-  const delSiguiente = enDias(diasParaPagar(manana, linea.diaDeCorte, linea.diaDePago).dias);
+  const diasDelSiguiente = diasParaPagar(manana, linea.diaDeCorte, linea.diaDePago).dias;
+  const delSiguiente = enDias(diasDelSiguiente);
+  const deHoy = diasParaPagar(linea.hoy, linea.diaDeCorte, linea.diaDePago).dias;
   // Cero pasa cuando el pago y el corte, recortados a un mes corto, caen el
   // mismo día (corte 30, pago 31, en abril): no hay gracia que contar.
   const sinGracia = linea.minimo === 0;
@@ -209,8 +218,29 @@ function consejo(linea: LineaDeTiempo): string {
     return `Hoy es el corte: si esperás a mañana, tenés ${delSiguiente} en vez de ` +
       `${sinGracia ? 'ninguno' : linea.minimo}.`;
   }
-  return `Conviene usarla el día después del corte: el ${fecha(manana)} da ${delSiguiente}. ` +
-    (sinGracia ? 'El día del corte no da ninguno.' : `El día del corte da ${enDias(linea.minimo)}.`);
+  const delCorte = sinGracia ? 'El día del corte no da ninguno.' : `El día del corte da ${enDias(linea.minimo)}.`;
+  if (deHoy >= diasDelSiguiente) {
+    return `Hoy da ${deHoy > diasDelSiguiente ? 'más' : 'lo mismo'} que esperar al día después del corte: ` +
+      `el ${fecha(manana)} da ${delSiguiente}. ${delCorte}`;
+  }
+  return `Conviene usarla el día después del corte: el ${fecha(manana)} da ${delSiguiente}. ${delCorte}`;
+}
+
+/**
+ * Lo que vence antes que el pago de la barra, si hay algo.
+ *
+ * Entre el corte y su vencimiento conviven dos pagos: el del estado de cuenta
+ * que ya cerró, que es el que muestra el detalle de la tarjeta, y el de este
+ * ciclo, que es el de la barra. Los dos se llaman "Pago" y quedan uno encima
+ * del otro, así que se dice cuál es cuál. Sale de `proximoPago`, lo mismo que
+ * usa el estado de cuenta: si dijera otra fecha, la confusión sería peor.
+ */
+function loQueVenceAntes(linea: LineaDeTiempo): string | null {
+  const pendiente = proximoPago(linea.hoy, linea.diaDeCorte, linea.diaDePago);
+  if (pendiente === linea.pago) return null;
+  // El que vence antes es siempre el del corte anterior al de la barra: el
+  // que cierra el día antes de `inicio`.
+  return `Lo del corte del ${fecha(sumarDias(linea.inicio, -1))} vence antes: el ${fecha(pendiente)}.`;
 }
 
 /** Todo lo que dice la pieza para una compra del día `compra`. */
@@ -229,6 +259,8 @@ export interface TextosDeLaLinea {
   pago: string;
   /** Cuándo conviene usarla: el día después del corte, con su número. */
   consejo: string;
+  /** El pago del corte pasado, si todavía no venció. Null si no hay. */
+  antes: string | null;
   /** Para el lector de pantalla: el valor de la barra. */
   valor: string;
 }
@@ -246,6 +278,7 @@ export function textosDeLaLinea(linea: LineaDeTiempo, compra: string): TextosDeL
     corte: `Corte ${fecha(linea.corte)}`,
     pago: `Pago ${fecha(linea.pago)}`,
     consejo: consejo(linea),
+    antes: loQueVenceAntes(linea),
     valor: `${fecha(compra)}: ${enDias(dias)} para pagar`,
   };
 }

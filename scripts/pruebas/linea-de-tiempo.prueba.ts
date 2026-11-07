@@ -1,5 +1,5 @@
 import { crear } from './aserciones';
-import { cicloDeTarjeta, sumarDias } from '@/lib/tarjetas';
+import { cicloDeTarjeta, pagoDelCorte, proximoPago, sumarDias } from '@/lib/tarjetas';
 import {
   compraDelIndice, compraEnLaPosicion, dentroDelCiclo, diasParaPagar, indiceDeCompra,
   lineaDeTiempo, posicionDe, resumenDeDiasParaPagar, textosDeLaLinea,
@@ -72,6 +72,9 @@ t.igual('textos · hoy', textos, {
   pago: duro('Pago 10~ene'),
   // El próximo día después del corte, con sus días: los del ciclo de enero.
   consejo: duro('Conviene usarla el día después del corte: el 26~dic da 46~días. El día del corte da 16~días.'),
+  // El 3 dic todavía no venció lo del corte de noviembre, que es el "Pago" del
+  // estado de cuenta de arriba.
+  antes: duro('Lo del corte del 25~nov vence antes: el 10~dic.'),
   valor: duro('3~dic: 38~días para pagar'),
 });
 t.igual('frase · mañana', textosDeLaLinea(comun, '2026-12-04').frase,
@@ -87,6 +90,25 @@ t.igual('consejo · hoy es el corte', textosDeLaLinea(lineaDeTiempo('2026-12-25'
   duro('Hoy es el corte: si esperás a mañana, tenés 46~días en vez de 16.'));
 t.igual('consejo · el corte fue ayer', textosDeLaLinea(lineaDeTiempo('2026-12-26', 25, 10), '2026-12-26').consejo,
   'Hoy es el mejor día para usarla: el corte fue ayer, y lo que compres hoy entra recién en el próximo.');
+// Cuando el ciclo que viene pasa por febrero, el día después del corte da
+// MENOS que hoy: el consejo no puede mandar a esperar un mes para perder días.
+t.igual('consejo · esperar da menos', textosDeLaLinea(lineaDeTiempo('2026-12-27', 25, 10), '2026-12-27').consejo,
+  duro('Hoy da más que esperar al día después del corte: el 26~ene da 43~días. El día del corte da 16~días.'));
+t.igual('consejo · esperar da lo mismo', textosDeLaLinea(lineaDeTiempo('2026-12-29', 25, 10), '2026-12-29').consejo,
+  duro('Hoy da lo mismo que esperar al día después del corte: el 26~ene da 43~días. El día del corte da 16~días.'));
+t.igual('consejo · un día después ya conviene esperar',
+  textosDeLaLinea(lineaDeTiempo('2026-12-30', 25, 10), '2026-12-30').consejo,
+  duro('Conviene usarla el día después del corte: el 26~ene da 43~días. El día del corte da 16~días.'));
+// El caso del detalle de la tarjeta: arriba dice "Pago 10 ene" (lo del corte
+// pasado) y la barra termina en "Pago 10 feb".
+t.igual('antes · el pago del corte pasado', textosDeLaLinea(lineaDeTiempo('2027-01-03', 25, 10), '2027-01-03').antes,
+  duro('Lo del corte del 25~dic vence antes: el 10~ene.'));
+t.igual('antes · el día del vencimiento todavía cuenta',
+  textosDeLaLinea(lineaDeTiempo('2027-01-10', 25, 10), '2027-01-10').antes,
+  duro('Lo del corte del 25~dic vence antes: el 10~ene.'));
+t.igual('antes · ya venció', textosDeLaLinea(lineaDeTiempo('2027-01-11', 25, 10), '2027-01-11').antes, null);
+t.igual('antes · vence el mismo mes', textosDeLaLinea(mismoMes, '2026-11-20').antes,
+  duro('Lo del corte del 5~nov vence antes: el 25~nov.'));
 const unDia = textosDeLaLinea(corto, '2026-12-01');
 t.igual('un día · singular', [unDia.numero, unDia.unidad, unDia.valor], ['1', 'día', duro('1~dic: 1~día para pagar')]);
 t.cierto('un día · consejo en singular', unDia.consejo.endsWith(duro('El día del corte da 1~día.')));
@@ -134,6 +156,8 @@ let barridos = 0;
 let rotos = 0;
 let sinGraciaVistos = 0;
 let mayorMaximo = 0;
+let hoyDaMas = 0;
+let antesVistos = 0;
 const mal = (m: string) => { rotos++; t.falla(m); };
 
 for (let corte = 1; corte <= 31 && rotos < 10; corte++) {
@@ -187,7 +211,28 @@ for (let corte = 1; corte <= 31 && rotos < 10; corte++) {
       }
 
       // Los textos dicen el mismo número que la cuenta.
-      if (hoy === L.inicio && textosDeLaLinea(L, hoy).numero !== String(P.dias)) mal(`el número del texto: ${caso}`);
+      const T = textosDeLaLinea(L, hoy);
+      if (T.numero !== String(P.dias)) mal(`el número del texto: ${caso}`);
+
+      // El consejo nunca manda a esperar a un día que da menos (o lo mismo)
+      // que hoy, ni dice que hoy da más cuando no es cierto.
+      const diasManana = diasParaPagar(sumarDias(L.corte, 1), corte, pago).dias;
+      if (T.consejo.startsWith('Conviene') && diasManana <= P.dias) mal(`manda a esperar y pierde días: ${caso}`);
+      if (T.consejo.startsWith('Hoy da')) {
+        hoyDaMas++;
+        if (diasManana > P.dias) mal(`dice que hoy da más y no: ${caso}`);
+      }
+
+      // Lo que vence antes es el pago que todavía muestra el estado de cuenta,
+      // y es siempre el del corte anterior al de la barra.
+      const pendiente = proximoPago(hoy, corte, pago);
+      if ((T.antes === null) !== (pendiente === L.pago)) mal(`"antes" y el próximo pago no cuadran: ${caso}`);
+      if (T.antes !== null) {
+        antesVistos++;
+        if (pendiente !== pagoDelCorte(sumarDias(L.inicio, -1), corte, pago) || pendiente >= L.pago) {
+          mal(`lo que vence antes no es el corte pasado: ${caso}`);
+        }
+      }
 
       // Lo mismo que el estado de cuenta: el corte de la barra es el próximo
       // corte de la tarjeta, y el ciclo arranca después del último cerrado. El
@@ -221,6 +266,9 @@ if (rotos === 0) t.suma(20);
 // Si el recorte que deja la gracia en cero no apareció nunca, el barrido no
 // estaría pasando por los meses cortos.
 t.cierto('el barrido pasa por la gracia cero', sinGraciaVistos > 0);
+// Si no aparecieran, las comprobaciones de arriba no estarían probando nada.
+t.cierto('el barrido pasa por días en que esperar da menos', hoyDaMas > 0);
+t.cierto('el barrido pasa por días con un pago pendiente', antesVistos > 0);
 // El número grande nunca pasa de dos cifras: la pieza se diseñó para eso.
 t.cierto(`el máximo cabe en dos cifras (dio ${mayorMaximo})`, mayorMaximo <= 61);
 
