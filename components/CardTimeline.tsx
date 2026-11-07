@@ -176,13 +176,22 @@ export default function CardTimeline({
               style={{ left: `${enCorte * 100}%`, right: 0, marginLeft: 1 }}
             />
           </div>
+          {/* Dónde queda hoy mientras se mira otro día: el punto al que
+              vuelve la píldora. Con la compra en hoy ya lo marca el círculo. */}
+          {compra !== hoy && (
+            <div
+              aria-hidden
+              className="absolute bottom-0 w-1 h-1 rounded-full bg-tinta-3"
+              style={{ left: `${posicionDe(linea, hoy) * 100}%`, marginLeft: -2 }}
+            />
+          )}
           {/* La marca del corte sube hasta su etiqueta. */}
           <div
             className="absolute top-0 h-2 w-px bg-tinta-3"
             style={{ left: `${enCorte * 100}%` }}
           />
           <div
-            className="absolute top-0.5 w-5 h-5 rounded-full bg-primario border-[3px] border-fondo-luz group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:outline-tinta-3"
+            className="absolute top-0.5 w-5 h-5 rounded-full bg-primario border-[3px] border-fondo-luz group-focus-visible:outline group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-tinta-3"
             style={{ left: `${enX * 100}%`, marginLeft: -10 }}
           />
         </div>

@@ -191,25 +191,26 @@ function cuando(compra: string, hoy: string): string {
  * Nombra el PRÓXIMO día después del corte, con su número exacto, y no el
  * primero de la barra: ese casi siempre ya pasó, y lo que sirve es saber para
  * cuándo dejar una compra grande. Sus días son los del ciclo que viene, que
- * pueden diferir en uno o dos de los de esta barra porque los meses no miden
- * lo mismo.
+ * pueden no ser los de esta barra porque los meses no miden lo mismo.
  */
 function consejo(linea: LineaDeTiempo): string {
   const manana = sumarDias(linea.corte, 1);
   const delSiguiente = enDias(diasParaPagar(manana, linea.diaDeCorte, linea.diaDePago).dias);
   // Cero pasa cuando el pago y el corte, recortados a un mes corto, caen el
   // mismo día (corte 30, pago 31, en abril): no hay gracia que contar.
-  const delCorte = linea.minimo === 0 ? 'ninguno' : enDias(linea.minimo);
+  const sinGracia = linea.minimo === 0;
 
   if (linea.hoy === linea.inicio) {
     return 'Hoy es el mejor día para usarla: el corte fue ayer, y lo que compres hoy entra recién en el próximo.';
   }
-  // El día del corte es cuando más rinde esperar: un día cambia el doble.
+  // El día del corte es cuando más rinde esperar: un día de diferencia suma
+  // un mes entero de plazo. "60 días en vez de 30", con la unidad una vez.
   if (linea.hoy === linea.corte) {
-    return `Hoy es el corte: si esperás a mañana, tenés ${delSiguiente} en vez de ${delCorte}.`;
+    return `Hoy es el corte: si esperás a mañana, tenés ${delSiguiente} en vez de ` +
+      `${sinGracia ? 'ninguno' : linea.minimo}.`;
   }
   return `Conviene usarla el día después del corte: el ${fecha(manana)} da ${delSiguiente}. ` +
-    (linea.minimo === 0 ? 'El día del corte no da ninguno.' : `El día del corte da ${delCorte}.`);
+    (sinGracia ? 'El día del corte no da ninguno.' : `El día del corte da ${enDias(linea.minimo)}.`);
 }
 
 /** Todo lo que dice la pieza para una compra del día `compra`. */
@@ -218,7 +219,7 @@ export interface TextosDeLaLinea {
   numero: string;
   /** "días" o "día", al lado del número. */
   unidad: string;
-  /** "Si la usás hoy, tenés hasta el 10 ene para pagarla." */
+  /** "Si la usás hoy, tenés hasta el 10 ene." */
   frase: string;
   /** Debajo de la barra, a la izquierda: el primer día del ciclo. */
   inicio: string;
@@ -238,7 +239,9 @@ export function textosDeLaLinea(linea: LineaDeTiempo, compra: string): TextosDeL
   return {
     numero: String(dias),
     unidad: dias === 1 ? 'día' : 'días',
-    frase: `${cuando(compra, linea.hoy)}, tenés hasta el ${fecha(linea.pago)} para pagarla.`,
+    // Sin "para pagarla": el título ya lo dice, y así la frase entra en un
+    // renglón aun con la fecha más larga, del mismo modo en las dos apps.
+    frase: `${cuando(compra, linea.hoy)}, tenés hasta el ${fecha(linea.pago)}.`,
     inicio: fecha(linea.inicio),
     corte: `Corte ${fecha(linea.corte)}`,
     pago: `Pago ${fecha(linea.pago)}`,
