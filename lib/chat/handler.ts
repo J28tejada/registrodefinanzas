@@ -255,6 +255,43 @@ export async function handleInboundMessage(entrada: Entrada): Promise<string | n
     }
   }
 
+  // 4b. Sin cuenta no hay categorías que ofrecer.
+  //
+  // Las categorías son de cada cuenta y varían mucho entre ellas: una personal
+  // no tiene "Honorarios", una de negocio no tiene "Diezmo". Hasta saber dónde
+  // anotar, el agente no tiene una lista válida. Corriéndolo igual, con la lista
+  // vacía, Gemini rechazaba la petición entera y TODO mensaje fallaba —hasta un
+  // "hola"—. Y con la lista de otra cuenta se podría guardar una categoría que
+  // la elegida no tiene. Por eso la cuenta se resuelve acá, antes del agente.
+  //
+  // Si había una pendiente sin cuenta, el paso 4 ya la atendió y retornó.
+  if (!ctx.ledger) {
+    const cuentas = await getAllLedgersWithStats(ctx.db);
+    if (cuentas.length === 0) {
+      return conEco(eco,
+        'Te quedaste sin cuentas, así que no hay dónde anotarlo.\n'
+        + 'Creá una en la app y volvé a mandarme el movimiento.');
+    }
+
+    // Con una sola no hay nada que preguntar. Con varias, solo vale el número o
+    // el nombre exacto: este texto puede ser un movimiento, no una respuesta.
+    const elegida = cuentas.length === 1
+      ? cuentas[0].id
+      : elegirCuenta(texto, cuentas, { parcial: false });
+    if (!elegida) {
+      return conEco(eco, preguntarCuenta(cuentas, 'Antes de anotar necesito saber dónde.'));
+    }
+
+    await setLinkLedger(supabase, linkEfectivo.user_id, linkEfectivo.id, elegida);
+    ctx = await construirContexto(supabase, { ...linkEfectivo, ledger_id: elegida }, participant);
+
+    // Con varias cuentas, este mensaje fue la elección: no hay movimiento que
+    // interpretar. Con una sola, el mensaje sigue de largo hacia el agente.
+    if (cuentas.length > 1) {
+      return conEco(eco, `Listo, de ahora en más anoto en *${ctx.ledger?.name ?? 'esa cuenta'}*. Mandame el movimiento.`);
+    }
+  }
+
   // 5. El agente
   try {
     const respuesta = await correrAgente(ctx, texto, receiptUrl);

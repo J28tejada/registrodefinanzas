@@ -151,8 +151,17 @@ export interface OpcionCuenta {
  * Resuelve la respuesta a "¿en qué cuenta lo anoto?": por número de la lista o
  * por nombre. Devuelve null si no se entiende o si el nombre es ambiguo, para
  * repreguntar en vez de anotar en la cuenta equivocada.
+ *
+ * `parcial: false` exige el número o el nombre exacto. Hace falta cuando el
+ * texto puede no ser una respuesta a esa pregunta sino un movimiento: "gasté
+ * 300 en uber" contiene el nombre de la cuenta Uber, y por coincidencia parcial
+ * se tomaría como elección y el gasto se perdería.
  */
-export function elegirCuenta(body: string, cuentas: OpcionCuenta[]): string | null {
+export function elegirCuenta(
+  body: string,
+  cuentas: OpcionCuenta[],
+  { parcial = true }: { parcial?: boolean } = {},
+): string | null {
   const texto = normalizar(body);
   if (!texto || cuentas.length === 0) return null;
 
@@ -165,6 +174,7 @@ export function elegirCuenta(body: string, cuentas: OpcionCuenta[]): string | nu
 
   const exacta = cuentas.filter(c => normalizar(c.name) === texto);
   if (exacta.length === 1) return exacta[0].id;
+  if (!parcial) return null;
 
   // "hogar" tiene que encontrar "Gastos del hogar", pero si el texto encaja con
   // dos cuentas no se adivina.
