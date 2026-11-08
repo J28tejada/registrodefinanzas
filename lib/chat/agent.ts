@@ -61,7 +61,13 @@ REGLAS
  * cafés de 150 son 450 o tres de 150, lo inventa. Esa pregunta va dentro de la
  * confirmación y la resuelve el código.
  */
-function declaraciones(categorias: string[]): FunctionDeclaration[] {
+export function declaraciones(categorias: string[]): FunctionDeclaration[] {
+  // Gemini rechaza la petición entera ante un `enum` vacío, así que sin
+  // categorías se declara como texto libre y `registrarMovimiento` explica qué
+  // falta. Pasa con una cuenta a la que le borraron todas sus categorías.
+  const categoria = categorias.length > 0
+    ? { type: SchemaType.STRING, enum: categorias, format: 'enum', description: 'Categoría de la app' } as const
+    : { type: SchemaType.STRING, description: 'Categoría de la app' } as const;
 
   return [
     {
@@ -73,7 +79,7 @@ function declaraciones(categorias: string[]): FunctionDeclaration[] {
           tipo: { type: SchemaType.STRING, enum: ['ingreso', 'gasto'], format: 'enum', description: 'ingreso o gasto' },
           monto: { type: SchemaType.NUMBER, description: 'Monto de CADA unidad, no el total' },
           descripcion: { type: SchemaType.STRING, description: 'Concepto concreto, ej. "Súper del sábado". Nunca "Gasto"' },
-          categoria: { type: SchemaType.STRING, enum: categorias, format: 'enum', description: 'Categoría de la app' },
+          categoria,
           fecha: { type: SchemaType.STRING, description: 'YYYY-MM-DD. Por defecto hoy' },
           metodo_pago: { type: SchemaType.STRING, description: 'efectivo, tarjeta, transferencia' },
           cantidad: { type: SchemaType.NUMBER, description: 'Cuántas unidades, ej. 3 cafés. Por defecto 1' },
@@ -155,6 +161,9 @@ async function registrarMovimiento(args: Record<string, unknown>, turno: Turno):
   }
 
   const validas = turno.categorias[tipo === 'gasto' ? 'expense' : 'income'];
+  if (validas.length === 0) {
+    return `ERROR: la cuenta no tiene categorías de ${tipo}. Decile al usuario que cree una en la app; no lo anotes.`;
+  }
   const categoria = categoriaValida(args.categoria, validas);
   if (!categoria) {
     return `ERROR: "categoria" tiene que ser una de: ${validas.join(', ')}.`;
@@ -345,8 +354,8 @@ export async function correrAgente(
   const apiKey = geminiApiKey();
   if (!apiKey) throw new Error('Falta GOOGLE_AI_API_KEY: el agente no puede interpretar mensajes.');
 
-  // Las de la cuenta donde se va a anotar. Sin cuenta elegida no hay lista que
-  // ofrecer: el handler pregunta cuál antes de guardar nada.
+  // Las de la cuenta donde se va a anotar. El handler resuelve la cuenta antes
+  // de llegar acá; el caso sin cuenta queda solo como resguardo.
   const [gastos, ingresos] = ctx.ledger
     ? await Promise.all([
         getCategories(ctx.db, ctx.ledger.id, { type: 'expense' }),
